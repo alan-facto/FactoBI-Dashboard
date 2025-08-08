@@ -3,6 +3,14 @@ const apiUrl = "https://script.google.com/macros/s/AKfycbyHUho9j0-swZTJO4Fka_59N
 
 let data = { months: [], departments: [], data: {} };
 
+// Mapping from sheet department names → dashboard short names
+const deptMap = {
+  "Administrativo Financeiro": "Administrativo",
+  "Operação Geral": "Operação",
+  "Jurídico Externo": "Jurídico",
+  "RH / Departamento Pessoal": "RH"
+};
+
 fetch(apiUrl)
   .then(response => response.json())
   .then(rows => {
@@ -12,7 +20,8 @@ fetch(apiUrl)
 
     rows.forEach(row => {
       const month = row["Month"];
-      const dept = row["Department"];
+      const rawDept = row["Department"];
+      const dept = deptMap[rawDept] || rawDept; // normalize name
       const total = parseFloat(row["Total"]) || 0;
       const bonificacao = parseFloat(row["Bonificacao 20"]) || 0;
       const count = parseInt(row["Employee Count"]) || 0;
@@ -50,28 +59,6 @@ fetch(apiUrl)
   .catch(error => {
     console.error("Error loading data:", error);
   });
-
-data = {
-  data: rows.reduce((acc, row) => {
-    const month = row["Month"];
-    const department = row["Department"];
-
-    if (!acc[month]) {
-      acc[month] = { departments: {} };
-    }
-
-    acc[month].departments[department] = {
-      total: parseFloat(row["Total"]),
-      bonificacao: parseFloat(row["Bonificacao 20"]),
-      count: parseInt(row["Employee Count"]),
-      geral: parseFloat(row["Total Geral"])
-    };
-
-    return acc;
-  }, {}),
-  months: [...new Set(rows.map(r => r["Month"]))].sort(),
-  departments: [...new Set(rows.map(r => r["Department"]))]
-};
 
 console.log("Fetched rows:", rows);
 console.log("Structured data object:", data);
@@ -1153,5 +1140,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 }
+
 
 
