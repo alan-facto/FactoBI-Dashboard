@@ -93,17 +93,6 @@ const colorsByDepartment = {
     "RH": "#9c755f"
 };
 
-const deptReverseMap = {
-    "Administrativo": "Administrativo Financeiro",
-    "Jurídico": "Jurídico Externo",
-    "Operação": "Operação Geral",
-    "RH": "RH / Departamento Pessoal",
-};
-
-function toOriginalDept(shortName) {
-    return deptReverseMap[shortName] || shortName;
-}
-
 function hexToRGBA(hex, alpha = 1) {
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
@@ -778,6 +767,17 @@ function createPercentageStackedChart(data, months, departments) {
     };
 }
 
+const deptReverseMap = {
+    "Administrativo": "Administrativo Financeiro",
+    "Jurídico": "Jurídico Externo",
+    "Operação": "Operação Geral",
+    "RH": "RH / Departamento Pessoal",
+};
+
+function toOriginalDept(shortName) {
+    return deptReverseMap[shortName] || shortName;
+}
+
 function createTotalExpendituresChart(data, months, departments) {
     const ctx = document.getElementById('total-expenditures-chart');
     if (!ctx) return null;
@@ -884,6 +884,7 @@ function initDashboard() {
   document.querySelector('#total-expenditures-wrapper .time-btn.active')?.click();
   document.querySelector('#department-trends-wrapper .time-btn.active')?.click();
 }
+
 
 
 
