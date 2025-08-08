@@ -51,6 +51,28 @@ fetch(apiUrl)
     console.error("Error loading data:", error);
   });
 
+data = {
+  data: rows.reduce((acc, row) => {
+    const month = row["Month"];
+    const department = row["Department"];
+
+    if (!acc[month]) {
+      acc[month] = { departments: {} };
+    }
+
+    acc[month].departments[department] = {
+      total: parseFloat(row["Total"]),
+      bonificacao: parseFloat(row["Bonificacao 20"]),
+      count: parseInt(row["Employee Count"]),
+      geral: parseFloat(row["Total Geral"])
+    };
+
+    return acc;
+  }, {}),
+  months: [...new Set(rows.map(r => r["Month"]))].sort(),
+  departments: [...new Set(rows.map(r => r["Department"]))]
+};
+
 
 let charts = {};
 
@@ -1129,3 +1151,4 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 }
+
