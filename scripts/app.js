@@ -512,12 +512,9 @@ function createDepartmentBreakdownCharts(data, months, departments) {
     const recentMonths = months.slice(-6);
     let activeDepartments = [...departments];
 
-    // Pie charts for last 6 months
-    recentMonths.forEach((month) => {
+    // Create one pie per recent month
+    recentMonths.forEach(month => {
         const canvas = document.createElement('canvas');
-        canvas.style.flex = '1'; // make all pies take equal width
-        canvas.style.maxWidth = 'none';
-        canvas.style.height = '280px'; // match other charts
         container.appendChild(canvas);
 
         breakdownCharts[month] = new Chart(canvas.getContext('2d'), {
@@ -533,7 +530,7 @@ function createDepartmentBreakdownCharts(data, months, departments) {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { display: false }, // HIDE individual legends
+                    legend: { display: false }, // hide per-chart legend
                     tooltip: {
                         callbacks: {
                             label: function (context) {
@@ -547,7 +544,7 @@ function createDepartmentBreakdownCharts(data, months, departments) {
         });
     });
 
-    // Legend toggle logic
+    // Build shared legend
     departments.forEach(dept => {
         const item = document.createElement('div');
         item.className = 'department-legend-item';
@@ -573,7 +570,7 @@ function createDepartmentBreakdownCharts(data, months, departments) {
                 item.classList.remove('inactive');
             }
 
-            // Update all pie charts
+            // Update all pies
             recentMonths.forEach(month => {
                 const chart = breakdownCharts[month];
                 chart.data.labels = activeDepartments;
@@ -950,6 +947,7 @@ function initDashboard() {
   document.querySelector('#total-expenditures-wrapper .time-btn.active')?.click();
   document.querySelector('#department-trends-wrapper .time-btn.active')?.click();
 }
+
 
 
 
