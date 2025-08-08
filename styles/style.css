@@ -1,0 +1,201 @@
+/* ====== BASE RESETS ====== */
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #024B59; /* Brand dark green */
+  color: #111;
+}
+
+h1, h2, h3, h4 {
+  margin: 0.5em 0;
+}
+
+/* ====== LAYOUT & CONTAINERS ====== */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 30px 20px;
+}
+
+/* ====== CARD DESIGN (CHART + TABLE WRAPPERS) ====== */
+.card {
+  background-color: #F6F6F6; /* Light grey / Branco Gelo */
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+  padding: 25px;
+  margin-bottom: 25px;
+}
+
+/* ====== MODERN BUTTON STYLING ====== */
+button,
+.filter-btn,
+.toggle-button-group button {
+  background-color: white;
+  color: #024B59;
+  border: 2px solid #024B59;
+  border-radius: 8px;
+  padding: 8px 14px;
+  margin: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+button:hover,
+.filter-btn:hover,
+.toggle-button-group button:hover {
+  background-color: #024B59;
+  color: white;
+}
+
+button.active,
+.filter-btn.active,
+.toggle-button-group button.active {
+  background-color: white;
+  color: #024B59;
+  border-color: #024B59;
+}
+
+button:not(.active),
+.filter-btn:not(.active),
+.toggle-button-group button:not(.active) {
+  background-color: #024B59;
+  color: white;
+}
+
+
+/* ====== TABLE STYLING ====== */
+#tables-view table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+  table-layout: fixed; /* Consistent column widths */
+}
+
+#tables-view th,
+#tables-view td {
+  border: 1px solid #ccc;
+  padding: 10px;
+  text-align: center;
+  vertical-align: middle;
+  word-wrap: break-word;
+}
+
+#tables-view td:first-child,
+#tables-view th:first-child {
+  text-align: left;
+  width: 30%; /* Department column */
+}
+
+#tables-view th:nth-child(2),
+#tables-view td:nth-child(2),
+#tables-view th:nth-child(3),
+#tables-view td:nth-child(3),
+#tables-view th:nth-child(4),
+#tables-view td:nth-child(4),
+#tables-view th:nth-child(5),
+#tables-view td:nth-child(5) {
+  width: 17.5%;
+}
+
+/* ====== RESPONSIVE CHART SIZING ====== */
+canvas {
+  max-width: 100%;
+}
+
+/* ====== HEADINGS FOR SECTION TITLES ====== */
+.section-title {
+  color: #F6F6F6;
+  font-size: 20px;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+/* ====== CHART CONTAINERS ====== */
+.chart-container {
+  padding: 15px 0;
+}
+
+/* ====== MISC ====== */
+.hidden {
+  display: none;
+}
+
+/* ===== CHART HEIGHT FIXES ===== */
+.chart-container {
+  padding: 15px 0;
+}
+
+.chart-container canvas {
+  width: 100% !important;
+  height: 300px !important; /* Customize as needed */
+}
+
+/* ===== Pie Chart Layout Fix ===== */
+.pie-chart-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 24px;
+  padding: 20px 0;
+}
+
+.pie-chart-row canvas {
+  width: 150px !important;
+  height: 150px !important;
+}
+
+/* ===== Department Legend Styling ===== */
+.department-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px 24px;
+  margin-top: 20px;
+}
+
+.department-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.department-legend-swatch {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+#top-bar {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 999;
+}
+
+#facto-logo {
+  height: 40px; /* adjust as needed */
+  opacity: 0.9;  /* optional */
+}
+
+
+.facto-logo {
+  position: absolute;
+  top: -55px;   /* raises it above the card */
+  right: 15px; /* pushes it beyond the right edge */
+  height: 40px; /* or smaller/larger depending on your preference */
+  z-index: 10;
+}
+
+.card {
+  position: relative; /* ADD THIS */
+  background-color: #F6F6F6;
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+  padding: 25px;
+  margin-bottom: 25px;
+}
