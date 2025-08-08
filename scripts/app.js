@@ -543,9 +543,9 @@ function createDepartmentBreakdownCharts(data, months, departments) {
         swatch.style.backgroundColor = colorsByDepartment[dept] || '#ccc';
 
         const label = document.createElement('span');
-        label.textContent = normalizeDepartmentName(dept);
+        label.textContent = dept;
 
-        item.appendChild(swatch);
+		item.appendChild(swatch);
         item.appendChild(label);
 
         item.addEventListener('click', () => {
@@ -865,6 +865,7 @@ function initDashboard() {
   document.querySelector('#total-expenditures-wrapper .time-btn.active')?.click();
   document.querySelector('#department-trends-wrapper .time-btn.active')?.click();
 }
+
 
 
 
