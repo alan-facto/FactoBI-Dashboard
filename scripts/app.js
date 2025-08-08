@@ -1,9 +1,8 @@
-// URL of your deployed Apps Script web app
 const apiUrl = "https://script.google.com/macros/s/AKfycbyHUho9j0-swZTJO4Fka_59Nv3GVFqo-Qfbp3yydchcKZaUUcs7HxlWZ5mUO6vjH4mPTA/exec";
 
 let data = { months: [], departments: [], data: {} };
 
-// Mapping from sheet department names → dashboard short names
+// Normalize department names from sheet to dashboard
 const deptMap = {
   "Administrativo Financeiro": "Administrativo",
   "Operação Geral": "Operação",
@@ -19,50 +18,49 @@ fetch(apiUrl)
     const structuredData = {};
 
     rows.forEach(row => {
-  const month = row["Month"];
-  const rawDept = row["Department"];
-  const dept = deptMap[rawDept] || rawDept; // normalized name
+      const month = row["Month"];
+      const rawDept = row["Department"];
+      const dept = deptMap[rawDept] || rawDept; // normalize once here
 
-  const total = parseFloat(row["Total"]) || 0;
-  const bonificacao = parseFloat(row["Bonificacao 20"]) || 0;
-  const count = parseInt(row["Employee Count"]) || 0;
-  const geral = parseFloat(row["Total Geral"]) || (total + bonificacao);
+      const total = parseFloat(row["Total"]) || 0;
+      const bonificacao = parseFloat(row["Bonificacao 20"]) || 0;
+      const count = parseInt(row["Employee Count"]) || 0;
+      const geral = parseFloat(row["Total Geral"]) || (total + bonificacao);
 
-  monthsSet.add(month);
+      monthsSet.add(month);
 
-  if (dept.toLowerCase() !== "total geral") {
-    departmentsSet.add(dept); // normalized
+      if (dept.toLowerCase() !== "total geral") {
+        departmentsSet.add(dept); // normalized here
 
-    if (!structuredData[month]) {
-      structuredData[month] = {
-        departments: {},
-        total: 0,
-        totalEmployees: 0
-      };
-    }
+        if (!structuredData[month]) {
+          structuredData[month] = {
+            departments: {},
+            total: 0,
+            totalEmployees: 0
+          };
+        }
 
-    structuredData[month].departments[dept] = { total, bonificacao, count, geral }; // normalized
-    structuredData[month].total += geral;
-    structuredData[month].totalEmployees += count;
-  }
-});
-
+        structuredData[month].departments[dept] = { total, bonificacao, count, geral }; // normalized here
+        structuredData[month].total += geral;
+        structuredData[month].totalEmployees += count;
+      }
+    });
 
     data = {
-      months: Array.from(monthsSet).sort(),
-      departments: Array.from(departmentsSet),
-      data: structuredData
-    };
+  months: Array.from(monthsSet).sort(),
+  departments: Array.from(departmentsSet),
+  data: structuredData
+};
 
-    console.log("Live data loaded:", data);
-    initDashboard();
+// Now that data.months exists, build sortedMonths
+sortedMonths = data.months.slice().sort();
+
+console.log("Live data loaded:", data);
+initDashboard();
   })
   .catch(error => {
     console.error("Error loading data:", error);
   });
-
-console.log("Fetched rows:", rows);
-console.log("Structured data object:", data);
 
 let charts = {};
 
@@ -76,7 +74,7 @@ const translations = {
   "Total": "Total"
 };
 
-const sortedMonths = data.months.slice().sort();
+let sortedMonths = [];
 
 const canonicalDepartmentNames = {
   "administrativo financeiro": "Administrativo Financeiro",
@@ -234,7 +232,7 @@ function generateSummaryByDepartment() {
       </thead>
       <tbody>
         ${data.months.map(month => {
-          const d = data.data[month].departments[dept];
+          const d = data.data[month].departments[normalizeDepartmentName(dept)];
           return d ? `
             <tr>
               <td>${formatMonthLabel(month)}</td>
@@ -273,7 +271,7 @@ function generateDetailedByMonth() {
     `;
 
     data.departments.forEach(dept => {
-      const d = data.data[month].departments[dept];
+      const d = data.data[month].departments[normalizeDepartmentName(dept)];
       if (d) {
         const row = document.createElement('tr');
         row.innerHTML = `
@@ -318,7 +316,7 @@ function generateDetailedByDepartment() {
     `;
 
     data.months.forEach(month => {
-      const d = data.data[month].departments[dept];
+      const d = data.data[month].departments[normalizeDepartmentName(dept)];
       if (d) {
         const row = document.createElement('tr');
         row.innerHTML = `
@@ -582,7 +580,7 @@ function createDepartmentBreakdownCharts(data, months, departments) {
             data: {
                 labels: activeDepartments,
                 datasets: [{
-                    data: activeDepartments.map(dept => monthData.departments[dept]?.geral || 0),
+                    data: activeDepartments.map(dept => monthData.departments[normalizeDepartmentName(dept)]?.geral || 0),
                     backgroundColor: activeDepartments.map(dept => colorsByDepartment[dept] || "#ccc")
                 }]
             },
@@ -1141,6 +1139,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 }
+
 
 
 
