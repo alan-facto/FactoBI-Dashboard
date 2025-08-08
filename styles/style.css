@@ -1,195 +1,86 @@
-/* =========================
-   Facto Dashboard - cleaned & focused CSS
-   Replace your styles/style.css with this
-   ========================= */
-
-:root{
-  --brand: #024B59;
-  --card-bg: #F6F6F6;
-  --accent: #024B59;
-  --muted: #e6eef0;
-  --text: #111;
-  --btn-radius: 8px;
-  --gap: 20px;
-}
-
-*,
-*::before,
-*::after { box-sizing: border-box; }
-
-/* ====== BASE ====== */
-html,body {
-  height: 100%;
+/* ===== BASE RESETS ===== */
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   margin: 0;
-  font-family: "Plus Jakarta Sans", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  padding: 0;
+  background-color: #024B59; /* Brand dark green */
+  color: #111;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: var(--brand);
-  color: var(--text);
-  line-height: 1.35;
 }
 
-/* ====== LAYOUT & CONTAINERS ====== */
+h1, h2, h3, h4 {
+  margin: 0.5em 0;
+}
+
+/* ===== LAYOUT & CONTAINERS ===== */
 .container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 30px 20px;
 }
 
-.dashboard .view-toggle {
-  margin-bottom: 12px;
+.hidden {
+  display: none;
 }
 
-/* ====== CARD (chart wrappers) ====== */
+/* ===== CARD DESIGN ===== */
 .card {
   position: relative;
-  background: var(--card-bg);
+  background-color: #F6F6F6; /* Light grey / Branco Gelo */
   border-radius: 12px;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.08);
-  padding: 22px;
-  margin-bottom: 24px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+  padding: 25px;
+  margin-bottom: 25px;
 }
 
-/* small logo that sits inside a card */
+/* ===== LOGO POSITIONING ===== */
 .facto-logo {
   position: absolute;
-  right: 16px;
-  top: 14px;
+  top: -55px;   
+  right: 15px;
   height: 40px;
-  opacity: .95;
+  z-index: 10;
 }
 
-/* ====== BUTTONS ====== */
+/* ===== BUTTONS ===== */
 button,
 .filter-btn,
 .toggle-button-group button {
-  border-radius: var(--btn-radius);
+  background-color: white;
+  color: #024B59;
+  border: 2px solid #024B59;
+  border-radius: 8px;
   padding: 8px 14px;
   margin: 4px;
   cursor: pointer;
   font-weight: 500;
-  border: 2px solid var(--accent);
-  background: white;
-  color: var(--accent);
-  transition: all .15s ease;
+  transition: all 0.2s ease;
 }
 
 button:hover,
 .filter-btn:hover,
 .toggle-button-group button:hover {
-  background: var(--accent);
-  color: #fff;
-}
-
-button:not(.active),
-.filter-btn:not(.active),
-.toggle-button-group button:not(.active) {
-  background: var(--accent);
-  color: #fff;
+  background-color: #024B59;
+  color: white;
 }
 
 button.active,
 .filter-btn.active,
 .toggle-button-group button.active {
-  background: white;
-  color: var(--accent);
+  background-color: white;
+  color: #024B59;
+  border-color: #024B59;
 }
 
-/* ====== CHART ROWS ====== */
-.chart-row { margin-bottom: 18px; }
-
-/* Single (full-width) chart row */
-.chart-row.single { /* keeps default block layout */ }
-.chart-row.single .card { width: 100%; }
-
-/* Double: two-column row (for .half cards) */
-.chart-row.double {
-  display: flex;
-  gap: var(--gap);
-  align-items: stretch;
-  /* allow wrap on very small screens */
-  flex-wrap: wrap;
+button:not(.active),
+.filter-btn:not(.active),
+.toggle-button-group button:not(.active) {
+  background-color: #024B59;
+  color: white;
 }
 
-/* .half card inside a double row: two columns */
-.chart-row.double .card.half {
-  flex: 1 1 calc(50% - (var(--gap) / 2));
-  max-width: calc(50% - (var(--gap) / 2));
-  min-width: 280px; /* don't go too narrow */
-}
-
-/* ensure cards still fill their column */
-.chart-row.double .card.half .chart-container {
-  height: 300px; /* half-card height */
-}
-
-/* full-width charts get a larger height */
-.chart-row.single .card .chart-container,
-.chart-row.single .chart-container {
-  height: 380px; /* full-width chart height */
-}
-
-/* Generic chart container */
-.chart-container {
-  position: relative;
-  width: 100%;
-  padding-top: 0; /* not using aspect-ratio trick: we control height with explicit heights above */
-}
-
-/* Canvas sizing: let canvas fill container exactly (Chart.js: maintainAspectRatio=false) */
-.chart-container canvas,
-.card canvas {
-  width: 100% !important;
-  height: 100% !important;
-  display: block;
-}
-
-/* ====== PIE / small charts row override ====== */
-.pie-chart-row {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 16px;
-  padding: 12px 0;
-}
-
-.pie-chart-row canvas {
-  width: 150px !important;
-  height: 150px !important;
-  max-width: 150px;
-}
-
-/* ====== Legend styling ====== */
-.department-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px 18px;
-  justify-content: center;
-  margin-top: 16px;
-}
-
-.department-legend-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  white-space: nowrap;
-  cursor: pointer;
-  padding: 6px 8px;
-  border-radius: 8px;
-}
-
-.department-legend-item.inactive { opacity: 0.45; }
-
-.department-legend-swatch {
-  width: 16px;
-  height: 16px;
-  border-radius: 4px;
-  display: inline-block;
-  box-shadow: 0 1px 0 rgba(0,0,0,0.06) inset;
-}
-
-/* ====== TABLE STYLING ====== */
+/* ===== TABLES ===== */
 #tables-view table {
   width: 100%;
   border-collapse: collapse;
@@ -197,36 +88,123 @@ button.active,
   table-layout: fixed;
 }
 
-#tables-view th, #tables-view td {
-  border: 1px solid #ddd;
+#tables-view th,
+#tables-view td {
+  border: 1px solid #ccc;
   padding: 10px;
   text-align: center;
   vertical-align: middle;
   word-wrap: break-word;
 }
 
-#tables-view td:first-child, #tables-view th:first-child {
+#tables-view td:first-child,
+#tables-view th:first-child {
   text-align: left;
-  width: 30%;
+  width: 30%; /* Department column */
 }
 
-/* Misc */
-.hidden { display: none !important; }
-
-/* ====== RESPONSIVE ====== */
-@media (max-width: 900px) {
-  .container { padding: 20px; }
-
-  /* stack half cards vertically on smaller view widths */
-  .chart-row.double {
-    flex-direction: column;
-  }
-  .chart-row.double .card.half { 
-    max-width: 100%;
-    flex: 1 1 100%;
-  }
-
-  /* lower heights for mobile to avoid very long pages */
-  .chart-row.double .card.half .chart-container { height: 260px; }
-  .chart-row.single .card .chart-container { height: 300px; }
+#tables-view th:nth-child(2),
+#tables-view td:nth-child(2),
+#tables-view th:nth-child(3),
+#tables-view td:nth-child(3),
+#tables-view th:nth-child(4),
+#tables-view td:nth-child(4),
+#tables-view th:nth-child(5),
+#tables-view td:nth-child(5) {
+  width: 17.5%;
 }
+
+/* ===== CHARTS ===== */
+.chart-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 300px; /* Base height for all charts */
+}
+
+/* Full-width charts */
+.single .chart-container {
+  height: 400px;
+}
+
+/* Half-width charts in double row */
+.chart-row.double {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.chart-row.double .card {
+  flex: 1 1 calc(50% - 10px);
+  min-width: 300px;
+}
+
+.chart-row.double .chart-container {
+  height: 350px; /* Slightly taller for better visibility */
+}
+
+/* Ensure canvas fills container */
+canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+
+/* ===== PIE CHART LAYOUT ===== */
+.pie-chart-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 24px;
+  padding: 20px 0;
+}
+
+.pie-chart-row canvas {
+  width: 150px !important;
+  height: 150px !important;
+}
+
+/* ===== LEGEND ===== */
+.department-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px 24px;
+  margin-top: 20px;
+}
+
+.department-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.department-legend-swatch {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+/* ===== TOP BAR ===== */
+#top-bar {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 999;
+}
+
+#facto-logo {
+  height: 40px;
+  opacity: 0.9;
+}
+
+/* ===== SECTION TITLES ===== */
+.section-title {
+  color: #F6F6F6;
+  font-size: 20px;
+  margin-bottom: 10px;
+  font-weight: 600;
+}ree
