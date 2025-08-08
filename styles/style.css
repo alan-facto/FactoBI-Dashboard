@@ -1,4 +1,4 @@
-/* =========================
+e/* =========================
    Clean dashboard CSS — use this as the single source of truth
    ========================= */
 
@@ -76,18 +76,23 @@ button.active, .filter-btn.active { background:white; color:var(--brand); }
 }
 
 /* Pie / small charts */
+.pie-scroll-container {
+  overflow-x: auto;
+  padding-bottom: 10px;
+}
+
 .pie-chart-row {
   display: flex;
   flex-wrap: nowrap; /* keep in one row */
   gap: 20px;
-  justify-content: space-between;
-  align-items: center;
 }
+
 .pie-chart-row canvas {
-  flex: 1;
-  max-width: none;
-  height: 280px !important; /* consistent height */
+  flex: 0 0 auto; /* don't shrink */
+  width: 250px !important;
+  height: 250px !important;
 }
+
 
 /* Department legend styling */
 .department-legend { display:flex; flex-wrap:wrap; gap:12px 18px; justify-content:center; margin-top:16px; }
@@ -110,5 +115,6 @@ button.active, .filter-btn.active { background:white; color:var(--brand); }
   .chart-row.double .card.half .chart-container { height: 260px; }
   .chart-row.single .chart-container { height: 300px; }
 }
+
 
 
