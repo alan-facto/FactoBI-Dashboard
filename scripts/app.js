@@ -1,8 +1,10 @@
 const apiUrl = "https://script.google.com/macros/s/AKfycbyHUho9j0-swZTJO4Fka_59Nv3GVFqo-Qfbp3yydchcKZaUUcs7HxlWZ5mUO6vjH4mPTA/exec";
 
+// Structure to hold processed data
 let data = { months: [], departments: [], data: {} };
+let sortedMonths = [];
 
-// Normalize department names from sheet to dashboard
+// Map sheet department names to dashboard names
 const deptMap = {
   "Administrativo Financeiro": "Administrativo",
   "Operação Geral": "Operação",
@@ -10,17 +12,18 @@ const deptMap = {
   "RH / Departamento Pessoal": "RH"
 };
 
+// Fetch and process live data
 fetch(apiUrl)
   .then(response => response.json())
-  .then(rows => {
+  .then(fetchedRows => {
     const monthsSet = new Set();
     const departmentsSet = new Set();
     const structuredData = {};
 
-    rows.forEach(row => {
+    fetchedRows.forEach(row => {
       const month = row["Month"];
       const rawDept = row["Department"];
-      const dept = deptMap[rawDept] || rawDept; // normalize once here
+      const dept = deptMap[rawDept] || rawDept; // normalize
 
       const total = parseFloat(row["Total"]) || 0;
       const bonificacao = parseFloat(row["Bonificacao 20"]) || 0;
@@ -30,7 +33,7 @@ fetch(apiUrl)
       monthsSet.add(month);
 
       if (dept.toLowerCase() !== "total geral") {
-        departmentsSet.add(dept); // normalized here
+        departmentsSet.add(dept);
 
         if (!structuredData[month]) {
           structuredData[month] = {
@@ -40,29 +43,29 @@ fetch(apiUrl)
           };
         }
 
-        structuredData[month].departments[dept] = { total, bonificacao, count, geral }; // normalized here
+        structuredData[month].departments[dept] = { total, bonificacao, count, geral };
         structuredData[month].total += geral;
         structuredData[month].totalEmployees += count;
       }
     });
 
     data = {
-  months: Array.from(monthsSet).sort(),
-  departments: Array.from(departmentsSet),
-  data: structuredData
-};
+      months: Array.from(monthsSet).sort(),
+      departments: Array.from(departmentsSet),
+      data: structuredData
+    };
 
-// Now that data.months exists, build sortedMonths
-sortedMonths = data.months.slice().sort();
+    sortedMonths = data.months.slice().sort();
 
-console.log("Live data loaded:", data);
-initDashboard();
+    console.log("Live data loaded:", data);
+    initDashboard();
   })
   .catch(error => {
     console.error("Error loading data:", error);
   });
 
 let charts = {};
+
 
 const translations = {
   "Total Expenditures": "Gastos Totais",
@@ -1139,6 +1142,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 }
+
 
 
 
