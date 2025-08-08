@@ -75,23 +75,60 @@ button.active, .filter-btn.active { background:white; color:var(--brand); }
   display: block;
 }
 
-/* Pie / small charts */
+/* Make sure the app root background and text colors are present (restores teal if missing) */
+body {
+  background: var(--brand) !important;
+  color: var(--text) !important;
+}
+
+/* Horizontal scroll container for pies - fixed height so card size stays predictable */
 .pie-scroll-container {
   overflow-x: auto;
-  padding-bottom: 10px;
+  -webkit-overflow-scrolling: touch;
+  padding: 8px 6px 12px 6px;
+  width: 100%;
 }
 
-.pie-chart-row {
+/* Inner flex track that holds each pie item in a single row */
+.pie-track {
   display: flex;
-  flex-wrap: nowrap; /* keep in one row */
+  flex-wrap: nowrap;
   gap: 20px;
+  align-items: flex-start;
 }
 
-.pie-chart-row canvas {
-  flex: 0 0 auto; /* don't shrink */
-  width: 250px !important;
-  height: 250px !important;
+/* Each pie + label lives inside .pie-item so it can't force card resizing */
+.pie-item {
+  flex: 0 0 260px;      /* fixed width per pie */
+  max-width: 260px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
+
+/* Canvas fixed height so Chart.js renders consistently and doesn't stretch other cards */
+.pie-item canvas {
+  width: 100% !important;
+  height: 220px !important;
+  display: block;
+}
+
+/* Small month label under each pie */
+.pie-item .pie-label {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--text);
+}
+
+/* Slightly larger pies on very wide screens */
+@media (min-width: 1400px) {
+  .pie-item { flex-basis: 300px; max-width: 300px; }
+  .pie-item canvas { height: 240px !important; }
+}
+
+/* Ensure legend sits below the pies and centers */
+.department-legend { margin-top: 18px; justify-content: center; }
+
 
 
 /* Department legend styling */
@@ -115,6 +152,7 @@ button.active, .filter-btn.active { background:white; color:var(--brand); }
   .chart-row.double .card.half .chart-container { height: 260px; }
   .chart-row.single .chart-container { height: 300px; }
 }
+
 
 
 
