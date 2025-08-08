@@ -73,6 +73,8 @@ data = {
   departments: [...new Set(rows.map(r => r["Department"]))]
 };
 
+console.log("Fetched rows:", rows);
+console.log("Structured data object:", data);
 
 let charts = {};
 
@@ -1151,4 +1153,5 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 }
+
 
