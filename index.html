@@ -154,16 +154,18 @@
 <div class="chart-row single">
   <div class="card" id="department-breakdown-wrapper">
     <h2>Distribuição de Gastos por Departamento (Últimos 6 Meses)</h2>
-    <div class="pie-scroll-container">
-      <div class="pie-chart-row" id="department-breakdown-charts">
-        <!-- Pie charts will be inserted here by JavaScript -->
+
+    <!-- horizontal scroll area (fixed height so card doesn't balloon) -->
+    <div class="pie-scroll-container" aria-hidden="false">
+      <div class="pie-track" id="department-breakdown-charts">
+        <!-- JS will insert multiple .pie-item (canvas + label) here -->
       </div>
     </div>
-    <div class="department-legend" id="department-legend">
-      <!-- Legend items will be inserted here by JavaScript -->
-    </div>
+
+    <div class="department-legend" id="department-legend"></div>
   </div>
 </div>
+
 
 
 
@@ -198,6 +200,7 @@
   </div>
 </body>
 </html>
+
 
 
 
