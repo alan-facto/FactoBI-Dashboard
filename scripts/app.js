@@ -93,6 +93,17 @@ const colorsByDepartment = {
     "RH": "#9c755f"
 };
 
+const deptReverseMap = {
+    "Administrativo": "Administrativo Financeiro",
+    "Jurídico": "Jurídico Externo",
+    "Operação": "Operação Geral",
+    "RH": "RH / Departamento Pessoal",
+};
+
+function toOriginalDept(shortName) {
+    return deptReverseMap[shortName] || shortName;
+}
+
 function hexToRGBA(hex, alpha = 1) {
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
@@ -770,10 +781,13 @@ function createPercentageStackedChart(data, months, departments) {
 function createTotalExpendituresChart(data, months, departments) {
     const ctx = document.getElementById('total-expenditures-chart');
     if (!ctx) return null;
-    
+
     const departmentData = {};
     departments.forEach(dept => {
-        departmentData[dept] = months.map(month => data[month]?.departments[dept]?.geral || 0);
+        const originalDept = toOriginalDept(dept);
+        departmentData[dept] = months.map(month =>
+            data[month]?.departments[originalDept]?.geral || 0
+        );
     });
 
     const chart = new Chart(ctx.getContext('2d'), {
@@ -802,7 +816,10 @@ function createTotalExpendituresChart(data, months, departments) {
             chart.data.labels = monthsToShow.map(formatMonthShort);
 
             departments.forEach(dept => {
-                departmentData[dept] = monthsToShow.map(month => newData[month]?.departments[dept]?.geral || 0);
+                const originalDept = toOriginalDept(dept);
+                departmentData[dept] = monthsToShow.map(month =>
+                    newData[month]?.departments[originalDept]?.geral || 0
+                );
             });
 
             if (selectedDepartment === 'all') {
@@ -867,6 +884,7 @@ function initDashboard() {
   document.querySelector('#total-expenditures-wrapper .time-btn.active')?.click();
   document.querySelector('#department-trends-wrapper .time-btn.active')?.click();
 }
+
 
 
 
