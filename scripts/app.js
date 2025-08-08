@@ -19,34 +19,34 @@ fetch(apiUrl)
     const structuredData = {};
 
     rows.forEach(row => {
-      const month = row["Month"];
-      const rawDept = row["Department"];
-      const dept = deptMap[rawDept] || rawDept; // normalize name
-      const total = parseFloat(row["Total"]) || 0;
-      const bonificacao = parseFloat(row["Bonificacao 20"]) || 0;
-      const count = parseInt(row["Employee Count"]) || 0;
-      const geral = parseFloat(row["Total Geral"]) || (total + bonificacao);
+  const month = row["Month"];
+  const rawDept = row["Department"];
+  const dept = deptMap[rawDept] || rawDept; // normalized name
 
-      monthsSet.add(month);
+  const total = parseFloat(row["Total"]) || 0;
+  const bonificacao = parseFloat(row["Bonificacao 20"]) || 0;
+  const count = parseInt(row["Employee Count"]) || 0;
+  const geral = parseFloat(row["Total Geral"]) || (total + bonificacao);
 
-      if (dept.toLowerCase() !== "total geral") {
-        departmentsSet.add(dept); // now using normalized name
-      }
+  monthsSet.add(month);
 
-      if (!structuredData[month]) {
-        structuredData[month] = {
-          departments: {},
-          total: 0,
-          totalEmployees: 0
-        };
-      }
+  if (dept.toLowerCase() !== "total geral") {
+    departmentsSet.add(dept); // normalized
 
-      if (dept.toLowerCase() !== "total geral") {
-        structuredData[month].departments[dept] = { total, bonificacao, count, geral };
-        structuredData[month].total += geral;
-        structuredData[month].totalEmployees += count;
-      }
-    });
+    if (!structuredData[month]) {
+      structuredData[month] = {
+        departments: {},
+        total: 0,
+        totalEmployees: 0
+      };
+    }
+
+    structuredData[month].departments[dept] = { total, bonificacao, count, geral }; // normalized
+    structuredData[month].total += geral;
+    structuredData[month].totalEmployees += count;
+  }
+});
+
 
     data = {
       months: Array.from(monthsSet).sort(),
@@ -1141,6 +1141,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 }
+
 
 
 
