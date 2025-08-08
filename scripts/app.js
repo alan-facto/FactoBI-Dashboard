@@ -1007,9 +1007,6 @@ function createTotalExpendituresChart(data, months, departments) {
 }
 
 function initDashboard() {
-
-// Main initialization
-document.addEventListener('DOMContentLoaded', function () {
   const months = data.months;
   const departments = data.departments;
 
@@ -1025,12 +1022,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Initialize UI interactions
   setupTimeFilters();
-  setupViewToggle(); // For the main Charts/Tables toggle
+  setupViewToggle();
 
-  // Initialize table functionality if the elements exist
   if (document.getElementById('btn-summary-month')) {
-    setupTableToggle(); // For the table view buttons
-    generateSummaryByMonth(); // Load default table view
+    setupTableToggle();
+    generateSummaryByMonth();
   }
 
   setupDepartmentTrendsFilters();
@@ -1038,17 +1034,4 @@ document.addEventListener('DOMContentLoaded', function () {
   // Trigger default chart filters
   document.querySelector('#total-expenditures-wrapper .time-btn.active')?.click();
   document.querySelector('#department-trends-wrapper .time-btn.active')?.click();
-});
-
-
 }
-
-
-
-
-
-
-
-
-
-
