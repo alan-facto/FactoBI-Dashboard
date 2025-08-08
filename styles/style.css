@@ -78,14 +78,15 @@ button.active, .filter-btn.active { background:white; color:var(--brand); }
 /* Pie / small charts */
 .pie-chart-row {
   display: flex;
-  flex-wrap: nowrap;       /* prevent wrapping */
+  flex-wrap: nowrap; /* keep in one row */
   gap: 20px;
   justify-content: space-between;
+  align-items: center;
 }
 .pie-chart-row canvas {
-  flex: 1;                 /* let them grow evenly */
-  max-width: none;         /* remove artificial cap */
-  height: 280px !important;/* match other chart heights */
+  flex: 1;
+  max-width: none;
+  height: 280px !important; /* consistent height */
 }
 
 /* Department legend styling */
@@ -109,4 +110,5 @@ button.active, .filter-btn.active { background:white; color:var(--brand); }
   .chart-row.double .card.half .chart-container { height: 260px; }
   .chart-row.single .chart-container { height: 300px; }
 }
+
 
