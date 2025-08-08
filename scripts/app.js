@@ -31,8 +31,7 @@ fetch(apiUrl)
     fetchedRows.forEach(row => {
       const month = row["Month"];
       const rawDept = row["Department"];
-      const dept = normalizeDepartmentName(rawDept);
-
+      const dept = deptMap[rawDept] || rawDept;
       const total = parseFloat(row["Total"]) || 0;
       const bonificacao = parseFloat(row["Bonificacao 20"]) || 0;
       const count = parseInt(row["Employee Count"]) || 0;
@@ -203,7 +202,7 @@ function generateSummaryByMonth() {
       <tbody>
         ${Object.entries(monthData.departments).map(([dept, d]) => `
           <tr>
-            <td>${normalizeDepartmentName(dept)}</td>
+            <td>${dept}</td>
             <td>${formatCurrencyBRL(d.total)}</td>
           </tr>
         `).join('')}
@@ -221,7 +220,7 @@ function generateSummaryByDepartment() {
 
   data.departments.forEach(dept => {
     const section = document.createElement('div');
-    section.innerHTML = `<h3>${normalizeDepartmentName(dept)}</h3>`;
+    section.innerHTML = `<h3>${dept}</h3>`;
     
     const table = document.createElement('table');
     table.innerHTML = `
@@ -233,7 +232,7 @@ function generateSummaryByDepartment() {
       </thead>
       <tbody>
         ${data.months.map(month => {
-          const d = data.data[month].departments[normalizeDepartmentName(dept)];
+          const d = data.data[month].departments[dept];
           return d ? `
             <tr>
               <td>${formatMonthLabel(month)}</td>
@@ -272,11 +271,11 @@ function generateDetailedByMonth() {
     `;
 
     data.departments.forEach(dept => {
-      const d = data.data[month].departments[normalizeDepartmentName(dept)];
+      const d = data.data[month].departments[dept];
       if (d) {
         const row = document.createElement('tr');
         row.innerHTML = `
-          <td>${normalizeDepartmentName(dept)}</td>
+          <td>${dept}</td>
           <td>${d.count || 0}</td>
           <td>${formatCurrencyBRL(d.total)}</td>
           <td>${formatCurrencyBRL(d.bonificacao)}</td>
@@ -300,7 +299,7 @@ function generateDetailedByDepartment() {
 
   data.departments.forEach(dept => {
     const section = document.createElement('div');
-    section.innerHTML = `<h3>${normalizeDepartmentName(dept)}</h3>`;
+    section.innerHTML = `<h3>${dept}</h3>`;
 
     const table = document.createElement('table');
     const thead = document.createElement('thead');
@@ -317,7 +316,7 @@ function generateDetailedByDepartment() {
     `;
 
     data.months.forEach(month => {
-      const d = data.data[month].departments[normalizeDepartmentName(dept)];
+      const d = data.data[month].departments[dept];
       if (d) {
         const row = document.createElement('tr');
         row.innerHTML = `
@@ -353,7 +352,7 @@ function generateDepartmentTable() {
   data.departments.forEach(dept => {
     const row = document.createElement('tr');
     row.innerHTML = `
-      <td>${normalizeDepartmentName(dept)}</td>
+      <td>${dept}</td>
       ${data.months.map(month => {
         const value = data.data[month].departments[dept]?.total || 0;
         return `<td>${formatCurrencyBRL(value)}</td>`;
@@ -521,9 +520,11 @@ function createDepartmentBreakdownCharts(data, months, departments) {
         breakdownCharts[month] = new Chart(canvas.getContext('2d'), {
             type: 'pie',
             data: {
-                labels: activeDepartments.map(normalizeDepartmentName),
+                labels: activeDepartments,
                 datasets: [{
-                    data: activeDepartments.map(dept => data[month].departments[dept]?.geral || 0),
+                    data: activeDepartments.map(dept => {
+    return data[month].departments[dept]?.geral || 0;
+}),
                     backgroundColor: activeDepartments.map(dept => colorsByDepartment[dept] || "#ccc")
                 }]
             },
@@ -559,7 +560,7 @@ function createDepartmentBreakdownCharts(data, months, departments) {
 
             recentMonths.forEach(month => {
                 const chart = breakdownCharts[month];
-                chart.data.labels = activeDepartments.map(normalizeDepartmentName);
+                chart.data.labels = activeDepartments;
                 chart.data.datasets[0].data = activeDepartments.map(d => data[month].departments[d]?.geral || 0);
                 chart.data.datasets[0].backgroundColor = activeDepartments.map(d => colorsByDepartment[d] || '#ccc');
                 chart.update();
@@ -696,7 +697,7 @@ function createDepartmentTrendsChart(data, months, departments) {
     if (!ctx) return null;
 
     const datasets = departments.map(dept => ({
-        label: normalizeDepartmentName(dept),
+        label: dept,
         data: months.map(month => data[month]?.departments[dept]?.geral || 0),
         borderColor: colorsByDepartment[dept] || "#ccc",
         backgroundColor: 'transparent',
@@ -715,7 +716,7 @@ function createDepartmentTrendsChart(data, months, departments) {
         update: function(monthsToShow, filteredDepartments = departments) {
             chart.data.labels = monthsToShow.map(formatMonthShort);
             chart.data.datasets = filteredDepartments.map(dept => ({
-                label: normalizeDepartmentName(dept),
+                label: dept,
                 data: monthsToShow.map(month => data[month]?.departments[dept]?.geral || 0),
                 borderColor: colorsByDepartment[dept] || "#ccc",
                 backgroundColor: 'transparent',
@@ -733,7 +734,7 @@ function createPercentageStackedChart(data, months, departments) {
     if (!ctx) return null;
 
     const datasets = departments.map(dept => ({
-        label: normalizeDepartmentName(dept),
+        label: dept,
         data: months.map(month => {
             const deptTotal = data[month]?.departments[dept]?.geral || 0;
             const total = data[month]?.total || 1;
@@ -864,6 +865,7 @@ function initDashboard() {
   document.querySelector('#total-expenditures-wrapper .time-btn.active')?.click();
   document.querySelector('#department-trends-wrapper .time-btn.active')?.click();
 }
+
 
 
 
