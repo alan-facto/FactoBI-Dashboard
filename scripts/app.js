@@ -1,68 +1,56 @@
 // URL of your deployed Apps Script web app
-const apiUrl = "https://script.google.com/macros/s/AKfycbyHUho9j0-swZTJO4Fka_59Nv3GVFqo-Qfbp3yydchcKZaUUcs7HxlWZ5mUO6vjH4mPTA/exec"; // replace with actual URL
+const apiUrl = "https://script.google.com/macros/s/AKfycbyHUho9j0-swZTJO4Fka_59Nv3GVFqo-Qfbp3yydchcKZaUUcs7HxlWZ5mUO6vjH4mPTA/exec";
 
-// This will hold the same structure as your old `data` object
-let data = {};
+let data = { months: [], departments: [], data: {} };
 
-// Fetch the live data
 fetch(apiUrl)
   .then(response => response.json())
   .then(rows => {
-    // Convert flat rows into the grouped `data` object
-    data = rows.reduce((acc, row) => {
-      const month = row["Month"];
-      const department = row["Department"];
+    const monthsSet = new Set();
+    const departmentsSet = new Set();
+    const structuredData = {};
 
-      if (!acc[month]) {
-        acc[month] = {};
+    rows.forEach(row => {
+      const month = row["Month"];
+      const dept = row["Department"];
+      const total = parseFloat(row["Total"]) || 0;
+      const bonificacao = parseFloat(row["Bonificacao 20"]) || 0;
+      const count = parseInt(row["Employee Count"]) || 0;
+      const geral = parseFloat(row["Total Geral"]) || (total + bonificacao);
+
+      monthsSet.add(month);
+      if (dept.toLowerCase() !== "total geral") {
+        departmentsSet.add(dept);
       }
 
-      acc[month][department] = [
-        parseFloat(row["Total"]),
-        parseFloat(row["Bonificacao 20"]),
-        parseInt(row["Employee Count"]),
-        parseFloat(row["Total Geral"])
-      ];
+      if (!structuredData[month]) {
+        structuredData[month] = {
+          departments: {},
+          total: 0,
+          totalEmployees: 0
+        };
+      }
 
-      return acc;
-    }, {});
+      if (dept.toLowerCase() !== "total geral") {
+        structuredData[month].departments[dept] = { total, bonificacao, count, geral };
+        structuredData[month].total += geral;
+        structuredData[month].totalEmployees += count;
+      }
+    });
 
-    console.log("Live data loaded:", data); // ✅ Test output
+    data = {
+      months: Array.from(monthsSet).sort(),
+      departments: Array.from(departmentsSet),
+      data: structuredData
+    };
+
+    console.log("Live data loaded:", data);
     initDashboard();
   })
   .catch(error => {
     console.error("Error loading data:", error);
   });
 
-
-// Sanitize data after parsing
-Object.keys(data.data).forEach(month => {
-  const monthData = data.data[month];
-
-  // Normalize department names (fix double spaces)
-  const normalizedDepartments = {};
-  let totalEmployees = 0;
-
-  for (const dept in monthData.departments) {
-  const normalizedName = dept.replace(/\s+/g, ' ').trim();
-
-  // 🚫 Skip "Total geral" department to avoid duplication
-  if (normalizedName.toLowerCase() === "total geral") continue;
-
-  const deptData = monthData.departments[dept];
-  totalEmployees += deptData.count || 0;
-  normalizedDepartments[normalizedName] = deptData;
-}
-
-  // Replace with cleaned-up data
-  monthData.departments = normalizedDepartments;
-  monthData.totalEmployees = totalEmployees;
-});
-
-// Normalize department list too
-data.departments = data.departments
-  .map(name => name.replace(/\s+/g, ' ').trim())
-  .filter(name => name.toLowerCase() !== "total geral"); // 🔥 Remove from department list
 
 let charts = {};
 
@@ -1138,5 +1126,6 @@ document.addEventListener('DOMContentLoaded', function () {
   document.querySelector('#total-expenditures-wrapper .time-btn.active')?.click();
   document.querySelector('#department-trends-wrapper .time-btn.active')?.click();
 });
+
 
 }
