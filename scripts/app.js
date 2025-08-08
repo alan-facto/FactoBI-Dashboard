@@ -4,6 +4,9 @@ const apiUrl = "https://script.google.com/macros/s/AKfycbyHUho9j0-swZTJO4Fka_59N
 let data = { months: [], departments: [], data: {} };
 let sortedMonths = [];
 
+// Holds chart instances globally
+let charts = [];
+
 // Map sheet department names to dashboard names
 const deptMap = {
   "Administrativo Financeiro": "Administrativo",
@@ -64,9 +67,6 @@ fetch(apiUrl)
     console.error("Error loading data:", error);
   });
 
-let charts = {};
-
-
 const translations = {
   "Total Expenditures": "Gastos Totais",
   "Company Average per Employee": "Média da Empresa por Funcionário",
@@ -76,8 +76,6 @@ const translations = {
   "Expenditure": "Gastos",
   "Total": "Total"
 };
-
-let sortedMonths = [];
 
 const canonicalDepartmentNames = {
   "administrativo financeiro": "Administrativo Financeiro",
@@ -367,105 +365,6 @@ function generateDepartmentTable() {
   table.appendChild(thead);
   table.appendChild(tbody);
   container.appendChild(table);
-}
-
-
-
-// Chart 1: Total Expenditures Over Time
-function createTotalExpendituresChart(chartElement) {
-  const ctx = chartElement.getContext("2d");
-  return new Chart(ctx, {
-    type: "line",
-    data: {
-      labels: sortedMonths,
-      datasets: [{
-        label: "Total de Gastos",
-        data: sortedMonths.map(month => data.data[month].total),
-        backgroundColor: "#4e79a7",
-        borderColor: "#4e79a7",
-        tension: 0.3
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { display: false },
-        title: {
-          display: true,
-          text: "Total de Gastos ao Longo do Tempo"
-        }
-      }
-    }
-  });
-}
-
-// Chart 2: Média de Gastos por Funcionário
-function createAvgExpenditureChart(chartElement) {
-    const avgData = sortedMonths.map(month => {
-    const monthData = data.data[month];
-    const totalEmployees = Object.values(monthData.departments || {}).reduce((sum, dept) => sum + Number(dept.count || 0), 0);
-    return totalEmployees > 0 ? (monthData.total / totalEmployees) : 0;
-  });
-
-  return new Chart(ctx, {
-    type: "line",
-    data: {
-      labels: sortedMonths,
-      datasets: [{
-        label: "Média por Funcionário",
-        data: avgData,
-        backgroundColor: "#f28e2b",
-        borderColor: "#f28e2b",
-        tension: 0.3
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { display: false },
-        title: {
-          display: true,
-          text: "Média de Gastos por Funcionário"
-        }
-      }
-    }
-  });
-}
-
-// Chart 3: Total de Funcionários
-function createEmployeesChart(chartElement) {
-  const ctx = chartElement.getContext("2d");
-  const employeeData = months.map(month => {
-  const monthData = data.data[month];
-  return Object.values(monthData.departments || {}).reduce(
-    (sum, dept) => sum + (Number(Number(dept.count || 0)) || 0),
-    0
-  );
-});
-
-  return new Chart(ctx, {
-    type: "line",
-    data: {
-      labels: sortedMonths,
-      datasets: [{
-        label: "Total de Funcionários",
-        data: employeeData,
-        backgroundColor: "#e15759",
-        borderColor: "#e15759",
-        tension: 0.3
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { display: false },
-        title: {
-          display: true,
-          text: "Total de Funcionários"
-        }
-      }
-    }
-  });
 }
 
 function getMonthsToShow(allMonths, range) {
@@ -1142,6 +1041,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 }
+
 
 
 
