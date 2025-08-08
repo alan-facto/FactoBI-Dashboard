@@ -28,8 +28,9 @@ fetch(apiUrl)
       const geral = parseFloat(row["Total Geral"]) || (total + bonificacao);
 
       monthsSet.add(month);
+
       if (dept.toLowerCase() !== "total geral") {
-        departmentsSet.add(dept);
+        departmentsSet.add(dept); // now using normalized name
       }
 
       if (!structuredData[month]) {
@@ -1140,6 +1141,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 }
+
 
 
 
