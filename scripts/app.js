@@ -9,10 +9,15 @@ let charts = {};
 
 // Map sheet department names to dashboard names
 const deptMap = {
-  "Administrativo Financeiro": "Administrativo",
-  "Operação Geral": "Operação",
-  "Jurídico Externo": "Jurídico",
-  "RH / Departamento Pessoal": "RH"
+    "Administrativo Financeiro": "Administrativo",
+    "Apoio": "Apoio",
+    "Comercial": "Comercial",
+    "Diretoria": "Diretoria",
+    "Jurídico Externo": "Jurídico",
+    "Marketing": "Marketing",
+    "NEC": "NEC",
+    "Operação Geral": "Operação",
+    "RH / Departamento Pessoal": "RH"
 };
 
 // Fetch and process live data
@@ -77,28 +82,16 @@ const translations = {
   "Total": "Total"
 };
 
-const canonicalDepartmentNames = {
-  "administrativo financeiro": "Administrativo Financeiro",
-  "apoio": "Apoio",
-  "comercial": "Comercial",
-  "diretoria": "Diretoria",
-  "jurídico externo": "Jurídico Externo",
-  "marketing": "Marketing",
-  "NEC": "NEC",
-  "operação geral": "Operação Geral",
-  "RH / Departamento Pessoal": "RH / Departamento Pessoal"
-};
-
 const colorsByDepartment = {
-  "Administrativo Financeiro": "#3E64FF", // Azul Lavanda Claro (adjusted to match your earlier custom color)
-  "Apoio": "#6545CF", // Rosa Valdita
-  "Comercial": "#00EB89", // Verde claro
-  "Diretoria": "#F2D24C", // Amarelo Dourado
-  "Jurídico Externo": "#DC4B45", // Vermelho Tomate
-  "Marketing": "#0CBA8C", // Verde médio
-  "NEC": "#024B59", // Verde escuro
-  "Operação Geral": "#FF5E5B", // Rosa Salmão
-  "RH / Departamento Pessoal": "#6545CF" // Rosa Valdita (same as Apoio)
+    "Administrativo": "#4e79a7",
+    "Apoio": "#f28e2b",
+    "Comercial": "#e15759",
+    "Diretoria": "#76b7b2",
+    "Jurídico": "#59a14f",
+    "Marketing": "#edc948",
+    "NEC": "#b07aa1",
+    "Operação": "#ff9da7",
+    "RH": "#9c755f"
 };
 
 function hexToRGBA(hex, alpha = 1) {
@@ -109,8 +102,15 @@ function hexToRGBA(hex, alpha = 1) {
 }
 
 function normalizeDepartmentName(name) {
+  if (!name) return "";
   const key = name.toLowerCase().trim();
-  return canonicalDepartmentNames[key] || name;
+  // Find matching short name from deptMap
+  for (const [longName, shortName] of Object.entries(deptMap)) {
+    if (longName.toLowerCase() === key || shortName.toLowerCase() === key) {
+      return shortName;
+    }
+  }
+  return name; // fallback if no match
 }
 
 function formatMonthLabel(monthStr) {
@@ -864,4 +864,5 @@ function initDashboard() {
   document.querySelector('#total-expenditures-wrapper .time-btn.active')?.click();
   document.querySelector('#department-trends-wrapper .time-btn.active')?.click();
 }
+
 
