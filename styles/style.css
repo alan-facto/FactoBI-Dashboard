@@ -1,210 +1,102 @@
-/* ===== BASE RESETS ===== */
-body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  margin: 0;
-  padding: 0;
-  background-color: #024B59; /* Brand dark green */
-  color: #111;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+/* =========================
+   Clean dashboard CSS — use this as the single source of truth
+   ========================= */
+
+:root{
+  --brand: #024B59;
+  --card-bg: #F6F6F6;
+  --text: #111;
+  --gap: 20px;
+  --half-height: 300px;   /* height for half-width charts */
+  --full-height: 380px;   /* height for full-width charts */
 }
 
-h1, h2, h3, h4 {
-  margin: 0.5em 0;
-}
+/* Basic resets */
+* { box-sizing: border-box; }
+html,body { height:100%; margin:0; padding:0; font-family: "Plus Jakarta Sans", "Segoe UI", sans-serif; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; background:var(--brand); color:var(--text); }
 
-/* ===== LAYOUT & CONTAINERS ===== */
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 30px 20px;
-}
+.container { max-width:1200px; margin:0 auto; padding:30px 20px; }
 
-.hidden {
-  display: none;
-}
-
-/* ===== CARD DESIGN ===== */
+/* Card */
 .card {
   position: relative;
-  background-color: #F6F6F6; /* Light grey / Branco Gelo */
+  background: var(--card-bg);
   border-radius: 12px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
-  padding: 25px;
-  margin-bottom: 25px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+  padding: 22px;
+  margin-bottom: 24px;
 }
 
-/* ===== LOGO POSITIONING ===== */
-.facto-logo {
-  position: absolute;
-  top: -55px;   
-  right: 15px;
-  height: 40px;
-  z-index: 10;
-}
+/* Logo inside card */
+.facto-logo { position:absolute; right:16px; top:14px; height:40px; opacity:.95; }
 
-/* ===== BUTTONS ===== */
-button,
-.filter-btn,
-.toggle-button-group button {
-  background-color: white;
-  color: #024B59;
-  border: 2px solid #024B59;
-  border-radius: 8px;
-  padding: 8px 14px;
-  margin: 4px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: all 0.2s ease;
-}
+/* Buttons (kept simple) */
+button, .filter-btn { border-radius:8px; padding:8px 14px; margin:4px; cursor:pointer; border:2px solid var(--brand); background:white; color:var(--brand); font-weight:500; transition:all .15s ease; }
+button:not(.active), .filter-btn:not(.active) { background:var(--brand); color:#fff; }
+button:hover, .filter-btn:hover { background:var(--brand); color:#fff; }
+button.active, .filter-btn.active { background:white; color:var(--brand); }
 
-button:hover,
-.filter-btn:hover,
-.toggle-button-group button:hover {
-  background-color: #024B59;
-  color: white;
-}
+/* Chart rows */
+.chart-row { margin-bottom: 18px; }
 
-button.active,
-.filter-btn.active,
-.toggle-button-group button.active {
-  background-color: white;
-  color: #024B59;
-  border-color: #024B59;
-}
+/* Single (full-width) chart */
+.chart-row.single .chart-container { height: var(--full-height); }
 
-button:not(.active),
-.filter-btn:not(.active),
-.toggle-button-group button:not(.active) {
-  background-color: #024B59;
-  color: white;
-}
-
-/* ===== TABLES ===== */
-#tables-view table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-bottom: 20px;
-  table-layout: fixed;
-}
-
-#tables-view th,
-#tables-view td {
-  border: 1px solid #ccc;
-  padding: 10px;
-  text-align: center;
-  vertical-align: middle;
-  word-wrap: break-word;
-}
-
-#tables-view td:first-child,
-#tables-view th:first-child {
-  text-align: left;
-  width: 30%; /* Department column */
-}
-
-#tables-view th:nth-child(2),
-#tables-view td:nth-child(2),
-#tables-view th:nth-child(3),
-#tables-view td:nth-child(3),
-#tables-view th:nth-child(4),
-#tables-view td:nth-child(4),
-#tables-view th:nth-child(5),
-#tables-view td:nth-child(5) {
-  width: 17.5%;
-}
-
-/* ===== CHARTS ===== */
-.chart-container {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  min-height: 300px; /* Base height for all charts */
-}
-
-/* Full-width charts */
-.single .chart-container {
-  height: 400px;
-}
-
-/* Half-width charts in double row */
+/* Two-column row (double) */
 .chart-row.double {
   display: flex;
-  gap: 20px;
-  flex-wrap: wrap;
+  gap: var(--gap);
+  align-items: stretch;
+  flex-wrap: wrap; /* allow wrap on narrower screens */
 }
 
-.chart-row.double .card {
-  flex: 1 1 calc(50% - 10px);
+/* Target ONLY cards that are meant to be half-width */
+.chart-row.double .card.half {
+  flex: 1 1 calc(50% - (var(--gap) / 2));
+  max-width: calc(50% - (var(--gap) / 2));
   min-width: 300px;
 }
 
-.chart-row.double .chart-container {
-  height: 350px; /* Slightly taller for better visibility */
+/* Smaller height for the half cards' chart containers */
+.chart-row.double .card.half .chart-container {
+  height: var(--half-height);
 }
 
-/* Ensure canvas fills container */
-canvas {
+/* Generic chart container rules */
+.chart-container {
+  position: relative;
+  width: 100%;
+}
+
+/* Make canvas exactly fill the container; Chart.js should have maintainAspectRatio=false */
+.chart-container canvas, .card canvas {
   width: 100% !important;
   height: 100% !important;
   display: block;
 }
 
-/* ===== PIE CHART LAYOUT ===== */
-.pie-chart-row {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 24px;
-  padding: 20px 0;
-}
+/* Pie / small charts */
+.pie-chart-row { display:flex; flex-wrap:wrap; gap:16px; justify-content:center; padding:12px 0; }
+.pie-chart-row canvas { width:150px !important; height:150px !important; max-width:150px; }
 
-.pie-chart-row canvas {
-  width: 150px !important;
-  height: 150px !important;
-}
+/* Department legend styling */
+.department-legend { display:flex; flex-wrap:wrap; gap:12px 18px; justify-content:center; margin-top:16px; }
+.department-legend-item { display:flex; align-items:center; gap:8px; font-size:14px; white-space:nowrap; padding:6px 8px; border-radius:8px; cursor:pointer; }
+.department-legend-item.inactive { opacity: .45; }
+.department-legend-swatch { width:16px; height:16px; border-radius:4px; }
 
-/* ===== LEGEND ===== */
-.department-legend {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 16px 24px;
-  margin-top: 20px;
-}
+/* Tables */
+#tables-view table { width:100%; border-collapse:collapse; table-layout:fixed; margin-bottom:20px; }
+#tables-view th,#tables-view td { border:1px solid #ddd; padding:10px; text-align:center; vertical-align:middle; }
+#tables-view td:first-child,#tables-view th:first-child { text-align:left; width:30%; }
 
-.department-legend-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
-  white-space: nowrap;
-}
+/* Misc */
+.hidden { display:none !important; }
 
-.department-legend-swatch {
-  width: 16px;
-  height: 16px;
-  border-radius: 4px;
-  display: inline-block;
+/* Responsive: stack halves on narrow screens */
+@media (max-width: 900px) {
+  .chart-row.double { flex-direction: column; }
+  .chart-row.double .card.half { flex-basis: 100%; max-width: 100%; }
+  .chart-row.double .card.half .chart-container { height: 260px; }
+  .chart-row.single .chart-container { height: 300px; }
 }
-
-/* ===== TOP BAR ===== */
-#top-bar {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  z-index: 999;
-}
-
-#facto-logo {
-  height: 40px;
-  opacity: 0.9;
-}
-
-/* ===== SECTION TITLES ===== */
-.section-title {
-  color: #F6F6F6;
-  font-size: 20px;
-  margin-bottom: 10px;
-  font-weight: 600;
-}ree
