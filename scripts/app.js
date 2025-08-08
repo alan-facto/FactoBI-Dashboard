@@ -836,6 +836,8 @@ function createTotalExpendituresChart(data, months, departments) {
     };
 }
 
+Chart.defaults.devicePixelRatio = window.devicePixelRatio;
+
 function initDashboard() {
   const months = data.months;
   const departments = data.departments;
@@ -865,6 +867,7 @@ function initDashboard() {
   document.querySelector('#total-expenditures-wrapper .time-btn.active')?.click();
   document.querySelector('#department-trends-wrapper .time-btn.active')?.click();
 }
+
 
 
 
