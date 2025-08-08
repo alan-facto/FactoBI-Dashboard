@@ -31,7 +31,7 @@ fetch(apiUrl)
     fetchedRows.forEach(row => {
       const month = row["Month"];
       const rawDept = row["Department"];
-      const dept = deptMap[rawDept] || rawDept;
+      const dept = canonicalDept(rawDept);
 
       const total = parseFloat(row["Total"]) || 0;
       const bonificacao = parseFloat(row["Bonificacao 20"]) || 0;
@@ -864,5 +864,6 @@ function initDashboard() {
   document.querySelector('#total-expenditures-wrapper .time-btn.active')?.click();
   document.querySelector('#department-trends-wrapper .time-btn.active')?.click();
 }
+
 
 
