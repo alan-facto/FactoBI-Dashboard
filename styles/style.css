@@ -76,8 +76,17 @@ button.active, .filter-btn.active { background:white; color:var(--brand); }
 }
 
 /* Pie / small charts */
-.pie-chart-row { display:flex; flex-wrap:wrap; gap:16px; justify-content:center; padding:12px 0; }
-.pie-chart-row canvas { width:150px !important; height:150px !important; max-width:150px; }
+.pie-chart-row {
+  display: flex;
+  flex-wrap: nowrap;       /* prevent wrapping */
+  gap: 20px;
+  justify-content: space-between;
+}
+.pie-chart-row canvas {
+  flex: 1;                 /* let them grow evenly */
+  max-width: none;         /* remove artificial cap */
+  height: 280px !important;/* match other chart heights */
+}
 
 /* Department legend styling */
 .department-legend { display:flex; flex-wrap:wrap; gap:12px 18px; justify-content:center; margin-top:16px; }
@@ -100,3 +109,4 @@ button.active, .filter-btn.active { background:white; color:var(--brand); }
   .chart-row.double .card.half .chart-container { height: 260px; }
   .chart-row.single .chart-container { height: 300px; }
 }
+
