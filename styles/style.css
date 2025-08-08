@@ -144,13 +144,18 @@ canvas {
 .chart-row.double {
   display: flex;
   gap: 20px;
-  flex-wrap: wrap; /* stacks on small screens */
+  flex-wrap: wrap; /* allows stacking on smaller screens */
 }
 
 .chart-row.double .card.half {
   flex: 1 1 calc(50% - 20px);
   max-width: calc(50% - 20px);
 }
+
+.chart-row.double .card.half .chart-container {
+  height: 300px; /* same height as single charts */
+}
+
 
 /* ===== PIE CHART LAYOUT ===== */
 .pie-chart-row {
@@ -210,3 +215,4 @@ canvas {
   margin-bottom: 10px;
   font-weight: 600;
 }
+
