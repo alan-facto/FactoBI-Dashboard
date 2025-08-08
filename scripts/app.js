@@ -5,7 +5,7 @@ let data = { months: [], departments: [], data: {} };
 let sortedMonths = [];
 
 // Holds chart instances globally
-let charts = [];
+let charts = {};
 
 // Map sheet department names to dashboard names
 const deptMap = {
@@ -26,7 +26,7 @@ fetch(apiUrl)
     fetchedRows.forEach(row => {
       const month = row["Month"];
       const rawDept = row["Department"];
-      const dept = deptMap[rawDept] || rawDept; // normalize
+      const dept = deptMap[rawDept] || rawDept;
 
       const total = parseFloat(row["Total"]) || 0;
       const bonificacao = parseFloat(row["Bonificacao 20"]) || 0;
@@ -58,7 +58,7 @@ fetch(apiUrl)
       data: structuredData
     };
 
-    sortedMonths = data.months.slice().sort();
+    sortedMonths = data.months.slice();
 
     console.log("Live data loaded:", data);
     initDashboard();
@@ -66,6 +66,7 @@ fetch(apiUrl)
   .catch(error => {
     console.error("Error loading data:", error);
   });
+
 
 const translations = {
   "Total Expenditures": "Gastos Totais",
@@ -1041,6 +1042,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 }
+
 
 
 
