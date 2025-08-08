@@ -462,7 +462,7 @@ function createDepartmentBreakdownCharts(data, months, departments) {
     container.innerHTML = '';
     legendContainer.innerHTML = '';
 
-    const charts = {};
+    const breakdownCharts = {};
     const recentMonths = months.slice(-6);
     let activeDepartments = [...departments];
 
@@ -477,7 +477,7 @@ function createDepartmentBreakdownCharts(data, months, departments) {
         const ctx = canvas.getContext('2d');
         const monthData = data[month];
 
-        charts[month] = new Chart(ctx, {
+        breakdownCharts[month] = new Chart(ctx, {
             type: 'pie',
             data: {
                 labels: activeDepartments,
@@ -539,7 +539,7 @@ function createDepartmentBreakdownCharts(data, months, departments) {
 
             // Update all pie charts
             recentMonths.forEach(month => {
-                const chart = charts[month];
+                const chart = breakdownCharts[month];
                 const monthData = data[month];
                 chart.data.labels = activeDepartments;
                 chart.data.datasets[0].data = activeDepartments.map(d => monthData.departments[d]?.total || 0);
@@ -1041,6 +1041,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 }
+
 
 
 
