@@ -505,25 +505,50 @@ function createDepartmentBreakdownCharts(data, months, departments) {
     const container = document.getElementById('department-breakdown-charts');
     const legendContainer = document.getElementById('department-legend');
 
+    // If there are any canvas/chart instances inside container, destroy them first
+    Array.from(container.querySelectorAll('canvas')).forEach(c => {
+        const inst = Chart.getChart(c);
+        if (inst) inst.destroy();
+    });
+
+    // clear DOM
     container.innerHTML = '';
     legendContainer.innerHTML = '';
 
     const breakdownCharts = {};
     const recentMonths = months.slice(-6);
-    let activeDepartments = [...departments];
+    const disabled = new Set(); // track which departments are hidden
 
-    // Create one pie per recent month
+    const getActiveDepartments = () => departments.filter(d => !disabled.has(d));
+
+    // Create one pie-item per month (canvas + label), appended to the horizontal track
     recentMonths.forEach(month => {
-        const canvas = document.createElement('canvas');
-        container.appendChild(canvas);
+        const item = document.createElement('div');
+        item.className = 'pie-item';
 
-        breakdownCharts[month] = new Chart(canvas.getContext('2d'), {
+        const canvas = document.createElement('canvas');
+        // assign an id just for debugging / chart.getChart lookup if needed
+        canvas.id = `pie-${month.replace(/\//g, '-').replace(/:/g,'-')}`;
+        item.appendChild(canvas);
+
+        const label = document.createElement('div');
+        label.className = 'pie-label';
+        label.textContent = formatMonthLabel(month);
+        item.appendChild(label);
+
+        container.appendChild(item);
+
+        // initial dataset (using active departments in original order)
+        const active = getActiveDepartments();
+        const chart = new Chart(canvas.getContext('2d'), {
             type: 'pie',
             data: {
-                labels: activeDepartments,
+                labels: active,
                 datasets: [{
-                    data: activeDepartments.map(dept => data[month].departments[dept]?.geral || 0),
-                    backgroundColor: activeDepartments.map(dept => colorsByDepartment[dept] || "#ccc")
+                    data: active.map(d => data[month].departments[d]?.geral || 0),
+                    backgroundColor: active.map(d => colorsByDepartment[d] || '#ccc'),
+                    borderColor: 'rgba(255,255,255,0.6)',
+                    borderWidth: 1
                 }]
             },
             options: {
@@ -533,18 +558,19 @@ function createDepartmentBreakdownCharts(data, months, departments) {
                     legend: { display: false }, // hide per-chart legend
                     tooltip: {
                         callbacks: {
-                            label: function (context) {
-                                let value = context.raw;
-                                return `${context.label}: ${formatCurrencyBRL(value)}`;
+                            label: function(context) {
+                                return `${context.label}: ${formatCurrencyBRL(context.raw)}`;
                             }
                         }
                     }
                 }
             }
         });
+
+        breakdownCharts[month] = chart;
     });
 
-    // Build shared legend
+    // Build the shared legend (preserves department order)
     departments.forEach(dept => {
         const item = document.createElement('div');
         item.className = 'department-legend-item';
@@ -561,21 +587,23 @@ function createDepartmentBreakdownCharts(data, months, departments) {
         item.appendChild(label);
 
         item.addEventListener('click', () => {
-            const idx = activeDepartments.indexOf(dept);
-            if (idx !== -1) {
-                activeDepartments.splice(idx, 1);
-                item.classList.add('inactive');
-            } else {
-                activeDepartments.push(dept);
+            // toggle disabled set and update item styling
+            if (disabled.has(dept)) {
+                disabled.delete(dept);
                 item.classList.remove('inactive');
+            } else {
+                disabled.add(dept);
+                item.classList.add('inactive');
             }
 
-            // Update all pies
+            const active = getActiveDepartments();
+
+            // update every pie chart to reflect active departments in the original order
             recentMonths.forEach(month => {
                 const chart = breakdownCharts[month];
-                chart.data.labels = activeDepartments;
-                chart.data.datasets[0].data = activeDepartments.map(d => data[month].departments[d]?.geral || 0);
-                chart.data.datasets[0].backgroundColor = activeDepartments.map(d => colorsByDepartment[d] || '#ccc');
+                chart.data.labels = active;
+                chart.data.datasets[0].data = active.map(d => data[month].departments[d]?.geral || 0);
+                chart.data.datasets[0].backgroundColor = active.map(d => colorsByDepartment[d] || '#ccc');
                 chart.update();
             });
         });
@@ -583,6 +611,7 @@ function createDepartmentBreakdownCharts(data, months, departments) {
         legendContainer.appendChild(item);
     });
 
+    // return an object for API compatibility (no-op update here)
     return { update: () => {} };
 }
 
@@ -947,6 +976,7 @@ function initDashboard() {
   document.querySelector('#total-expenditures-wrapper .time-btn.active')?.click();
   document.querySelector('#department-trends-wrapper .time-btn.active')?.click();
 }
+
 
 
 
