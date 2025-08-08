@@ -779,27 +779,33 @@ function toOriginalDept(shortName) {
 }
 
 function createTotalExpendituresChart(data, months, departments) {
-    const ctx = document.getElementById('total-expenditures-chart');
-    if (!ctx) return null;
+    const canvas = document.getElementById('total-expenditures-chart');
+    if (!canvas) return null;
+    const ctx = canvas.getContext('2d');
 
+    // Use a stable copy of months for initial series building
+    const initialMonths = months.slice();
+
+    // Build department series keyed by normalized (short) name
     const departmentData = {};
     departments.forEach(dept => {
-        const originalDept = toOriginalDept(dept);
-        departmentData[dept] = months.map(month =>
-            data[month]?.departments[originalDept]?.geral || 0
-        );
+        const key = normalizeDepartmentName(dept);
+        departmentData[key] = initialMonths.map(month => data[month]?.departments?.[key]?.geral || 0);
     });
 
-    const chart = new Chart(ctx.getContext('2d'), {
+    // Totals series (sum of all departments for each month)
+    const totalsSeries = initialMonths.map(month => {
+        const depts = data[month]?.departments || {};
+        return Object.values(depts).reduce((sum, d) => sum + (d?.geral || 0), 0);
+    });
+
+    const chart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: months.map(formatMonthShort),
+            labels: initialMonths.map(formatMonthShort),
             datasets: [{
                 label: 'Gastos Totais',
-                data: months.map(month => {
-                    const depts = data[month].departments || {};
-                    return Object.values(depts).reduce((sum, d) => sum + (d.geral || 0), 0);
-                }),
+                data: totalsSeries,
                 borderColor: '#024B59',
                 backgroundColor: hexToRGBA('#024B59', 0.1),
                 borderWidth: 2,
@@ -807,28 +813,64 @@ function createTotalExpendituresChart(data, months, departments) {
                 tension: 0.4
             }]
         },
-        options: { /* same as before */ }
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `Gastos: R$ ${context.raw.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                        }
+                    }
+                },
+                legend: { display: true, position: 'top' }
+            },
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    ticks: {
+                        callback: function(value) {
+                            return `R$ ${Number(value).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`;
+                        }
+                    }
+                }
+            }
+        }
     });
 
     return {
+        /**
+         * newData: the data object (same structure: newData[month].departments[dept].geral)
+         * monthsToShow: array of month keys (e.g. ['2024-01', '2024-02', ...'])
+         * selectedDepartment: either 'all' or a department string (short or long)
+         */
         update: function(newData, monthsToShow, selectedDepartment = 'all') {
-            monthsToShow = [...monthsToShow]; // clone for safety
-            chart.data.labels = monthsToShow.map(formatMonthShort);
+            // defensive clone (avoid mutating caller's array)
+            const monthsArr = Array.isArray(monthsToShow) ? monthsToShow.slice() : initialMonths.slice();
 
-            departments.forEach(dept => {
-                const originalDept = toOriginalDept(dept);
-                departmentData[dept] = monthsToShow.map(month =>
-                    newData[month]?.departments[originalDept]?.geral || 0
-                );
+            // Normalize selectedDepartment to the short key used in your data object
+            const selectedShort = (selectedDepartment === 'all' ? 'all' : normalizeDepartmentName(selectedDepartment));
+
+            // Ensure department series exist for the months we're about to show.
+            // Rebuild from newData if needed (handles case where department keys differ)
+            Object.keys(departmentData).forEach(short => {
+                // if lengths mismatch or months differ, rebuild
+                departmentData[short] = monthsArr.map(m => newData[m]?.departments?.[short]?.geral || 0);
             });
 
-            if (selectedDepartment === 'all') {
+            chart.data.labels = monthsArr.map(formatMonthShort);
+
+            if (selectedShort === 'all') {
+                // show total series (recompute from newData to be safe)
+                const totals = monthsArr.map(month => {
+                    const depts = newData[month]?.departments || {};
+                    return Object.values(depts).reduce((s, d) => s + (d?.geral || 0), 0);
+                });
+
                 chart.data.datasets = [{
                     label: 'Gastos Totais',
-                    data: monthsToShow.map(month => {
-                        const depts = newData[month].departments || {};
-                        return Object.values(depts).reduce((sum, d) => sum + (d.geral || 0), 0);
-                    }),
+                    data: totals,
                     borderColor: '#024B59',
                     backgroundColor: hexToRGBA('#024B59', 0.1),
                     borderWidth: 2,
@@ -836,12 +878,17 @@ function createTotalExpendituresChart(data, months, departments) {
                     tension: 0.4
                 }];
             } else {
-                const color = colorsByDepartment[selectedDepartment] || '#ccc';
+                // show single-department series, using normalized key
+                const series = departmentData[selectedShort] ??
+                    monthsArr.map(m => newData[m]?.departments?.[selectedShort]?.geral || 0);
+
+                const color = colorsByDepartment[selectedShort] || colorsByDepartment[normalizeDepartmentName(selectedShort)] || '#cccccc';
+
                 chart.data.datasets = [{
-                    label: `Gastos - ${selectedDepartment}`,
-                    data: departmentData[selectedDepartment],
+                    label: `Gastos - ${selectedShort}`,
+                    data: series,
                     borderColor: color,
-                    backgroundColor: hexToRGBA(color, 0.1),
+                    backgroundColor: hexToRGBA(color, 0.12),
                     borderWidth: 2,
                     fill: true,
                     tension: 0.4
@@ -849,9 +896,12 @@ function createTotalExpendituresChart(data, months, departments) {
             }
 
             chart.update();
+            // ensure canvas is resized properly (helps avoid blurriness if container changed)
+            try { chart.resize(); } catch (e) { /* ignore if Chart.js version doesn't expose resize */ }
         }
     };
 }
+
 
 Chart.defaults.devicePixelRatio = window.devicePixelRatio;
 
@@ -884,6 +934,7 @@ function initDashboard() {
   document.querySelector('#total-expenditures-wrapper .time-btn.active')?.click();
   document.querySelector('#department-trends-wrapper .time-btn.active')?.click();
 }
+
 
 
 
