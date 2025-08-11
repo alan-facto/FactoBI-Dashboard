@@ -75,6 +75,16 @@ body {
   margin-bottom: 20px;
 }
 
+.chart-row:last-child {
+  margin-bottom: 0;
+}
+
+#charts-view {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
 .chart-row.single .chart-container {
   height: 400px;
   display: block;
@@ -361,6 +371,7 @@ body {
   cursor: pointer;
   font-weight: bold;
 }
+
 
 
 
