@@ -16,92 +16,92 @@
     <header>
       <h1>Painel Financeiro</h1>
       <div class="view-toggle">
-        <button id="charts-btn" class="active">Gráficos</button>
-        <button id="tables-btn">Tabelas</button>
+        <button id="show-charts" class="active">Gráficos</button>
+        <button id="show-tables">Tabelas</button>
       </div>
     </header>
 
     <!-- Charts View -->
     <div id="charts-view">
-
-  <!-- Row 1: Total Expenditures Over Time -->
-  <div class="chart-row single">
-    <div class="card">
-      <h2>Total de Gastos (Mensal)</h2>
-      <div class="chart-container">
-        <canvas id="total-expenditures-chart"></canvas>
+      
+      <!-- Row 1: Total Expenditures Over Time -->
+      <div class="chart-row single">
+        <div class="card">
+          <h2>Total de Gastos (Mensal)</h2>
+          <div class="chart-container">
+            <canvas id="total-expenditures-chart"></canvas>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
 
-  <!-- Row 2: Total Pago -->
-  <div class="chart-row single">
-    <div class="card">
-      <h2>Total Pago</h2>
-      <div class="chart-container">
-        <canvas id="total-pago-chart"></canvas>
+      <!-- Row 2: Total pago (full width) -->
+      <div class="chart-row single">
+        <div class="card">
+          <h2>Total Pago</h2>
+          <div class="chart-container">
+            <canvas id="total-pago-chart"></canvas>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
 
-  <!-- Row 3: Bonificação 20% -->
-  <div class="chart-row single">
-    <div class="card">
-      <h2>Bonificação 20%</h2>
-      <div class="chart-container">
-        <canvas id="bonificacao-chart"></canvas>
+      <!-- Row 3: Bonificação 20% (full width) -->
+      <div class="chart-row single">
+        <div class="card">
+          <h2>Bonificação 20%</h2>
+          <div class="chart-container">
+            <canvas id="bonificacao-chart"></canvas>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
 
-  <!-- Row 4: Por Mês (Detalhado) -->
-  <div class="chart-row single">
-    <div class="card">
-      <h2>Por Mês (Detalhado)</h2>
-      <div class="chart-container">
-        <canvas id="monthly-details-chart"></canvas>
+      <!-- Row 4: Média Gastos + Total Funcionários -->
+      <div class="chart-row double">
+        <div class="card half">
+          <h2>Média de Gastos por Funcionário</h2>
+          <div class="chart-container">
+            <canvas id="avg-expenditure-chart"></canvas>
+          </div>
+        </div>
+        <div class="card half">
+          <h2>Total de Funcionários</h2>
+          <div class="chart-container">
+            <canvas id="employees-chart"></canvas>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
 
-  <!-- Row 5: Por Departamento (Detalhado) -->
-  <div class="chart-row single">
-    <div class="card">
-      <h2>Por Departamento (Detalhado)</h2>
-      <div class="chart-container">
-        <canvas id="department-details-chart"></canvas>
+      <!-- Row 5: Por Mês (detalhado) -->
+      <div class="chart-row single">
+        <div class="card">
+          <h2>Por Mês (Detalhado)</h2>
+          <div class="chart-container">
+            <canvas id="monthly-details-chart"></canvas>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
 
-  <!-- Row 6: Média de Gastos / Total de Funcionários -->
-  <div class="chart-row double">
-    <div class="card half">
-      <h2>Média de Gastos por Funcionário</h2>
-      <div class="chart-container">
-        <canvas id="avg-expenditure-chart"></canvas>
+      <!-- Row 6: Por Departamento (detalhado) -->
+      <div class="chart-row single">
+        <div class="card">
+          <h2>Por Departamento (Detalhado)</h2>
+          <div class="chart-container">
+            <canvas id="department-details-chart"></canvas>
+          </div>
+        </div>
       </div>
-    </div>
-    <div class="card half">
-      <h2>Total de Funcionários</h2>
-      <div class="chart-container">
-        <canvas id="employees-chart"></canvas>
-      </div>
-    </div>
-  </div>
 
-  <!-- Row 7: Department Breakdown (Pie charts) -->
-  <div class="chart-row single">
-    <div class="card">
-      <h2>Distribuição de Gastos por Departamento (Últimos 6 Meses)</h2>
-      <div id="department-breakdown-charts">
-        <!-- JS inserts pie charts here -->
+      <!-- Row 7: Department Breakdown (Pie charts) -->
+      <div class="chart-row single">
+        <div class="card">
+          <h2>Distribuição de Gastos por Departamento (Últimos 6 Meses)</h2>
+          <div id="department-breakdown-charts">
+            <!-- JS will insert .pie-item blocks here -->
+          </div>
+          <div class="department-legend" id="department-legend"></div>
+        </div>
       </div>
-      <div class="department-legend" id="department-legend"></div>
-    </div>
-  </div>
 
-</div>
+    </div> <!-- end charts-view -->
 
     <!-- Tables View -->
     <div id="tables-view" class="hidden">
@@ -123,4 +123,3 @@
   <script src="scripts/app.js"></script>
 </body>
 </html>
-
