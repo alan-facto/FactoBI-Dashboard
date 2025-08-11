@@ -233,13 +233,13 @@ function setupTableToggle() {
           tableEl.style.display = 'block';
           button.classList.add('active');
           
-          // Generate content only if empty
-          if (tableEl.innerHTML === '') {
-            if (btnId === 'btn-summary-month') generateSummaryByMonth();
-            if (btnId === 'btn-summary-department') generateSummaryByDepartment();
-            if (btnId === 'btn-detailed-month') generateDetailedByMonth();
-            if (btnId === 'btn-detailed-department') generateDetailedByDepartment();
-          }
+          // Clear and regenerate content every time to ensure freshness
+          tableEl.innerHTML = '';
+          
+          if (btnId === 'btn-summary-month') generateSummaryByMonth();
+          if (btnId === 'btn-summary-department') generateSummaryByDepartment();
+          if (btnId === 'btn-detailed-month') generateDetailedByMonth();
+          if (btnId === 'btn-detailed-department') generateDetailedByDepartment();
         }
       });
     }
@@ -1255,6 +1255,7 @@ function showError(message) {
         </div>
     `;
 }
+
 
 
 
