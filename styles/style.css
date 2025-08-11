@@ -275,3 +275,30 @@ body {
   cursor: pointer;
   font-weight: bold;
 }
+
+/* Table styling */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed; /* This enforces consistent column widths */
+}
+
+th, td {
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+    word-wrap: break-word; /* Handle long content */
+}
+
+/* Specific column widths - adjust percentages as needed */
+th:nth-child(1), td:nth-child(1) { width: 20%; }  /* Department/Month */
+th:nth-child(2), td:nth-child(2) { width: 15%; }  /* Employees */
+th:nth-child(3), td:nth-child(3) { width: 20%; }  /* Total */
+th:nth-child(4), td:nth-child(4) { width: 20%; }  /* Bonificação */
+th:nth-child(5), td:nth-child(5) { width: 25%; }  /* Total Geral */
+
+/* For summary tables with fewer columns */
+table.summary th:nth-child(1), 
+table.summary td:nth-child(1) { width: 50%; }
+table.summary th:nth-child(2), 
+table.summary td:nth-child(2) { width: 50%; }
