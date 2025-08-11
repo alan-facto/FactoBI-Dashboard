@@ -85,7 +85,7 @@ body {
   gap: 20px;
 }
 
-.chart-row.single .chart-container {
+.chart-row.single: .chart-container {
   height: 400px;
   display: block;
   margin: 0 auto;
@@ -108,7 +108,7 @@ body {
 .chart-row.single .card {
   flex: 1;
   min-width: 0; /* important so flex items can shrink */
-  width:> 100%;
+  width: 100%;
 }
 
 .chart-row.double {
@@ -404,3 +404,4 @@ body {
   font-weight: bold;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
+
