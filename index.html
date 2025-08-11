@@ -25,14 +25,17 @@
     <div id="charts-view">
 
       <!-- Row 1: Total Expenditures -->
-      <div class="chart-row single">
-        <div class="card">
-          <h2>Gastos Totais ao Longo do Tempo</h2>
-          <div class="chart-container">
-            <canvas id="total-expenditures-chart"></canvas>
-          </div>
-        </div>
-      </div>
+<div class="card">
+  <h2>Gastos Totais ao Longo do Tempo</h2>
+  <div class="department-filters">
+    <button class="active" data-department="all">Todos</button>
+    <button data-department="Administrativo">Administrativo</button>
+    <!-- Add other departments -->
+  </div>
+  <div class="chart-container">
+    <canvas id="total-expenditures-chart"></canvas>
+  </div>
+</div>
 
       <!-- Row 2: Department Trends -->
       <div class="chart-row single">
@@ -104,5 +107,6 @@
   <script src="scripts/app.js?v=20250811"></script>
 </body>
 </html>
+
 
 
