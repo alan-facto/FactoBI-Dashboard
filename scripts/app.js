@@ -140,6 +140,7 @@ function hexToRGBA(hex, alpha = 1) {
 }
 
 function tryParseJSON(jsonString) {
+    if (!jsonString || jsonString === 'undefined') return [];
     try {
         return JSON.parse(jsonString);
     } catch (e) {
@@ -606,29 +607,26 @@ function setupDepartmentTrendsFilters() {
 
         // Department filter buttons
         trendsWrapper.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                try {
-                    trendsWrapper.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
+    btn.addEventListener('click', () => {
+        trendsWrapper.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        const raw = btn.dataset?.departments || 'all';
+        const selectedDepartments = raw === 'all' ? 
+            data.departments : 
+            tryParseJSON(raw);
+        
+        const activeTimeBtn = trendsWrapper.querySelector('.time-btn.active');
+        const monthsToShow = getMonthsToShow(
+            data.months,
+            activeTimeBtn?.dataset?.months || 'all'
+        );
 
-                    const raw = btn.dataset?.departments || 'all';
-					const selectedDepartments = raw === 'all' ? data.departments : 
-    					(typeof raw === 'string' ? tryParseJSON(raw) : []);
-
-                    const activeTimeBtn = trendsWrapper.querySelector('.time-btn.active');
-                    const monthsToShow = getMonthsToShow(
-                        data.months,
-                        activeTimeBtn?.dataset?.months || 'all'
-                    );
-
-                    if (charts.departmentTrends?.update) {
-                        charts.departmentTrends.update(monthsToShow, selectedDepartments);
-                    }
-                } catch (e) {
-                    console.error('Error handling department filter click:', e);
-                }
-            });
-        });
+        if (charts.departmentTrends?.update) {
+            charts.departmentTrends.update(monthsToShow, selectedDepartments);
+        }
+    });
+});
 
         // Total Expenditures Filters (similar pattern)
         const expendituresWrapper = document.getElementById('total-expenditures-wrapper');
@@ -913,9 +911,13 @@ function createDepartmentTrendsChart(data, months, departments) {
         }
 
         // Filter out months with no data
-        const validMonths = months.filter(month => data[month]);
+         const validMonths = months.filter(month => {
+            return data[month] && typeof data[month] === 'object' && 
+                   month.match(/^\d{4}-\d{2}$/); // Validate YYYY-MM format
+        });
+
         if (validMonths.length === 0) {
-            console.warn('No valid months data for department trends chart');
+            console.warn('No valid months data for trends chart');
             return null;
         }
 
@@ -1006,10 +1008,11 @@ function createDepartmentTrendsChart(data, months, departments) {
             }
         };
     } catch (e) {
-        console.error('Error creating department trends chart:', e);
+        console.error('Chart creation error:', e);
         return null;
     }
 }
+
 function createPercentageStackedChart(data, months, departments) {
     const ctx = document.getElementById('percentage-stacked-chart');
     if (!ctx) return null;
@@ -1255,6 +1258,7 @@ function showError(message) {
         </div>
     `;
 }
+
 
 
 
