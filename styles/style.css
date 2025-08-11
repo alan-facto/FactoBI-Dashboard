@@ -193,21 +193,75 @@ body {
   margin-bottom: 20px;
 }
 
+/* Updated Table Styles */
 #tables-view table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
+  margin-bottom: 30px;
+  background-color: white;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 #tables-view th, 
 #tables-view td {
-  padding: 10px;
+  padding: 12px 15px;
   text-align: left;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid #e0e0e0;
+  word-wrap: break-word;
 }
 
 #tables-view th {
   background-color: #024B59;
   color: white;
+  font-weight: 500;
+  position: sticky;
+  top: 0;
+}
+
+#tables-view tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+/* Detailed tables (5 columns) */
+#tables-view table:not(.summary) th:nth-child(1),
+#tables-view table:not(.summary) td:nth-child(1) { width: 25%; }
+#tables-view table:not(.summary) th:nth-child(2),
+#tables-view table:not(.summary) td:nth-child(2) { width: 15%; }
+#tables-view table:not(.summary) th:nth-child(3),
+#tables-view table:not(.summary) td:nth-child(3) { width: 20%; }
+#tables-view table:not(.summary) th:nth-child(4),
+#tables-view table:not(.summary) td:nth-child(4) { width: 20%; }
+#tables-view table:not(.summary) th:nth-child(5),
+#tables-view table:not(.summary) td:nth-child(5) { width: 20%; }
+
+/* Summary tables (2 columns) */
+#tables-view table.summary th:nth-child(1),
+#tables-view table.summary td:nth-child(1) { width: 60%; }
+#tables-view table.summary th:nth-child(2),
+#tables-view table.summary td:nth-child(2) { width: 40%; }
+
+/* Responsive tables */
+@media (max-width: 768px) {
+  #tables-view table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  
+  #tables-view th, 
+  #tables-view td {
+    padding: 8px 12px;
+  }
+  
+  /* Adjust column widths for mobile */
+  #tables-view table:not(.summary) th:nth-child(1),
+  #tables-view table:not(.summary) td:nth-child(1) { width: 30%; }
+  
+  #tables-view table.summary th:nth-child(1),
+  #tables-view table.summary td:nth-child(1) { width: 50%; }
+  #tables-view table.summary th:nth-child(2),
+  #tables-view table.summary td:nth-child(2) { width: 50%; }
 }
 
 /* ====== LOGO STYLING ====== */
@@ -275,30 +329,3 @@ body {
   cursor: pointer;
   font-weight: bold;
 }
-
-/* Table styling */
-table {
-    width: 100%;
-    border-collapse: collapse;
-    table-layout: fixed; /* This enforces consistent column widths */
-}
-
-th, td {
-    padding: 8px 12px;
-    text-align: left;
-    border-bottom: 1px solid #ddd;
-    word-wrap: break-word; /* Handle long content */
-}
-
-/* Specific column widths - adjust percentages as needed */
-th:nth-child(1), td:nth-child(1) { width: 20%; }  /* Department/Month */
-th:nth-child(2), td:nth-child(2) { width: 15%; }  /* Employees */
-th:nth-child(3), td:nth-child(3) { width: 20%; }  /* Total */
-th:nth-child(4), td:nth-child(4) { width: 20%; }  /* Bonificação */
-th:nth-child(5), td:nth-child(5) { width: 25%; }  /* Total Geral */
-
-/* For summary tables with fewer columns */
-table.summary th:nth-child(1), 
-table.summary td:nth-child(1) { width: 50%; }
-table.summary th:nth-child(2), 
-table.summary td:nth-child(2) { width: 50%; }
