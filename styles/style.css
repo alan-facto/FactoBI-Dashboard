@@ -255,3 +255,23 @@ body {
     align-items: center;
   }
 }
+
+.error-message {
+  color: white;
+  text-align: center;
+  padding: 40px;
+  background-color: #e15759;
+  border-radius: 10px;
+  margin: 20px;
+}
+
+.error-message button {
+  background: white;
+  color: #e15759;
+  border: none;
+  padding: 10px 20px;
+  margin-top: 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+}
