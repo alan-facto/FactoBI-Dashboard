@@ -140,15 +140,23 @@ function hexToRGBA(hex, alpha = 1) {
 }
 
 function tryParseJSON(jsonString) {
-    if (!jsonString || jsonString === 'undefined' || jsonString === undefined) {
+    // Handle all cases of undefined/null/empty/invalid strings
+    if (!jsonString || jsonString === 'undefined' || jsonString === 'null') {
         return [];
     }
+    
+    // Handle the "all" case explicitly
+    if (jsonString === 'all') {
+        return data.departments; // Return all departments
+    }
+    
     try {
         const parsed = JSON.parse(jsonString);
+        // Ensure we always return an array
         return Array.isArray(parsed) ? parsed : [];
     } catch (e) {
-        console.error('Failed to parse JSON:', jsonString, e);
-        return [];
+        console.error('Failed to parse departments JSON:', jsonString);
+        return []; // Return empty array as fallback
     }
 }
 
@@ -566,88 +574,80 @@ function setupTableToggle() {
 }
 
 function setupDepartmentTrendsFilters() {
-    try {
-        const trendsWrapper = document.getElementById('department-trends-wrapper');
-        if (!trendsWrapper) {
-            console.warn('Department trends wrapper not found');
-            return;
+    const trendsWrapper = document.getElementById('department-trends-wrapper');
+    if (!trendsWrapper) {
+        console.warn('Department trends wrapper not found');
+        return;
+    }
+
+    // Helper to get active departments safely
+    const getActiveDepartments = () => {
+        const activeBtn = trendsWrapper.querySelector('.filter-btn.active');
+        if (!activeBtn || !activeBtn.dataset.departments) {
+            return data.departments; // Default to all departments
+        }
+        return tryParseJSON(activeBtn.dataset.departments);
+    };
+
+    // Helper to update the chart
+    const updateChart = () => {
+        try {
+            if (!charts.departmentTrends?.update) return;
+
+            const activeTimeBtn = trendsWrapper.querySelector('.time-btn.active');
+            const monthsToShow = activeTimeBtn 
+                ? getMonthsToShow(data.months, activeTimeBtn.dataset.months || 'all')
+                : data.months;
+
+            const departmentsToShow = getActiveDepartments();
+            charts.departmentTrends.update(monthsToShow, departmentsToShow);
+        } catch (e) {
+            console.error('Error updating department trends chart:', e);
+        }
+    };
+
+    // Setup time filter buttons
+    trendsWrapper.querySelectorAll('.time-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            // Remove active class from all time buttons
+            trendsWrapper.querySelectorAll('.time-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            // Add active class to clicked button
+            this.classList.add('active');
+            updateChart();
+        });
+    });
+
+    // Setup department filter buttons
+    trendsWrapper.querySelectorAll('.filter-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            // Remove active class from all filter buttons
+            trendsWrapper.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            // Add active class to clicked button
+            this.classList.add('active');
+            updateChart();
+        });
+    });
+
+    // Initialize default active buttons
+    setTimeout(() => {
+        // Set default time filter (3 months) if none is active
+        if (!trendsWrapper.querySelector('.time-btn.active')) {
+            const defaultTimeBtn = trendsWrapper.querySelector('.time-btn[data-months="3"]');
+            if (defaultTimeBtn) defaultTimeBtn.classList.add('active');
         }
 
-        // Helper to update the chart
-        const updateChart = () => {
-            try {
-                if (!charts.departmentTrends?.update) return;
-
-                const activeTimeBtn = trendsWrapper.querySelector('.time-btn.active');
-                const activeFilterBtn = trendsWrapper.querySelector('.filter-btn.active');
-
-                const monthsToShow = activeTimeBtn 
-                    ? getMonthsToShow(data.months, activeTimeBtn.dataset?.months || 'all')
-                    : data.months;
-
-                let selectedDepartments = data.departments;
-                if (activeFilterBtn) {
-                    const deptData = activeFilterBtn.dataset.departments;
-                    selectedDepartments = deptData === 'all' 
-                        ? data.departments 
-                        : tryParseJSON(deptData);
-                }
-
-                charts.departmentTrends.update(monthsToShow, selectedDepartments);
-            } catch (e) {
-                console.error('Error updating department trends chart:', e);
-            }
-        };
-
-        // Setup time filter buttons
-        trendsWrapper.querySelectorAll('.time-btn').forEach(button => {
-            button.addEventListener('click', () => {
-                trendsWrapper.querySelectorAll('.time-btn').forEach(btn => {
-                    btn.classList.remove('active');
-                });
-                button.classList.add('active');
-                updateChart();
-            });
-        });
-
-        // Setup department filter buttons
-        trendsWrapper.querySelectorAll('.filter-btn').forEach(button => {
-            button.addEventListener('click', () => {
-                trendsWrapper.querySelectorAll('.filter-btn').forEach(btn => {
-                    btn.classList.remove('active');
-                });
-                button.classList.add('active');
-                updateChart();
-            });
-        });
-
-        // Initialize with default active buttons
-        setTimeout(() => {
-            const defaultTimeBtn = trendsWrapper.querySelector('.time-btn[data-months="3"]');
+        // Set default department filter (all) if none is active
+        if (!trendsWrapper.querySelector('.filter-btn.active')) {
             const defaultFilterBtn = trendsWrapper.querySelector('.filter-btn[data-departments="all"]');
-            
-            if (defaultTimeBtn && !trendsWrapper.querySelector('.time-btn.active')) {
-                defaultTimeBtn.classList.add('active');
-            }
-            
-            if (defaultFilterBtn && !trendsWrapper.querySelector('.filter-btn.active')) {
-                defaultFilterBtn.classList.add('active');
-            }
+            if (defaultFilterBtn) defaultFilterBtn.classList.add('active');
+        }
 
-            updateChart();
-        }, 100);
-    } catch (e) {
-        console.error('Error setting up department trends filters:', e);
-    }
-}
-
-function createChartIfExists(chartId, creationFunction, data, ...args) {
-    const canvas = document.getElementById(chartId);
-    if (!canvas) {
-        console.warn(`Canvas element #${chartId} not found - skipping chart creation`);
-        return null;
-    }
-    return creationFunction(data, ...args);
+        updateChart();
+    }, 100);
 }
 
 // Chart creation functions
@@ -1179,56 +1179,42 @@ Chart.defaults.devicePixelRatio = window.devicePixelRatio;
 function initDashboard() {
     try {
         if (!data || !data.months || !data.departments || !data.data) {
-            console.error('Invalid data structure:', data);
-            showError('Dados inválidos recebidos do servidor');
-            return;
+            throw new Error('Invalid data structure received');
         }
 
-        const months = data.months;
-        const departments = data.departments;
-
-        // Initialize UI interactions first
+        // Initialize UI components first
         setupViewToggle();
+        setupTableToggle();
+        
+        // Initialize filters before charts
         setupTimeFilters();
         setupDepartmentTrendsFilters();
 
-        // Only initialize charts if their containers exist
+        // Initialize charts
         charts = {
-            totalExpenditures: document.getElementById('total-expenditures-chart') ? 
-                createTotalExpendituresChart(data.data, months, departments) : null,
-            departmentBreakdown: document.getElementById('department-breakdown-charts') ? 
-                createDepartmentBreakdownCharts(data.data, months, departments) : null,
-            employeesChart: document.getElementById('employees-chart') ? 
-                createEmployeesChart(data.data, months) : null,
-            avgExpenditure: document.getElementById('avg-expenditure-chart') ? 
-                createAvgExpenditureChart(data.data, months) : null,
-            departmentTrends: document.getElementById('department-trends-chart') ? 
-                createDepartmentTrendsChart(data.data, months, departments) : null,
-            percentageStacked: document.getElementById('percentage-stacked-chart') ? 
-                createPercentageStackedChart(data.data, months, departments) : null,
+            totalExpenditures: createChartIfExists('total-expenditures-chart', createTotalExpendituresChart, data.data, data.months, data.departments),
+            departmentBreakdown: createChartIfExists('department-breakdown-charts', createDepartmentBreakdownCharts, data.data, data.months, data.departments),
+            employeesChart: createChartIfExists('employees-chart', createEmployeesChart, data.data, data.months),
+            avgExpenditure: createChartIfExists('avg-expenditure-chart', createAvgExpenditureChart, data.data, data.months),
+            departmentTrends: createChartIfExists('department-trends-chart', createDepartmentTrendsChart, data.data, data.months, data.departments),
+            percentageStacked: createChartIfExists('percentage-stacked-chart', createPercentageStackedChart, data.data, data.months, data.departments)
         };
 
-        // Setup tables if the container exists
-        if (document.getElementById('btn-summary-month')) {
-            setupTableToggle();
+        // Generate initial table view
+        if (document.getElementById('table-summary-month')) {
             generateSummaryByMonth();
         }
 
-        // Trigger default views safely with a slight delay
+        // Trigger initial chart updates with slight delay
         setTimeout(() => {
-            try {
-                const totalExpBtn = document.querySelector('#total-expenditures-wrapper .time-btn[data-months="3"]');
-                const deptTrendsBtn = document.querySelector('#department-trends-wrapper .time-btn[data-months="3"]');
-                
-                if (totalExpBtn) totalExpBtn.click();
-                if (deptTrendsBtn) deptTrendsBtn.click();
-            } catch (e) {
-                console.error('Error triggering default views:', e);
-            }
+            // Trigger click on default time buttons if they exist
+            document.querySelector('#total-expenditures-wrapper .time-btn[data-months="3"]')?.click();
+            document.querySelector('#department-trends-wrapper .time-btn[data-months="3"]')?.click();
         }, 200);
-    } catch (e) {
-        console.error('Error initializing dashboard:', e);
-        showError('Erro ao inicializar o dashboard');
+
+    } catch (error) {
+        console.error('Dashboard initialization failed:', error);
+        showError('Falha ao inicializar o dashboard');
     }
 }
 
@@ -1242,5 +1228,6 @@ function showError(message) {
         </div>
     `;
 }
+
 
 
