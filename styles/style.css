@@ -168,7 +168,7 @@ body {
 }
 
 .pie-item canvas {
-  width: 100% !important;
+  width: 140px !important;
   height: 140px !important;
   max-width: 140px;
   max-height: 140px;
@@ -361,6 +361,7 @@ body {
   cursor: pointer;
   font-weight: bold;
 }
+
 
 
 
