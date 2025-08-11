@@ -575,7 +575,9 @@ function setupDepartmentTrendsFilters() {
             if (!button || !button.dataset) return data.departments;
             
             const deptData = button.dataset.departments;
-            if (deptData === 'all') return data.departments;
+            if (deptData === 'all' || deptData === 'undefined' || !deptData) {
+                return data.departments;
+            }
             
             try {
                 return deptData ? JSON.parse(deptData) : data.departments;
@@ -632,12 +634,12 @@ function setupDepartmentTrendsFilters() {
         // Initialize with default active buttons if none are active
         setTimeout(() => {
             if (!trendsWrapper.querySelector('.time-btn.active')) {
-                const defaultTimeBtn = trendsWrapper.querySelector('.time-btn');
+                const defaultTimeBtn = trendsWrapper.querySelector('.time-btn[data-months="3"]');
                 if (defaultTimeBtn) defaultTimeBtn.classList.add('active');
             }
 
             if (!trendsWrapper.querySelector('.filter-btn.active')) {
-                const defaultFilterBtn = trendsWrapper.querySelector('.filter-btn');
+                const defaultFilterBtn = trendsWrapper.querySelector('.filter-btn[data-departments="all"]');
                 if (defaultFilterBtn) defaultFilterBtn.classList.add('active');
             }
 
@@ -1247,3 +1249,4 @@ function showError(message) {
         </div>
     `;
 }
+
