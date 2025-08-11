@@ -511,28 +511,26 @@ function setupTimeFilters() {
             document.querySelectorAll('#total-expenditures-wrapper .time-btn').forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
 
-            const activeDepartment = document.querySelector('#total-expenditures-wrapper .filter-btn.active')?.dataset.department || 'all';
+            const activeDepartment = document.querySelector('#total-expenditures-wrapper .filter-btn.active').dataset.department;
             charts.totalExpenditures.update(data.data, monthsToShow, activeDepartment);
         });
     });
-	
-// Setup department filter buttons for total expenditures
-    document.querySelectorAll('#total-expenditures-wrapper .filter-btn').forEach(button => {
+
+    // Department Trends
+    document.querySelectorAll('#department-trends-wrapper .time-btn').forEach(button => {
         button.addEventListener('click', () => {
-            document.querySelectorAll('#total-expenditures-wrapper .filter-btn').forEach(btn => btn.classList.remove('active'));
+            const monthsToShow = getMonthsToShow(data.months, button.dataset.months);
+            document.querySelectorAll('#department-trends-wrapper .time-btn').forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
-            
-            const activeTimeBtn = document.querySelector('#total-expenditures-wrapper .time-btn.active');
-            const monthsToShow = activeTimeBtn 
-                ? getMonthsToShow(data.months, activeTimeBtn.dataset.months) 
-                : data.months;
-            
-            charts.totalExpenditures.update(data.data, monthsToShow, button.dataset.department || 'all');
+
+            const raw = document.querySelector('#department-trends-wrapper .filter-btn.active').dataset.departments;
+            const selectedDepartments = raw === 'all' ? data.departments : JSON.parse(raw);
+            charts.departmentTrends.update(monthsToShow, selectedDepartments);
         });
     });
 }
 
-	
+
 function setupTableToggle() {
   const buttons = {
     'btn-summary-month': 'table-summary-month',
@@ -577,9 +575,7 @@ function setupDepartmentTrendsFilters() {
             if (!button || !button.dataset) return data.departments;
             
             const deptData = button.dataset.departments;
-            if (deptData === 'all' || deptData === 'undefined' || !deptData) {
-                return data.departments;
-            }
+            if (deptData === 'all') return data.departments;
             
             try {
                 return deptData ? JSON.parse(deptData) : data.departments;
@@ -1251,4 +1247,3 @@ function showError(message) {
         </div>
     `;
 }
-
