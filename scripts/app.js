@@ -1180,67 +1180,105 @@ Chart.defaults.devicePixelRatio = window.devicePixelRatio;
 
 function initDashboard() {
     try {
-        // Validate data structure
-        if (!data || !Array.isArray(data.months) || !Array.isArray(data.departments) || !data.data) {
-            throw new Error('Invalid data structure received from server');
+        // Validate data structure more thoroughly
+        if (!data || !Array.isArray(data.months) || !Array.isArray(data.departments) || typeof data.data !== 'object') {
+            throw new Error('Invalid or incomplete data received from server');
+        }
+
+        // Check if we have at least some data
+        if (data.months.length === 0 || data.departments.length === 0 || Object.keys(data.data).length === 0) {
+            throw new Error('No data available to display');
         }
 
         // Initialize UI components
-        setupViewToggle();
-        setupTableToggle();
-        
-        // Initialize filters
-        setupTimeFilters();
-        setupDepartmentTrendsFilters();
+        try {
+            setupViewToggle();
+            setupTableToggle();
+            setupTimeFilters();
+            setupDepartmentTrendsFilters();
+        } catch (uiError) {
+            console.error('UI initialization failed:', uiError);
+            throw new Error('Failed to initialize dashboard controls');
+        }
 
-        // Initialize charts only if their containers exist
-        charts = {
-            totalExpenditures: document.getElementById('total-expenditures-chart') ? 
-                createTotalExpendituresChart(data.data, data.months, data.departments) : null,
-            departmentBreakdown: document.getElementById('department-breakdown-charts') ? 
-                createDepartmentBreakdownCharts(data.data, data.months, data.departments) : null,
-            employeesChart: document.getElementById('employees-chart') ? 
-                createEmployeesChart(data.data, data.months) : null,
-            avgExpenditure: document.getElementById('avg-expenditure-chart') ? 
-                createAvgExpenditureChart(data.data, data.months) : null,
-            departmentTrends: document.getElementById('department-trends-chart') ? 
-                createDepartmentTrendsChart(data.data, data.months, data.departments) : null,
-            percentageStacked: document.getElementById('percentage-stacked-chart') ? 
-                createPercentageStackedChart(data.data, data.months, data.departments) : null
+        // Initialize charts with additional checks
+        charts = {};
+        const chartElements = {
+            'total-expenditures-chart': () => createTotalExpendituresChart(data.data, data.months, data.departments),
+            'department-breakdown-charts': () => createDepartmentBreakdownCharts(data.data, data.months, data.departments),
+            'employees-chart': () => createEmployeesChart(data.data, data.months),
+            'avg-expenditure-chart': () => createAvgExpenditureChart(data.data, data.months),
+            'department-trends-chart': () => createDepartmentTrendsChart(data.data, data.months, data.departments),
+            'percentage-stacked-chart': () => createPercentageStackedChart(data.data, data.months, data.departments)
         };
+
+        Object.entries(chartElements).forEach(([id, creator]) => {
+            try {
+                if (document.getElementById(id)) {
+                    charts[id] = creator();
+                }
+            } catch (chartError) {
+                console.error(`Failed to create chart ${id}:`, chartError);
+            }
+        });
 
         // Generate initial table view
         if (document.getElementById('table-summary-month')) {
-            generateSummaryByMonth();
+            try {
+                generateSummaryByMonth();
+            } catch (tableError) {
+                console.error('Failed to generate initial table:', tableError);
+            }
         }
 
-        // Trigger initial updates with delay
+        // Trigger initial updates with better error handling
         setTimeout(() => {
             try {
-                // Trigger default time filters
-                document.querySelector('#total-expenditures-wrapper .time-btn[data-months="3"]')?.click();
-                document.querySelector('#department-trends-wrapper .time-btn[data-months="3"]')?.click();
-            } catch (e) {
-                console.error('Error triggering default filters:', e);
+                const totalExpBtn = document.querySelector('#total-expenditures-wrapper .time-btn[data-months="3"]');
+                const deptTrendsBtn = document.querySelector('#department-trends-wrapper .time-btn[data-months="3"]');
+                
+                if (totalExpBtn) totalExpBtn.click();
+                if (deptTrendsBtn) deptTrendsBtn.click();
+            } catch (initError) {
+                console.error('Error during initial filter setup:', initError);
             }
-        }, 200);
+        }, 300);
 
     } catch (error) {
         console.error('Dashboard initialization failed:', error);
-        showError('Falha crítica ao inicializar o dashboard');
+        showError('Falha ao carregar o dashboard. Por favor, recarregue a página.');
     }
 }
 
 function showError(message) {
     const container = document.querySelector('.container') || document.body;
     container.innerHTML = `
-        <div class="error-message">
-            <h2>Erro</h2>
-            <p>${message}</p>
-            <button onclick="window.location.reload()">Recarregar</button>
+        <div class="error-message" style="
+            padding: 20px;
+            background: #ffecec;
+            border: 1px solid #ffb3b3;
+            border-radius: 5px;
+            max-width: 600px;
+            margin: 50px auto;
+            text-align: center;
+        ">
+            <h2 style="color: #d32f2f; margin-top: 0;">Erro</h2>
+            <p style="margin-bottom: 20px;">${message}</p>
+            <button onclick="window.location.reload()" style="
+                background: #d32f2f;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 16px;
+            ">
+                Recarregar Página
+            </button>
         </div>
     `;
 }
+
 
 
 
