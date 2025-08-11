@@ -110,7 +110,6 @@ fetch(apiUrl)
     }
   });
     initDashboard();
-  }
   .catch(error => {
     console.error("Error loading data:", error);
   });
@@ -1193,6 +1192,7 @@ function showError(message) {
         </div>
     `;
 }
+
 
 
 
