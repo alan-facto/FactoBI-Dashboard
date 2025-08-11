@@ -140,11 +140,14 @@ function hexToRGBA(hex, alpha = 1) {
 }
 
 function tryParseJSON(jsonString) {
-    if (!jsonString || jsonString === 'undefined') return [];
+    if (!jsonString || jsonString === 'undefined' || jsonString === undefined) {
+        return [];
+    }
     try {
-        return JSON.parse(jsonString);
+        const parsed = JSON.parse(jsonString);
+        return Array.isArray(parsed) ? parsed : [];
     } catch (e) {
-        console.error('Failed to parse JSON:', jsonString);
+        console.error('Failed to parse JSON:', jsonString, e);
         return [];
     }
 }
@@ -570,23 +573,6 @@ function setupDepartmentTrendsFilters() {
             return;
         }
 
-        // Helper to safely get departments from button data
-        const getDepartmentsFromButton = (button) => {
-            if (!button || !button.dataset) return data.departments;
-            
-            const deptData = button.dataset.departments;
-            if (deptData === 'all' || deptData === 'undefined' || !deptData) {
-                return data.departments;
-            }
-            
-            try {
-                return deptData ? JSON.parse(deptData) : data.departments;
-            } catch (e) {
-                console.error('Failed to parse departments:', deptData);
-                return data.departments;
-            }
-        };
-
         // Helper to update the chart
         const updateChart = () => {
             try {
@@ -599,9 +585,13 @@ function setupDepartmentTrendsFilters() {
                     ? getMonthsToShow(data.months, activeTimeBtn.dataset?.months || 'all')
                     : data.months;
 
-                const selectedDepartments = activeFilterBtn
-                    ? getDepartmentsFromButton(activeFilterBtn)
-                    : data.departments;
+                let selectedDepartments = data.departments;
+                if (activeFilterBtn) {
+                    const deptData = activeFilterBtn.dataset.departments;
+                    selectedDepartments = deptData === 'all' 
+                        ? data.departments 
+                        : tryParseJSON(deptData);
+                }
 
                 charts.departmentTrends.update(monthsToShow, selectedDepartments);
             } catch (e) {
@@ -631,16 +621,17 @@ function setupDepartmentTrendsFilters() {
             });
         });
 
-        // Initialize with default active buttons if none are active
+        // Initialize with default active buttons
         setTimeout(() => {
-            if (!trendsWrapper.querySelector('.time-btn.active')) {
-                const defaultTimeBtn = trendsWrapper.querySelector('.time-btn[data-months="3"]');
-                if (defaultTimeBtn) defaultTimeBtn.classList.add('active');
+            const defaultTimeBtn = trendsWrapper.querySelector('.time-btn[data-months="3"]');
+            const defaultFilterBtn = trendsWrapper.querySelector('.filter-btn[data-departments="all"]');
+            
+            if (defaultTimeBtn && !trendsWrapper.querySelector('.time-btn.active')) {
+                defaultTimeBtn.classList.add('active');
             }
-
-            if (!trendsWrapper.querySelector('.filter-btn.active')) {
-                const defaultFilterBtn = trendsWrapper.querySelector('.filter-btn[data-departments="all"]');
-                if (defaultFilterBtn) defaultFilterBtn.classList.add('active');
+            
+            if (defaultFilterBtn && !trendsWrapper.querySelector('.filter-btn.active')) {
+                defaultFilterBtn.classList.add('active');
             }
 
             updateChart();
@@ -1223,16 +1214,18 @@ function initDashboard() {
             generateSummaryByMonth();
         }
 
-        // Trigger default views safely
+        // Trigger default views safely with a slight delay
         setTimeout(() => {
             try {
-                document.querySelector('#total-expenditures-wrapper .time-btn.active')?.click();
-                document.querySelector('#department-trends-wrapper .time-btn.active')?.click();
+                const totalExpBtn = document.querySelector('#total-expenditures-wrapper .time-btn[data-months="3"]');
+                const deptTrendsBtn = document.querySelector('#department-trends-wrapper .time-btn[data-months="3"]');
+                
+                if (totalExpBtn) totalExpBtn.click();
+                if (deptTrendsBtn) deptTrendsBtn.click();
             } catch (e) {
                 console.error('Error triggering default views:', e);
             }
-        }, 100);
-
+        }, 200);
     } catch (e) {
         console.error('Error initializing dashboard:', e);
         showError('Erro ao inicializar o dashboard');
@@ -1249,4 +1242,5 @@ function showError(message) {
         </div>
     `;
 }
+
 
