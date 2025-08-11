@@ -107,12 +107,12 @@
     <!-- Tables View -->
     <div id="tables-view">
       <div class="card">
-        <div class="table-buttons">
-          <button id="btn-summary-month" class="active">Resumo por Mês</button>
-          <button id="btn-summary-department">Resumo por Departamento</button>
-          <button id="btn-detailed-month">Por Mês (detalhado)</button>
-          <button id="btn-detailed-department">Por Departamento (detalhado)</button>
-        </div>
+        <div class="table-toggle-buttons">
+  <button id="btn-summary-month" class="table-toggle-btn active">Resumo por Mês</button>
+  <button id="btn-summary-department" class="table-toggle-btn">Resumo por Departamento</button>
+  <button id="btn-detailed-month" class="table-toggle-btn">Detalhado por Mês</button>
+  <button id="btn-detailed-department" class="table-toggle-btn">Detalhado por Departamento</button>
+</div>
 
         <div id="table-summary-month"></div>
         <div id="table-summary-department" class="hidden"></div>
@@ -125,4 +125,5 @@
   <script src="scripts/app.js"></script>
 </body>
 </html>
+
 
