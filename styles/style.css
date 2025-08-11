@@ -77,6 +77,12 @@ body {
 
 .chart-row.single .chart-container {
   height: 400px;
+  display: flex;
+}
+
+.chart-row.single .card {
+  flex: 1;
+  min-width: 0; /* important so flex items can shrink */
 }
 
 .chart-row.double {
@@ -335,4 +341,5 @@ body {
   cursor: pointer;
   font-weight: bold;
 }
+
 
