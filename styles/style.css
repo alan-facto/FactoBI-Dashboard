@@ -153,6 +153,11 @@ body {
   .chart-row.single .chart-container { height: 300px; }
 }
 
+body {
+  background-color: #024B59;
+  color: #fff; /* Ensures text doesn't go white-on-white */
+}
+
 
 
 
