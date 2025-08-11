@@ -1,67 +1,87 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Painel Financeiro</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com"/>
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="styles/style.css?v=20250811"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
   <div class="container">
-
-    <!-- Header -->
-    <header>
-      <h1>Painel Financeiro</h1>
-      <div class="view-toggle">
-        <button id="btn-graphs" class="active">Gráficos</button>
-        <button id="btn-tables">Tabelas</button>
-      </div>
-    </header>
+    <div class="view-toggle">
+      <button id="btn-graphs" class="active">Gráficos</button>
+      <button id="btn-tables">Tabelas</button>
+    </div>
 
     <!-- Charts View -->
     <div id="charts-view">
-
       <!-- Row 1: Total Expenditures -->
-<div class="card">
-  <h2>Gastos Totais ao Longo do Tempo</h2>
-  <div class="department-filters">
-    <button class="active" data-department="all">Todos</button>
-    <button data-department="Administrativo">Administrativo</button>
-    <!-- Add other departments -->
-  </div>
-  <div class="chart-container">
-    <canvas id="total-expenditures-chart"></canvas>
-  </div>
-</div>
+      <div class="chart-row single" id="total-expenditures-wrapper">
+        <div class="card">
+          <img src="assets/logo.png" alt="Facto Logo" class="facto-logo">
+          <h2>Gastos Totais ao Longo do Tempo</h2>
+          <div class="time-filters">
+            <button class="filter-btn time-btn" data-months="3">3 Meses</button>
+            <button class="filter-btn time-btn" data-months="6">6 Meses</button>
+            <button class="filter-btn time-btn active" data-months="12">12 Meses</button>
+          </div>
+          <div class="filter-buttons">
+            <button class="filter-btn active" data-department="all">Todos</button>
+            <button class="filter-btn" data-department="Administrativo">Administrativo</button>
+            <button class="filter-btn" data-department="Comercial">Comercial</button>
+            <button class="filter-btn" data-department="Diretoria">Diretoria</button>
+            <button class="filter-btn" data-department="Operação">Operação</button>
+            <button class="filter-btn" data-department="RH">RH</button>
+            <button class="filter-btn" data-department="NEC">NEC</button>
+            <button class="filter-btn" data-department="Apoio">Apoio</button>
+            <button class="filter-btn" data-department="Marketing">Marketing</button>
+            <button class="filter-btn" data-department="Jurídico">Jurídico</button>
+          </div>
+          <div class="chart-container">
+            <canvas id="total-expenditures-chart"></canvas>
+          </div>
+        </div>
+      </div>
 
       <!-- Row 2: Department Trends -->
-      <div class="chart-row single">
+      <div class="chart-row single" id="department-trends-wrapper">
         <div class="card">
           <h2>Gastos por Departamento</h2>
+          <div class="time-filters">
+            <button class="filter-btn time-btn" data-months="3">3 Meses</button>
+            <button class="filter-btn time-btn" data-months="6">6 Meses</button>
+            <button class="filter-btn time-btn active" data-months="12">12 Meses</button>
+          </div>
+          <div class="filter-buttons">
+            <button class="filter-btn active" data-departments='all'>Mostrar Todos</button>
+            <button class="filter-btn" data-departments='["Comercial","Diretoria","Operação"]'>Principais</button>
+            <button class="filter-btn" data-departments='["Administrativo","RH","NEC","Apoio","Marketing","Jurídico"]'>Demais</button>
+          </div>
           <div class="chart-container">
             <canvas id="department-trends-chart"></canvas>
           </div>
         </div>
       </div>
 
-<!-- Row 3: Average Expenditure & Employees - FIXED two-column layout -->
-<div class="chart-row double">
-  <div class="card">
-    <h2>Gasto Médio por Funcionário</h2>
-    <div class="chart-container">
-      <canvas id="avg-expenditure-chart"></canvas>
-    </div>
-  </div>
-  <div class="card">
-    <h2>Quantidade de Funcionários</h2>
-    <div class="chart-container">
-      <canvas id="employees-chart"></canvas>
-    </div>
-  </div>
-</div>
+      <!-- Row 3: Average Expenditure & Employees -->
+      <div class="chart-row double">
+        <div class="card half">
+          <h2>Média de Gastos por Funcionário</h2>
+          <div class="chart-container">
+            <canvas id="avg-expenditure-chart"></canvas>
+          </div>
+        </div>
+        <div class="card half">
+          <h2>Total de Funcionários</h2>
+          <div class="chart-container">
+            <canvas id="employees-chart"></canvas>
+          </div>
+        </div>
+      </div>
 
       <!-- Row 4: Percentage Stacked -->
       <div class="chart-row single">
@@ -73,40 +93,34 @@
         </div>
       </div>
 
-      <!-- Row 5: Department Breakdown (Pie charts) -->
+      <!-- Row 5: Department Breakdown -->
       <div class="chart-row single">
-        <div class="card">
+        <div class="card" id="department-breakdown-wrapper">
           <h2>Distribuição de Gastos por Departamento (Últimos 6 Meses)</h2>
           <div id="department-breakdown-charts"></div>
           <div class="department-legend" id="department-legend"></div>
         </div>
       </div>
-
-    </div> <!-- end charts-view -->
+    </div>
 
     <!-- Tables View -->
-    <div id="tables-view" class="hidden">
-      <div class="table-buttons">
-        <button id="btn-summary-month" class="active">Resumo por Mês</button>
-        <button id="btn-summary-department">Resumo por Departamento</button>
-        <button id="btn-detailed-month">Por Mês (detalhado)</button>
-        <button id="btn-detailed-department">Por Departamento (detalhado)</button>
-      </div>
-      <div id="table-container">
+    <div id="tables-view">
+      <div class="card">
+        <div class="table-buttons">
+          <button id="btn-summary-month" class="active">Resumo por Mês</button>
+          <button id="btn-summary-department">Resumo por Departamento</button>
+          <button id="btn-detailed-month">Por Mês (detalhado)</button>
+          <button id="btn-detailed-department">Por Departamento (detalhado)</button>
+        </div>
+
         <div id="table-summary-month"></div>
         <div id="table-summary-department" class="hidden"></div>
         <div id="table-detailed-month" class="hidden"></div>
         <div id="table-detailed-department" class="hidden"></div>
       </div>
     </div>
+  </div>
 
-  </div> <!-- end container -->
-
-  <!-- Scripts -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="scripts/app.js?v=20250811"></script>
+  <script src="scripts/app.js"></script>
 </body>
 </html>
-
-
-
