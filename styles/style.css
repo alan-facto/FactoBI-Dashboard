@@ -59,8 +59,14 @@ body {
 .chart-container {
   position: relative;
   width: 100%;
-  height: 100%;
+  height: 400px;
   margin: 0 auto;
+}
+
+.chart-container canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 .chart-row {
@@ -329,3 +335,4 @@ body {
   cursor: pointer;
   font-weight: bold;
 }
+
