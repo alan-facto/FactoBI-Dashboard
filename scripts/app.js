@@ -121,15 +121,15 @@ const translations = {
 };
 
 const colorsByDepartment = {
-    "Administrativo": "#4e79a7",
-    "Apoio": "#f28e2b",
-    "Comercial": "#e15759",
-    "Diretoria": "#76b7b2",
-    "Jurídico": "#59a14f",
-    "Marketing": "#edc948",
-    "NEC": "#b07aa1",
-    "Operação": "#ff9da7",
-    "RH": "#9c755f"
+    "Administrativo": "#024B59", // Verde escuro
+    "Apoio": "#F2D24C",          // Amarelo dourado
+    "Comercial": "#DC4B45",      // Vermelho tomate
+    "Diretoria": "#0CBA8C",      // Verde médio
+    "Jurídico": "#00EB89",       // Verde claro
+    "Marketing": "#FFFF93",      // Amarelo pastel (might darken to #F8F57D)
+    "NEC": "#6545CF",            // Roxo violeta
+    "Operação": "#A9B5FB",       // Azul lavanda claro
+    "RH": "#76b7b2"              // Soft teal (keeps distinct, blends with brand)
 };
 
 function hexToRGBA(hex, alpha = 1) {
@@ -1213,6 +1213,7 @@ function showError(message) {
         </div>
     `;
 }
+
 
 
 
