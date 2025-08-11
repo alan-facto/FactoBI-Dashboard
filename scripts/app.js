@@ -762,27 +762,27 @@ function createEmployeesChart(data, months) {
             }]
         },
         options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            return `Total de Funcionários: ${context.raw}`;
-                        }
-                    }
-                }
-				legend: { display: false }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        precision: 0
-                    }
-                }
-            }
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    tooltip: {
+      callbacks: {
+        label: function(context) {
+          return `Total de Funcionários: ${context.raw}`;
         }
+      }
+    },
+    legend: { display: false } // <-- hide legend
+  },
+  scales: {
+    y: {
+      beginAtZero: true,
+      ticks: {
+        precision: 0
+      }
+    }
+  }
+}
     });
 
     return {
@@ -819,35 +819,35 @@ function createAvgExpenditureChart(data, months) {
             }]
         },
         options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            const value = context.raw;
-                            return `Média: R$ ${value.toLocaleString('pt-BR', {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2
-                            })}`;
-                        }
-                    }
-				legend: { display: false }
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: false,
-                    ticks: {
-                        callback: function(value) {
-                            return `R$ ${value.toLocaleString('pt-BR', {
-                                maximumFractionDigits: 0
-                            })}`;
-                        }
-                    }
-                }
-            }
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    tooltip: {
+      callbacks: {
+        label: function(context) {
+          const value = context.raw;
+          return `Média: R$ ${value.toLocaleString('pt-BR', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+          })}`;
         }
+      }
+    },
+    legend: { display: false } // <-- hide legend
+  },
+  scales: {
+    y: {
+      beginAtZero: false,
+      ticks: {
+        callback: function(value) {
+          return `R$ ${value.toLocaleString('pt-BR', {
+            maximumFractionDigits: 0
+          })}`;
+        }
+      }
+    }
+  }
+}
     });
 
     return {
@@ -1064,8 +1064,7 @@ function createTotalExpendituresChart(data, months, departments) {
                     }
                 },
 				legend: { display: false }
-                legend: { display: true, position: 'top' }
-            },
+                },
             scales: {
                 y: {
                     beginAtZero: false,
@@ -1209,6 +1208,7 @@ function showError(message) {
         </div>
     `;
 }
+
 
 
 
