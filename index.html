@@ -107,23 +107,25 @@
     <!-- Tables View -->
     <div id="tables-view">
       <div class="card">
-        <div class="table-toggle-buttons">
-  <button id="btn-summary-month" class="table-toggle-btn active">Resumo por Mês</button>
-  <button id="btn-summary-department" class="table-toggle-btn">Resumo por Departamento</button>
-  <button id="btn-detailed-month" class="table-toggle-btn">Detalhado por Mês</button>
-  <button id="btn-detailed-department" class="table-toggle-btn">Detalhado por Departamento</button>
-</div>
+        <div id="tables-view">
+  <div class="table-toggle-container">
+    <button id="btn-summary-month" class="table-toggle-btn active">Resumo por Mês</button>
+    <button id="btn-summary-department" class="table-toggle-btn">Resumo por Departamento</button>
+    <button id="btn-detailed-month" class="table-toggle-btn">Detalhado por Mês</button>
+    <button id="btn-detailed-department" class="table-toggle-btn">Detalhado por Departamento</button>
+  </div>
 
-        <div id="table-summary-month"></div>
-        <div id="table-summary-department" class="hidden"></div>
-        <div id="table-detailed-month" class="hidden"></div>
-        <div id="table-detailed-department" class="hidden"></div>
-      </div>
+  <div id="table-summary-month" style="display: block;"></div>
+  <div id="table-summary-department" style="display: none;"></div>
+  <div id="table-detailed-month" style="display: none;"></div>
+  <div id="table-detailed-department" style="display: none;"></div>
+</div>
     </div>
   </div>
 
   <script src="scripts/app.js"></script>
 </body>
 </html>
+
 
 
