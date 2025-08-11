@@ -643,7 +643,6 @@ function setupDepartmentTrendsFilters() {
 
             updateChart();
         }, 100);
-
     } catch (e) {
         console.error('Error setting up department trends filters:', e);
     }
@@ -655,60 +654,6 @@ function tryParseJSON(jsonString) {
     } catch (e) {
         console.error('Failed to parse JSON:', jsonString);
         return [];
-    }
-}
-
-        // Department filter buttons
-        trendsWrapper.querySelectorAll('.filter-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        trendsWrapper.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        
-        const raw = btn.dataset?.departments || 'all';
-        const selectedDepartments = raw === 'all' ? 
-            data.departments : 
-            tryParseJSON(raw);
-        
-        const activeTimeBtn = trendsWrapper.querySelector('.time-btn.active');
-        const monthsToShow = getMonthsToShow(
-            data.months,
-            activeTimeBtn?.dataset?.months || 'all'
-        );
-
-        if (charts.departmentTrends?.update) {
-            charts.departmentTrends.update(monthsToShow, selectedDepartments);
-        }
-    });
-});
-
-        // Total Expenditures Filters (similar pattern)
-        const expendituresWrapper = document.getElementById('total-expenditures-wrapper');
-        if (expendituresWrapper) {
-            expendituresWrapper.querySelectorAll('.filter-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    try {
-                        expendituresWrapper.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-                        btn.classList.add('active');
-
-                        const department = btn.dataset?.department || 'all';
-                        const activeTimeBtn = expendituresWrapper.querySelector('.time-btn.active');
-                        const monthsToShow = getMonthsToShow(
-                            data.months,
-                            activeTimeBtn?.dataset?.months || 'all'
-                        );
-
-                        if (charts.totalExpenditures?.update) {
-                            charts.totalExpenditures.update(data.data, monthsToShow, department);
-                        }
-                    } catch (e) {
-                        console.error('Error handling expenditures filter click:', e);
-                    }
-                });
-            });
-        }
-
-    } catch (e) {
-        console.error('Error setting up department trends filters:', e);
     }
 }
 
@@ -1311,6 +1256,7 @@ function showError(message) {
         </div>
     `;
 }
+
 
 
 
