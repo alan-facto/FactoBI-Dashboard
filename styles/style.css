@@ -1,237 +1,95 @@
-/* =========================
-   Dashboard Global Styles
-   ========================= */
-
-:root {
-  --brand: #024B59;
-  --brand-light: #03697a;
-  --card-bg: #F6F6F6;
-  --text: #111;
-  --gap: 20px;
-  --half-height: 300px;   /* height for half-width charts */
-  --full-height: 380px;   /* height for full-width charts */
-}
-
-/* Basic resets */
-* {
-  box-sizing: border-box;
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background: #004d4d;
   margin: 0;
   padding: 0;
 }
 
-html, body {
-  height: 100%;
-  font-family: "Plus Jakarta Sans", "Segoe UI", sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-body {
-  background-color: var(--brand);
-  color: var(--text);
-}
-
-/* Container */
 .container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 30px 20px;
+  padding: 20px;
 }
 
-/* Card */
-.card {
-  position: relative;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.08);
-  padding: 22px;
-  margin-bottom: 24px;
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  color: white;
 }
 
-/* Logo inside card */
-.facto-logo {
-  position: absolute;
-  right: 16px;
-  top: 14px;
-  height: 40px;
-  opacity: 0.95;
-}
-
-/* Buttons */
-button,
-.filter-btn {
-  border-radius: 8px;
+.view-toggle button {
+  background: #006666;
+  color: white;
+  border: none;
   padding: 8px 14px;
-  margin: 4px;
-  cursor: pointer;
-  border: 2px solid var(--brand);
-  background: white;
-  color: var(--brand);
-  font-weight: 500;
-  transition: all .15s ease;
-}
-
-button:not(.active),
-.filter-btn:not(.active) {
-  background: var(--brand);
-  color: #fff;
-}
-
-button:hover,
-.filter-btn:hover {
-  background: var(--brand);
-  color: #fff;
-}
-
-button.active,
-.filter-btn.active {
-  background: white;
-  color: var(--brand);
-}
-
-/* Chart rows */
-.chart-row {
-  margin-bottom: 18px;
-}
-
-/* Single (full-width) chart */
-.chart-row.single .chart-container {
-  height: var(--full-height);
-  max-height: var(--full-height);
-}
-
-/* Double-column layout */
-.chart-row.double {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: var(--gap);
-}
-
-/* Target ONLY cards that are meant to be half-width */
-.chart-row.double .card.half {
-  height: var(--half-height);
-}
-
-/* Generic chart container rules */
-.chart-container {
-  position: relative;
-  width: 100%;
-  height: 100%;
-}
-
-/* Make canvas exactly fill the container */
-.chart-container canvas,
-.card canvas {
-  width: 100% !important;
-  height: 100% !important;
-  display: block;
-  max-height: 320px; /* keeps charts from getting too tall */
-}
-
-/* Scrollable Pie Chart Row */
-#department-breakdown-charts {
-  display: flex;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  gap: 16px;
-  padding-bottom: 10px;
-}
-
-#department-breakdown-charts::-webkit-scrollbar {
-  height: 6px;
-}
-#department-breakdown-charts::-webkit-scrollbar-thumb {
-  background: rgba(0,0,0,0.3);
-  border-radius: 3px;
-}
-
-/* Each pie chart + label */
-.pie-item {
-  flex: 0 0 auto;
-  width: 160px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.pie-item canvas {
-  width: 100% !important;
-  height: 160px !important;
-}
-
-.pie-item .pie-label {
-  margin-top: 6px;
-  font-size: 13px;
-  color: var(--text);
-}
-
-/* Department legend styling */
-.department-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px 18px;
-  justify-content: center;
-  margin-top: 16px;
-}
-
-.department-legend-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  white-space: nowrap;
-  padding: 6px 8px;
-  border-radius: 8px;
+  margin-left: 5px;
+  border-radius: 6px;
   cursor: pointer;
 }
 
-.department-legend-item.inactive {
-  opacity: 0.45;
+.view-toggle button.active {
+  background: white;
+  color: #006666;
 }
 
-.department-legend-swatch {
-  width: 16px;
-  height: 16px;
-  border-radius: 4px;
-}
-
-/* Tables */
-#tables-view table {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;
+/* ===== Charts Layout ===== */
+#charts-view .chart-row {
+  display: flex;
+  gap: 20px;
   margin-bottom: 20px;
 }
 
-#tables-view th,
-#tables-view td {
-  border: 1px solid #ddd;
+#charts-view .chart-row.single .chart-card {
+  flex: 1;
+}
+
+#charts-view .chart-row.double .chart-card {
+  flex: 1;
+}
+
+.chart-card {
+  background: white;
+  border-radius: 10px;
+  padding: 15px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.chart-card h2 {
+  font-size: 18px;
+  margin-bottom: 10px;
+}
+
+/* ===== Pie charts scroll ===== */
+.pie-scroll {
+  display: flex;
+  gap: 20px;
+  overflow-x: auto;
+  padding-bottom: 10px;
+}
+
+.pie-scroll canvas {
+  width: 200px !important;
+  height: 200px !important;
+}
+
+/* ===== Tables Layout ===== */
+#tables-view .table-buttons {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+#tables-view table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+}
+
+#tables-view th, #tables-view td {
   padding: 10px;
-  text-align: center;
-  vertical-align: middle;
+  border: 1px solid #ddd;
 }
 
-#tables-view td:first-child,
-#tables-view th:first-child {
-  text-align: left;
-  width: 30%;
-}
-
-/* Misc */
 .hidden {
-  display: none !important;
-}
-
-/* Responsive adjustments */
-@media (max-width: 900px) {
-  .chart-row.double {
-    grid-template-columns: 1fr;
-  }
-  .chart-row.double .card.half .chart-container {
-    height: 260px;
-  }
-  .chart-row.single .chart-container {
-    height: 300px;
-  }
+  display: none;
 }
