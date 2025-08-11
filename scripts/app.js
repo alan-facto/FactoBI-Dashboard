@@ -504,32 +504,86 @@ function translateTooltip(context) {
 }
 
 function setupTimeFilters() {
-    // Total Expenditures
+    // Store the current filter states
+    const filterStates = {
+        totalExpenditures: {
+            months: '3', // default to 3 months
+            department: 'all'
+        },
+        departmentTrends: {
+            months: '3',
+            departments: 'all'
+        }
+    };
+
+    // Helper function to update the total expenditures chart
+    const updateTotalExpendituresChart = () => {
+        const state = filterStates.totalExpenditures;
+        const monthsToShow = getMonthsToShow(data.months, state.months);
+        charts.totalExpenditures?.update(data.data, monthsToShow, state.department);
+    };
+
+    // Helper function to update the department trends chart
+    const updateDepartmentTrendsChart = () => {
+        const state = filterStates.departmentTrends;
+        const monthsToShow = getMonthsToShow(data.months, state.months);
+        const departmentsToShow = state.departments === 'all' 
+            ? data.departments 
+            : tryParseJSON(state.departments) || data.departments;
+        charts.departmentTrends?.update(monthsToShow, departmentsToShow);
+    };
+
+    // Total Expenditures filters
     document.querySelectorAll('#total-expenditures-wrapper .time-btn').forEach(button => {
         button.addEventListener('click', () => {
-            const monthsToShow = getMonthsToShow(data.months, button.dataset.months);
-            document.querySelectorAll('#total-expenditures-wrapper .time-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('#total-expenditures-wrapper .time-btn').forEach(btn => 
+                btn.classList.remove('active'));
             button.classList.add('active');
-
-            const activeDepartment = document.querySelector('#total-expenditures-wrapper .filter-btn.active')?.dataset.department || 'all';
-            charts.totalExpenditures.update(data.data, monthsToShow, activeDepartment);
+            
+            filterStates.totalExpenditures.months = button.dataset.months;
+            updateTotalExpendituresChart();
         });
     });
-	
-// Setup department filter buttons for total expenditures
+
     document.querySelectorAll('#total-expenditures-wrapper .filter-btn').forEach(button => {
         button.addEventListener('click', () => {
-            document.querySelectorAll('#total-expenditures-wrapper .filter-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('#total-expenditures-wrapper .filter-btn').forEach(btn => 
+                btn.classList.remove('active'));
             button.classList.add('active');
             
-            const activeTimeBtn = document.querySelector('#total-expenditures-wrapper .time-btn.active');
-            const monthsToShow = activeTimeBtn 
-                ? getMonthsToShow(data.months, activeTimeBtn.dataset.months) 
-                : data.months;
-            
-            charts.totalExpenditures.update(data.data, monthsToShow, button.dataset.department || 'all');
+            filterStates.totalExpenditures.department = button.dataset.department;
+            updateTotalExpendituresChart();
         });
     });
+
+    // Department Trends filters
+    document.querySelectorAll('#department-trends-wrapper .time-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            document.querySelectorAll('#department-trends-wrapper .time-btn').forEach(btn => 
+                btn.classList.remove('active'));
+            button.classList.add('active');
+            
+            filterStates.departmentTrends.months = button.dataset.months;
+            updateDepartmentTrendsChart();
+        });
+    });
+
+    document.querySelectorAll('#department-trends-wrapper .filter-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            document.querySelectorAll('#department-trends-wrapper .filter-btn').forEach(btn => 
+                btn.classList.remove('active'));
+            button.classList.add('active');
+            
+            filterStates.departmentTrends.departments = button.dataset.departments;
+            updateDepartmentTrendsChart();
+        });
+    });
+
+    // Initialize default states
+    document.querySelector('#total-expenditures-wrapper .time-btn[data-months="3"]')?.classList.add('active');
+    document.querySelector('#total-expenditures-wrapper .filter-btn[data-department="all"]')?.classList.add('active');
+    document.querySelector('#department-trends-wrapper .time-btn[data-months="3"]')?.classList.add('active');
+    document.querySelector('#department-trends-wrapper .filter-btn[data-departments="all"]')?.classList.add('active');
 }
 
 	
@@ -896,114 +950,63 @@ function createAvgExpenditureChart(data, months) {
 }
 
 function createDepartmentTrendsChart(data, months, departments) {
-    try {
-        const ctx = document.getElementById('department-trends-chart');
-        if (!ctx) {
-            console.warn('Department trends chart canvas not found');
-            return null;
-        }
+    const ctx = document.getElementById('department-trends-chart');
+    if (!ctx) return null;
 
-        // Filter out months with no data
-         const validMonths = months.filter(month => {
-            return data[month] && typeof data[month] === 'object' && 
-                   month.match(/^\d{4}-\d{2}$/); // Validate YYYY-MM format
-        });
-
-        if (validMonths.length === 0) {
-            console.warn('No valid months data for trends chart');
-            return null;
-        }
-
-        // Filter out departments with no data
-        const validDepartments = departments.filter(dept => {
-            return validMonths.some(month => data[month]?.departments?.[dept]);
-        });
-
-        const datasets = validDepartments.map(dept => ({
-            label: dept,
-            data: validMonths.map(month => data[month]?.departments[dept]?.geral || 0),
-            borderColor: colorsByDepartment[dept] || "#ccc",
-            backgroundColor: 'transparent',
-            borderWidth: 2,
-            fill: false,
-            tension: 0.3
-        }));
-
-        const chart = new Chart(ctx.getContext('2d'), {
-            type: 'line',
-            data: {
-                labels: validMonths.map(formatMonthShort),
-                datasets: datasets
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    tooltip: {
-                        callbacks: {
-                            label: (context) => {
-                                const label = context.dataset.label || '';
-                                const value = context.raw.toLocaleString('pt-BR', {
-                                    style: 'currency',
-                                    currency: 'BRL'
-                                });
-                                return `${label}: ${value}`;
-                            }
-                        }
-                    },
-                    legend: {
-                        position: 'top',
-                        labels: {
-                            boxWidth: 12
+    const chart = new Chart(ctx.getContext('2d'), {
+        type: 'line',
+        data: { labels: [], datasets: [] },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: (context) => {
+                            return `${context.dataset.label}: R$ ${context.raw.toLocaleString('pt-BR')}`;
                         }
                     }
                 },
-                scales: {
-                    y: {
-                        beginAtZero: false,
-                        ticks: {
-                            callback: function(value) {
-                                return value.toLocaleString('pt-BR', {
-                                    style: 'currency',
-                                    currency: 'BRL'
-                                });
-                            }
+                legend: {
+                    position: 'top',
+                    labels: { boxWidth: 12 }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    ticks: {
+                        callback: function(value) {
+                            return value.toLocaleString('pt-BR', {
+                                style: 'currency',
+                                currency: 'BRL'
+                            });
                         }
                     }
                 }
             }
-        });
+        }
+    });
 
-        return {
-            update: function(monthsToShow = validMonths, filteredDepartments = validDepartments) {
-                try {
-                    if (!chart) return;
+    return {
+        update: function(monthsToShow, selectedDepartments) {
+            const filteredMonths = getMonthsToShow(monthsToShow, 'all');
+            
+            const datasets = selectedDepartments.map(dept => ({
+                label: dept,
+                data: filteredMonths.map(month => data[month]?.departments[dept]?.geral || 0),
+                borderColor: colorsByDepartment[dept] || "#ccc",
+                backgroundColor: 'transparent',
+                borderWidth: 2,
+                fill: false,
+                tension: 0.3
+            }));
 
-                    const filteredMonths = monthsToShow.filter(month => data[month]);
-                    const filteredDepts = filteredDepartments.filter(dept => 
-                        validDepartments.includes(dept));
-
-                    chart.data.labels = filteredMonths.map(formatMonthShort);
-                    chart.data.datasets = filteredDepts.map(dept => ({
-                        label: dept,
-                        data: filteredMonths.map(month => data[month]?.departments[dept]?.geral || 0),
-                        borderColor: colorsByDepartment[dept] || "#ccc",
-                        backgroundColor: 'transparent',
-                        borderWidth: 2,
-                        fill: false,
-                        tension: 0.3
-                    }));
-
-                    chart.update();
-                } catch (e) {
-                    console.error('Error updating department trends chart:', e);
-                }
-            }
-        };
-    } catch (e) {
-        console.error('Chart creation error:', e);
-        return null;
-    }
+            chart.data.labels = filteredMonths.map(formatMonthShort);
+            chart.data.datasets = datasets;
+            chart.update();
+        }
+    };
 }
 
 function createPercentageStackedChart(data, months, departments) {
@@ -1060,97 +1063,54 @@ function createTotalExpendituresChart(data, months, departments) {
     if (!canvas) return null;
     const ctx = canvas.getContext('2d');
 
-    // Use a stable copy of months for initial series building
-    const initialMonths = months.slice();
-
-    // Build department series keyed by normalized (short) name
-    const departmentData = {};
-    departments.forEach(dept => {
-        const key = normalizeDepartmentName(dept);
-        departmentData[key] = initialMonths.map(month => data[month]?.departments?.[key]?.geral || 0);
-    });
-
-    // Totals series (sum of all departments for each month)
-    const totalsSeries = initialMonths.map(month => {
-        const depts = data[month]?.departments || {};
-        return Object.values(depts).reduce((sum, d) => sum + (d?.geral || 0), 0);
-    });
-
     const chart = new Chart(ctx, {
         type: 'line',
-        data: {
-            labels: initialMonths.map(formatMonthShort),
-            datasets: [{
-                label: 'Gastos Totais',
-                data: totalsSeries,
-                borderColor: '#024B59',
-                backgroundColor: hexToRGBA('#024B59', 0.1),
-                borderWidth: 2,
-                fill: true,
-                tension: 0.4
-            }]
-        },
+        data: { labels: [], datasets: [] },
         options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-        tooltip: {
-            callbacks: {
-                label: function(context) {
-                    return `Gastos: R$ ${context.raw.toLocaleString('pt-BR', { 
-                        minimumFractionDigits: 2, 
-                        maximumFractionDigits: 2 
-                    })}`;
-                }
-            }
-        },
-        legend: { display: false } // hide legend
-    },
-    scales: {
-        y: {
-            beginAtZero: false,
-            ticks: {
-                callback: function(value) {
-                    return `R$ ${Number(value).toLocaleString('pt-BR', { 
-                        maximumFractionDigits: 0 
-                    })}`;
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `Gastos: R$ ${context.raw.toLocaleString('pt-BR', { 
+                                minimumFractionDigits: 2, 
+                                maximumFractionDigits: 2 
+                            })}`;
+                        }
+                    }
+                },
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    ticks: {
+                        callback: function(value) {
+                            return `R$ ${Number(value).toLocaleString('pt-BR', { 
+                                maximumFractionDigits: 0 
+                            })}`;
+                        }
+                    }
                 }
             }
         }
-    }
-}
     });
 
     return {
-        /**
-         * newData: the data object (same structure: newData[month].departments[dept].geral)
-         * monthsToShow: array of month keys (e.g. ['2024-01', '2024-02', ...'])
-         * selectedDepartment: either 'all' or a department string (short or long)
-         */
         update: function(newData, monthsToShow, selectedDepartment = 'all') {
-            // defensive clone (avoid mutating caller's array)
-            const monthsArr = Array.isArray(monthsToShow) ? monthsToShow.slice() : initialMonths.slice();
-
-            // Normalize selectedDepartment to the short key used in your data object
-            const selectedShort = (selectedDepartment === 'all' ? 'all' : normalizeDepartmentName(selectedDepartment));
-
-            // Ensure department series exist for the months we're about to show.
-            // Rebuild from newData if needed (handles case where department keys differ)
-            Object.keys(departmentData).forEach(short => {
-                // if lengths mismatch or months differ, rebuild
-                departmentData[short] = monthsArr.map(m => newData[m]?.departments?.[short]?.geral || 0);
-            });
-
-            chart.data.labels = monthsArr.map(formatMonthShort);
-
-            if (selectedShort === 'all') {
-                // show total series (recompute from newData to be safe)
-                const totals = monthsArr.map(month => {
+            // Filter data based on both time range and department
+            const filteredMonths = getMonthsToShow(monthsToShow, 'all'); // We already filtered by time
+            
+            let datasets = [];
+            if (selectedDepartment === 'all') {
+                // Show total for all departments in the time range
+                const totals = filteredMonths.map(month => {
                     const depts = newData[month]?.departments || {};
-                    return Object.values(depts).reduce((s, d) => s + (d?.geral || 0), 0);
+                    return Object.values(depts).reduce((sum, d) => sum + (d?.geral || 0), 0);
                 });
 
-                chart.data.datasets = [{
+                datasets.push({
                     label: 'Gastos Totais',
                     data: totals,
                     borderColor: '#024B59',
@@ -1158,34 +1118,31 @@ function createTotalExpendituresChart(data, months, departments) {
                     borderWidth: 2,
                     fill: true,
                     tension: 0.4
-                }];
+                });
             } else {
-                // show single-department series, using normalized key
-                const series = departmentData[selectedShort] ??
-                    monthsArr.map(m => newData[m]?.departments?.[selectedShort]?.geral || 0);
-
-                const color = colorsByDepartment[selectedShort] || colorsByDepartment[normalizeDepartmentName(selectedShort)] || '#cccccc';
-
-                chart.data.datasets = [{
-                    label: `Gastos - ${selectedShort}`,
-                    data: series,
+                // Show specific department in the time range
+                const deptData = filteredMonths.map(month => 
+                    newData[month]?.departments[selectedDepartment]?.geral || 0);
+                
+                const color = colorsByDepartment[selectedDepartment] || '#cccccc';
+                
+                datasets.push({
+                    label: `Gastos - ${selectedDepartment}`,
+                    data: deptData,
                     borderColor: color,
                     backgroundColor: hexToRGBA(color, 0.12),
                     borderWidth: 2,
                     fill: true,
                     tension: 0.4
-                }];
+                });
             }
 
+            chart.data.labels = filteredMonths.map(formatMonthShort);
+            chart.data.datasets = datasets;
             chart.update();
-            // ensure canvas is resized properly (helps avoid blurriness if container changed)
-            try { chart.resize(); } catch (e) { /* ignore if Chart.js version doesn't expose resize */ }
         }
     };
 }
-
-
-Chart.defaults.devicePixelRatio = window.devicePixelRatio;
 
 function initDashboard() {
     try {
@@ -1251,5 +1208,6 @@ function showError(message) {
         </div>
     `;
 }
+
 
 
