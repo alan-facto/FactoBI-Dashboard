@@ -772,6 +772,7 @@ function createEmployeesChart(data, months) {
                         }
                     }
                 }
+				legend: { display: false }
             },
             scales: {
                 y: {
@@ -831,6 +832,7 @@ function createAvgExpenditureChart(data, months) {
                             })}`;
                         }
                     }
+				legend: { display: false }
                 }
             },
             scales: {
@@ -1061,6 +1063,7 @@ function createTotalExpendituresChart(data, months, departments) {
                         }
                     }
                 },
+				legend: { display: false }
                 legend: { display: true, position: 'top' }
             },
             scales: {
@@ -1206,6 +1209,7 @@ function showError(message) {
         </div>
     `;
 }
+
 
 
 
