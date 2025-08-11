@@ -121,15 +121,15 @@ const translations = {
 };
 
 const colorsByDepartment = {
-    "Administrativo": "#024B59",  // Dark teal (primary brand color)
-    "Apoio": "#F28E2B",          // Orange (kept - good contrast)
-    "Comercial": "#E15759",      // Red (kept - important for sales)
-    "Diretoria": "#4E79A7",      // Blue (moved from Administrativo)
-    "Jurídico": "#59A14F",       // Green (kept - good for legal)
-    "Marketing": "#EDC948",      // Yellow (kept - vibrant for marketing)
-    "NEC": "#B07AA1",            // Purple (kept - distinctive)
-    "Operação": "#76B7B2",       // Teal (moved from Diretoria)
-    "RH": "#D4B483"              // New: warm sand color (better than brown)
+    "Administrativo": "#6B5B95",  // Royal purple (unique, authoritative)
+    "Apoio": "#FF6F61",          // Coral (friendly, energetic)
+    "Comercial": "#E44D42",      // Bright red (urgent, salesy)
+    "Diretoria": "#0072B5",      // Vivid blue (leadership, trust)
+    "Jurídico": "#2E8B57",       // Forest green (stable, legal)
+    "Marketing": "#FFA500",      // Orange (creative, bold - but not neon)
+    "NEC": "#9370DB",            // Medium purple (distinctive)
+    "Operação": "#00A86B",       // Jade green (fresh, operational)
+    "RH": "#FF69B4"              // Hot pink (friendly, human touch)
 };
 
 function hexToRGBA(hex, alpha = 1) {
@@ -1213,6 +1213,7 @@ function showError(message) {
         </div>
     `;
 }
+
 
 
 
