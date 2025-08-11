@@ -542,6 +542,15 @@ function setupDepartmentTrendsFilters() {
             });
         });
 
+		function tryParseJSON(jsonString) {
+    try {
+        return JSON.parse(jsonString);
+    } catch (e) {
+        console.error('Failed to parse JSON:', jsonString);
+        return [];
+    }
+}
+
         // Department filter buttons
         trendsWrapper.querySelectorAll('.filter-btn').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -549,10 +558,9 @@ function setupDepartmentTrendsFilters() {
                     trendsWrapper.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
 
-                    const raw = btn.dataset?.departments;
-                    const selectedDepartments = raw === 'all' ? 
-                        data.departments : 
-                        (raw ? JSON.parse(raw) : []);
+                    const raw = btn.dataset?.departments || 'all';
+					const selectedDepartments = raw === 'all' ? data.departments : 
+    					(typeof raw === 'string' ? tryParseJSON(raw) : []);
 
                     const activeTimeBtn = trendsWrapper.querySelector('.time-btn.active');
                     const monthsToShow = getMonthsToShow(
@@ -1187,6 +1195,7 @@ function showError(message) {
         </div>
     `;
 }
+
 
 
 
