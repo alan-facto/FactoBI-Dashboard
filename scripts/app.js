@@ -167,21 +167,36 @@ function setupViewToggle() {
     return;
   }
 
+  // Initialize view states
+  chartsView.style.display = 'block';
+  tablesView.style.display = 'none';
+
   btnGraphs.addEventListener('click', () => {
     btnGraphs.classList.add('active');
     btnTables.classList.remove('active');
-    chartsView.classList.remove('hidden');
-    tablesView.classList.add('hidden');
+    chartsView.style.display = 'block';
+    tablesView.style.display = 'none';
+    
+    // Redraw charts when switching back to graphs view
+    setTimeout(() => {
+      Object.values(charts).forEach(chart => {
+        if (chart && chart.update) chart.update();
+      });
+    }, 100);
   });
 
   btnTables.addEventListener('click', () => {
     btnGraphs.classList.remove('active');
     btnTables.classList.add('active');
-    chartsView.classList.add('hidden');
-    tablesView.classList.remove('hidden');
+    chartsView.style.display = 'none';
+    tablesView.style.display = 'block';
+    
+    // Generate default table view if needed
+    if (document.getElementById('table-summary-month').innerHTML === '') {
+      generateSummaryByMonth();
+    }
   });
 }
-
 function generateSummaryByMonth() {
   const container = document.getElementById('table-summary-month');
   container.innerHTML = '';
@@ -948,7 +963,11 @@ function initDashboard() {
   const months = data.months;
   const departments = data.departments;
 
-  // Initialize all chart instances
+  // Initialize UI interactions FIRST
+  setupViewToggle();  // Moved this up
+  setupTimeFilters();
+
+  // Then initialize chart instances
   charts = {
     totalExpenditures: createChartIfExists('total-expenditures-chart', createTotalExpendituresChart, data.data, months, departments),
     departmentBreakdown: createDepartmentBreakdownCharts(data.data, months, departments),
@@ -957,10 +976,6 @@ function initDashboard() {
     departmentTrends: createChartIfExists('department-trends-chart', createDepartmentTrendsChart, data.data, months, departments),
     percentageStacked: createChartIfExists('percentage-stacked-chart', createPercentageStackedChart, data.data, months, departments),
   };
-
-  // Initialize UI interactions
-  setupTimeFilters();
-  setupViewToggle();
 
   if (document.getElementById('btn-summary-month')) {
     setupTableToggle();
