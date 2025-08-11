@@ -648,15 +648,6 @@ function setupDepartmentTrendsFilters() {
     }
 }
 
-function tryParseJSON(jsonString) {
-    try {
-        return JSON.parse(jsonString);
-    } catch (e) {
-        console.error('Failed to parse JSON:', jsonString);
-        return [];
-    }
-}
-
 function createChartIfExists(chartId, creationFunction, data, ...args) {
     const canvas = document.getElementById(chartId);
     if (!canvas) {
@@ -1256,41 +1247,4 @@ function showError(message) {
         </div>
     `;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
