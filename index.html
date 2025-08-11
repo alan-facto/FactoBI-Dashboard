@@ -21,41 +21,32 @@
     <!-- Charts View -->
     <div id="charts-view">
       <!-- Row 1: Total Expenditures -->
-<div id="total-expenditures-wrapper" class="chart-wrapper">
-    <div class="chart-header">
-        <h2>Gastos Totais</h2>
-        <div class="chart-controls">
-            <!-- Time Filters -->
-            <div class="filter-group time-filters">
-                <span class="filter-label">Período:</span>
-                <button class="time-btn active" data-months="3">3 meses</button>
-                <button class="time-btn" data-months="6">6 meses</button>
-                <button class="time-btn" data-months="12">12 meses</button>
-                <button class="time-btn" data-months="all">Todos</button>
-            </div>
-            
-            <!-- Department Filters -->
-            <div class="filter-group department-filters">
-                <span class="filter-label">Departamento:</span>
-                <button class="filter-btn active" data-department="all">Todos</button>
-                <button class="filter-btn" data-department="Administrativo">Administrativo</button>
-                <button class="filter-btn" data-department="Apoio">Apoio</button>
-                <button class="filter-btn" data-department="Comercial">Comercial</button>
-                <button class="filter-btn" data-department="Diretoria">Diretoria</button>
-                <button class="filter-btn" data-department="Jurídico">Jurídico</button>
-                <button class="filter-btn" data-department="Marketing">Marketing</button>
-                <button class="filter-btn" data-department="NEC">NEC</button>
-                <button class="filter-btn" data-department="Operação">Operação</button>
-                <button class="filter-btn" data-department="RH">RH</button>
-            </div>
+      <div class="chart-row single" id="total-expenditures-wrapper">
+        <div class="card">
+          <img src="assets/logo.png" alt="Facto Logo" class="facto-logo">
+          <h2>Gastos Totais ao Longo do Tempo</h2>
+          <div class="time-filters">
+            <button class="filter-btn time-btn" data-months="3">3 Meses</button>
+            <button class="filter-btn time-btn" data-months="6">6 Meses</button>
+            <button class="filter-btn time-btn active" data-months="12">12 Meses</button>
+          </div>
+          <div class="filter-buttons">
+            <button class="filter-btn active" data-department="all">Todos</button>
+            <button class="filter-btn" data-department="Administrativo">Administrativo</button>
+            <button class="filter-btn" data-department="Comercial">Comercial</button>
+            <button class="filter-btn" data-department="Diretoria">Diretoria</button>
+            <button class="filter-btn" data-department="Operação">Operação</button>
+            <button class="filter-btn" data-department="RH">RH</button>
+            <button class="filter-btn" data-department="NEC">NEC</button>
+            <button class="filter-btn" data-department="Apoio">Apoio</button>
+            <button class="filter-btn" data-department="Marketing">Marketing</button>
+            <button class="filter-btn" data-department="Jurídico">Jurídico</button>
+          </div>
+          <div class="chart-container">
+            <canvas id="total-expenditures-chart"></canvas>
+          </div>
         </div>
-    </div>
-    
-    <!-- Chart Canvas -->
-    <div class="chart-container">
-        <canvas id="total-expenditures-chart"></canvas>
-    </div>
-</div>
+      </div>
 
       <!-- Row 2: Department Trends -->
       <div class="chart-row single" id="department-trends-wrapper">
@@ -135,7 +126,5 @@
   <script src="scripts/app.js"></script>
 </body>
 </html>
-
-
 
 
