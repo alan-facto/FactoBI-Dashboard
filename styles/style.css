@@ -77,8 +77,9 @@ body {
 
 .chart-row.single .chart-container {
   height: 400px;
-  display: flex;
-  margin: 0;
+  display: block;
+  margin: 0 auto;
+  max-width: 70%;
 }
 
 .chart-row.single .card {
@@ -343,6 +344,7 @@ body {
   cursor: pointer;
   font-weight: bold;
 }
+
 
 
 
