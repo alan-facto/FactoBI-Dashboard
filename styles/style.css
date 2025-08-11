@@ -82,6 +82,19 @@ body {
   max-width: 70%;
 }
 
+@media (max-width: 1200px) {
+  .chart-row.single: .chart-container {
+    max-width: 85%;
+  }
+}
+
+/* On small screens, full width for usability */
+@media (max-width: 768px) {
+  .chart-row.single: .chart-container {
+    max-width: 100%;
+  }
+}
+
 .chart-row.single .card {
   flex: 1;
   min-width: 0; /* important so flex items can shrink */
@@ -344,6 +357,7 @@ body {
   cursor: pointer;
   font-weight: bold;
 }
+
 
 
 
