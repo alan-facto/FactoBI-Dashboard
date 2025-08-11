@@ -22,37 +22,67 @@ const deptMap = {
 
 // Fetch and process live data
 fetch(apiUrl)
-  .then(response => response.json())
+  .then(response => {
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  })
   .then(fetchedRows => {
+    if (!fetchedRows || !Array.isArray(fetchedRows)) {
+      throw new Error('Invalid data format received from API');
+    }
+
     const monthsSet = new Set();
     const departmentsSet = new Set();
     const structuredData = {};
 
+    // Initialize structure for all expected months
+    const allMonths = [...new Set(fetchedRows.map(row => row["Month"]).sort())];
+    allMonths.forEach(month => {
+      structuredData[month] = {
+        departments: {},
+        total: 0,
+        totalEmployees: 0
+      };
+    });
+
     fetchedRows.forEach(row => {
-      const month = row["Month"];
-      const rawDept = row["Department"];
-      const dept = deptMap[rawDept] || rawDept;
-      const total = parseFloat(row["Total"]) || 0;
-      const bonificacao = parseFloat(row["Bonificacao 20"]) || 0;
-      const count = parseInt(row["Employee Count"]) || 0;
-      const geral = parseFloat(row["Total Geral"]) || (total + bonificacao);
+      try {
+        const month = row["Month"];
+        const rawDept = row["Department"];
+        const dept = deptMap[rawDept] || rawDept;
+        const total = parseFloat(row["Total"]) || 0;
+        const bonificacao = parseFloat(row["Bonificacao 20"]) || 0;
+        const count = parseInt(row["Employee Count"]) || 0;
+        const geral = parseFloat(row["Total Geral"]) || (total + bonificacao);
 
-      monthsSet.add(month);
+        monthsSet.add(month);
 
-      if (dept.toLowerCase() !== "total geral") {
-        departmentsSet.add(dept);
+        if (dept.toLowerCase() !== "total geral") {
+          departmentsSet.add(dept);
+          
+          // Initialize department if not exists
+          if (!structuredData[month].departments[dept]) {
+            structuredData[month].departments[dept] = {
+              total: 0,
+              bonificacao: 0,
+              count: 0,
+              geral: 0
+            };
+          }
 
-        if (!structuredData[month]) {
-          structuredData[month] = {
-            departments: {},
-            total: 0,
-            totalEmployees: 0
+          structuredData[month].departments[dept] = { 
+            total, 
+            bonificacao, 
+            count, 
+            geral 
           };
+          structuredData[month].total += geral;
+          structuredData[month].totalEmployees += count;
         }
-
-        structuredData[month].departments[dept] = { total, bonificacao, count, geral };
-        structuredData[month].total += geral;
-        structuredData[month].totalEmployees += count;
+      } catch (error) {
+        console.error('Error processing row:', row, error);
       }
     });
 
@@ -63,7 +93,22 @@ fetch(apiUrl)
     };
 
     sortedMonths = data.months.slice();
-
+    initDashboard();
+  })
+  .catch(error => {
+    console.error("Error loading data:", error);
+    // Show error message to user
+    const container = document.querySelector('.container');
+    if (container) {
+      container.innerHTML = `
+        <div class="error-message">
+          <h2>Erro ao carregar dados</h2>
+          <p>${error.message}</p>
+          <button onclick="window.location.reload()">Tentar Novamente</button>
+        </div>
+      `;
+    }
+  });
     initDashboard();
   })
   .catch(error => {
@@ -988,6 +1033,7 @@ function initDashboard() {
   document.querySelector('#total-expenditures-wrapper .time-btn.active')?.click();
   document.querySelector('#department-trends-wrapper .time-btn.active')?.click();
 }
+
 
 
 
