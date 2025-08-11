@@ -139,6 +139,15 @@ function hexToRGBA(hex, alpha = 1) {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
+function tryParseJSON(jsonString) {
+    try {
+        return JSON.parse(jsonString);
+    } catch (e) {
+        console.error('Failed to parse JSON:', jsonString);
+        return [];
+    }
+}
+
 function normalizeDepartmentName(name) {
   if (!name) return "";
   const key = name.toLowerCase().trim();
@@ -246,6 +255,7 @@ function generateSummaryByMonth() {
     section.innerHTML = `<h3>${formatMonthLabel(month)}</h3>`;
     
     const table = document.createElement('table');
+	table.className = 'summary';
     table.innerHTML = `
       <thead>
         <tr>
@@ -277,6 +287,7 @@ function generateSummaryByDepartment() {
     section.innerHTML = `<h3>${dept}</h3>`;
     
     const table = document.createElement('table');
+	table.className = 'summary';
     table.innerHTML = `
       <thead>
         <tr>
@@ -1195,6 +1206,7 @@ function showError(message) {
         </div>
     `;
 }
+
 
 
 
