@@ -1053,29 +1053,34 @@ function createTotalExpendituresChart(data, months, departments) {
             }]
         },
         options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            return `Gastos: R$ ${context.raw.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-                        }
-                    }
-                },
-				legend: { display: false }
-                },
-            scales: {
-                y: {
-                    beginAtZero: false,
-                    ticks: {
-                        callback: function(value) {
-                            return `R$ ${Number(value).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`;
-                        }
-                    }
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+        tooltip: {
+            callbacks: {
+                label: function(context) {
+                    return `Gastos: R$ ${context.raw.toLocaleString('pt-BR', { 
+                        minimumFractionDigits: 2, 
+                        maximumFractionDigits: 2 
+                    })}`;
+                }
+            }
+        },
+        legend: { display: false } // hide legend
+    },
+    scales: {
+        y: {
+            beginAtZero: false,
+            ticks: {
+                callback: function(value) {
+                    return `R$ ${Number(value).toLocaleString('pt-BR', { 
+                        maximumFractionDigits: 0 
+                    })}`;
                 }
             }
         }
+    }
+}
     });
 
     return {
@@ -1208,6 +1213,7 @@ function showError(message) {
         </div>
     `;
 }
+
 
 
 
