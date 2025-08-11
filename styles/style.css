@@ -1,12 +1,14 @@
 body {
   margin: 0;
   font-family: 'Plus Jakarta Sans', sans-serif;
-  background-color: #014344;
+  background-color: #024B59;
   color: #fff;
 }
 
 .container {
   padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 header {
@@ -29,25 +31,27 @@ header {
 
 .view-toggle button.active {
   background-color: #fff;
-  color: #014344;
+  color: #024B59;
 }
 
 /* ---------------------------
    Card "Plate" Styling
 ----------------------------*/
 .card {
-  background-color: #f7f7f7; /* light grey plate */
+  background-color: #f7f7f7;
   color: #000;
   border-radius: 10px;
   padding: 16px;
-  margin: 10px;
+  margin: 10px auto;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  max-width: 800px;
 }
 
 .card h2 {
   margin-top: 0;
   font-size: 1.2rem;
   font-weight: 600;
+  text-align: center;
 }
 
 /* Chart rows */
@@ -55,14 +59,15 @@ header {
   display: flex;
   flex-wrap: wrap;
   margin-bottom: 20px;
+  justify-content: center;
 }
 
 .chart-row.single .card {
-  flex: 1 1 100%;
+  flex: 0 1 800px;
 }
 
 .chart-row.double .card.half {
-  flex: 1 1 50%;
+  flex: 0 1 390px;
   box-sizing: border-box;
 }
 
@@ -70,6 +75,8 @@ header {
 .chart-container {
   position: relative;
   height: 300px;
+  margin: 0 auto;
+  width: 90%;
 }
 
 /* ---------------------------
@@ -77,22 +84,37 @@ header {
 ----------------------------*/
 #department-breakdown-charts {
   display: flex;
-  justify-content: flex-start;
-  flex-wrap: nowrap;
-  overflow-x: auto;
+  justify-content: center;
+  flex-wrap: wrap;
   padding-bottom: 10px;
+  gap: 20px;
 }
 
 #department-breakdown-charts canvas {
-  height: 180px !important; /* smaller pies */
+  height: 180px !important;
   width: 180px !important;
-  margin: 0 10px;
 }
 
 .department-legend {
   display: flex;
   flex-wrap: wrap;
-  margin-top: 10px;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.department-legend-item {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.department-legend-swatch {
+  display: inline-block;
+  width: 15px;
+  height: 15px;
+  margin-right: 8px;
+  border-radius: 3px;
 }
 
 /* ---------------------------
@@ -113,7 +135,7 @@ header {
 .table-buttons button.active,
 .filter-buttons button.active {
   background-color: #fff;
-  color: #014344;
+  color: #024B59;
 }
 
 /* Hide elements */
@@ -125,6 +147,6 @@ header {
    Logo adjustments
 ----------------------------*/
 header img {
-  max-height: 50px; /* constrain Facto logo */
+  max-height: 50px;
   width: auto;
 }
