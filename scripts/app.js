@@ -203,6 +203,48 @@ function generateDepartmentLegend(departments, colorMap) {
   });
 }
 
+function setupTableToggle() {
+  const buttons = {
+    'btn-summary-month': 'table-summary-month',
+    'btn-summary-department': 'table-summary-department',
+    'btn-detailed-month': 'table-detailed-month',
+    'btn-detailed-department': 'table-detailed-department'
+  };
+
+  Object.entries(buttons).forEach(([btnId, tableId]) => {
+    const button = document.getElementById(btnId);
+    if (button) {
+      button.addEventListener('click', () => {
+        // Hide all tables first
+        Object.values(buttons).forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.style.display = 'none';
+        });
+        
+        // Remove active class from all buttons
+        Object.keys(buttons).forEach(id => {
+          const btn = document.getElementById(id);
+          if (btn) btn.classList.remove('active');
+        });
+
+        // Show selected table and activate button
+        const tableEl = document.getElementById(tableId);
+        if (tableEl) {
+          tableEl.style.display = 'block';
+          button.classList.add('active');
+          
+          // Generate content only if empty
+          if (tableEl.innerHTML === '') {
+            if (btnId === 'btn-summary-month') generateSummaryByMonth();
+            if (btnId === 'btn-summary-department') generateSummaryByDepartment();
+            if (btnId === 'btn-detailed-month') generateDetailedByMonth();
+            if (btnId === 'btn-detailed-department') generateDetailedByDepartment();
+          }
+        }
+      });
+    }
+  });
+}
 
 function setupViewToggle() {
   const btnGraphs = document.getElementById('btn-graphs');
@@ -1213,6 +1255,7 @@ function showError(message) {
         </div>
     `;
 }
+
 
 
 
