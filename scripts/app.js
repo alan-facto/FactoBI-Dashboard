@@ -504,88 +504,92 @@ function translateTooltip(context) {
 }
 
 function setupTimeFilters() {
-    // Store the current filter states
-    const filterStates = {
+    // Track active filters for each chart
+    const activeFilters = {
         totalExpenditures: {
-            months: '3', // default to 3 months
+            months: '3',
             department: 'all'
         },
         departmentTrends: {
             months: '3',
-            departments: 'all'
+            departments: data.departments // Start with all departments
         }
     };
 
-    // Helper function to update the total expenditures chart
-    const updateTotalExpendituresChart = () => {
-        const state = filterStates.totalExpenditures;
-        const monthsToShow = getMonthsToShow(data.months, state.months);
-        charts.totalExpenditures?.update(data.data, monthsToShow, state.department);
+    // Update Total Expenditures Chart
+    const updateTotalExpenditures = () => {
+        const { months, department } = activeFilters.totalExpenditures;
+        const monthsToShow = getMonthsToShow(data.months, months);
+        charts.totalExpenditures?.update(data.data, monthsToShow, department);
     };
 
-    // Helper function to update the department trends chart
-    const updateDepartmentTrendsChart = () => {
-        const state = filterStates.departmentTrends;
-        const monthsToShow = getMonthsToShow(data.months, state.months);
-        const departmentsToShow = state.departments === 'all' 
-            ? data.departments 
-            : tryParseJSON(state.departments) || data.departments;
-        charts.departmentTrends?.update(monthsToShow, departmentsToShow);
+    // Update Department Trends Chart
+    const updateDepartmentTrends = () => {
+        const { months, departments } = activeFilters.departmentTrends;
+        const monthsToShow = getMonthsToShow(data.months, months);
+        charts.departmentTrends?.update(monthsToShow, departments);
     };
 
-    // Total Expenditures filters
-    document.querySelectorAll('#total-expenditures-wrapper .time-btn').forEach(button => {
-        button.addEventListener('click', () => {
-            document.querySelectorAll('#total-expenditures-wrapper .time-btn').forEach(btn => 
-                btn.classList.remove('active'));
-            button.classList.add('active');
-            
-            filterStates.totalExpenditures.months = button.dataset.months;
-            updateTotalExpendituresChart();
+    // Total Expenditures Time Buttons
+    document.querySelectorAll('#total-expenditures-wrapper .time-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('#total-expenditures-wrapper .time-btn').forEach(b => 
+                b.classList.remove('active'));
+            btn.classList.add('active');
+            activeFilters.totalExpenditures.months = btn.dataset.months;
+            updateTotalExpenditures();
         });
     });
 
-    document.querySelectorAll('#total-expenditures-wrapper .filter-btn').forEach(button => {
-        button.addEventListener('click', () => {
-            document.querySelectorAll('#total-expenditures-wrapper .filter-btn').forEach(btn => 
-                btn.classList.remove('active'));
-            button.classList.add('active');
-            
-            filterStates.totalExpenditures.department = button.dataset.department;
-            updateTotalExpendituresChart();
+    // Total Expenditures Department Buttons
+    document.querySelectorAll('#total-expenditures-wrapper .filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('#total-expenditures-wrapper .filter-btn').forEach(b => 
+                b.classList.remove('active'));
+            btn.classList.add('active');
+            activeFilters.totalExpenditures.department = btn.dataset.department;
+            updateTotalExpenditures();
         });
     });
 
-    // Department Trends filters
-    document.querySelectorAll('#department-trends-wrapper .time-btn').forEach(button => {
-        button.addEventListener('click', () => {
-            document.querySelectorAll('#department-trends-wrapper .time-btn').forEach(btn => 
-                btn.classList.remove('active'));
-            button.classList.add('active');
-            
-            filterStates.departmentTrends.months = button.dataset.months;
-            updateDepartmentTrendsChart();
+    // Department Trends Time Buttons
+    document.querySelectorAll('#department-trends-wrapper .time-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('#department-trends-wrapper .time-btn').forEach(b => 
+                b.classList.remove('active'));
+            btn.classList.add('active');
+            activeFilters.departmentTrends.months = btn.dataset.months;
+            updateDepartmentTrends();
         });
     });
 
-    document.querySelectorAll('#department-trends-wrapper .filter-btn').forEach(button => {
-        button.addEventListener('click', () => {
-            document.querySelectorAll('#department-trends-wrapper .filter-btn').forEach(btn => 
-                btn.classList.remove('active'));
-            button.classList.add('active');
+    // Department Trends Filter Buttons
+    document.querySelectorAll('#department-trends-wrapper .filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('#department-trends-wrapper .filter-btn').forEach(b => 
+                b.classList.remove('active'));
+            btn.classList.add('active');
             
-            filterStates.departmentTrends.departments = button.dataset.departments;
-            updateDepartmentTrendsChart();
+            if (btn.dataset.departments === 'all') {
+                activeFilters.departmentTrends.departments = data.departments;
+            } else {
+                try {
+                    activeFilters.departmentTrends.departments = JSON.parse(btn.dataset.departments);
+                } catch (e) {
+                    console.error('Error parsing departments:', e);
+                    activeFilters.departmentTrends.departments = data.departments;
+                }
+            }
+            updateDepartmentTrends();
         });
     });
 
     // Initialize default states
-    document.querySelector('#total-expenditures-wrapper .time-btn[data-months="3"]')?.classList.add('active');
-    document.querySelector('#total-expenditures-wrapper .filter-btn[data-department="all"]')?.classList.add('active');
-    document.querySelector('#department-trends-wrapper .time-btn[data-months="3"]')?.classList.add('active');
-    document.querySelector('#department-trends-wrapper .filter-btn[data-departments="all"]')?.classList.add('active');
+    document.querySelector('#total-expenditures-wrapper .time-btn[data-months="3"]')?.click();
+    document.querySelector('#total-expenditures-wrapper .filter-btn[data-department="all"]')?.click();
+    document.querySelector('#department-trends-wrapper .time-btn[data-months="3"]')?.click();
+    document.querySelector('#department-trends-wrapper .filter-btn[data-departments="all"]')?.click();
 }
-
 	
 function setupTableToggle() {
   const buttons = {
@@ -976,11 +980,8 @@ function createDepartmentTrendsChart(data, months, departments) {
                 y: {
                     beginAtZero: false,
                     ticks: {
-                        callback: function(value) {
-                            return value.toLocaleString('pt-BR', {
-                                style: 'currency',
-                                currency: 'BRL'
-                            });
+                        callback: (value) => {
+                            return `R$ ${value.toLocaleString('pt-BR')}`;
                         }
                     }
                 }
@@ -1072,11 +1073,8 @@ function createTotalExpendituresChart(data, months, departments) {
             plugins: {
                 tooltip: {
                     callbacks: {
-                        label: function(context) {
-                            return `Gastos: R$ ${context.raw.toLocaleString('pt-BR', { 
-                                minimumFractionDigits: 2, 
-                                maximumFractionDigits: 2 
-                            })}`;
+                        label: (context) => {
+                            return `${context.dataset.label}: R$ ${context.raw.toLocaleString('pt-BR')}`;
                         }
                     }
                 },
@@ -1086,10 +1084,8 @@ function createTotalExpendituresChart(data, months, departments) {
                 y: {
                     beginAtZero: false,
                     ticks: {
-                        callback: function(value) {
-                            return `R$ ${Number(value).toLocaleString('pt-BR', { 
-                                maximumFractionDigits: 0 
-                            })}`;
+                        callback: (value) => {
+                            return `R$ ${value.toLocaleString('pt-BR')}`;
                         }
                     }
                 }
@@ -1099,18 +1095,16 @@ function createTotalExpendituresChart(data, months, departments) {
 
     return {
         update: function(newData, monthsToShow, selectedDepartment = 'all') {
-            // Filter data based on both time range and department
-            const filteredMonths = getMonthsToShow(monthsToShow, 'all'); // We already filtered by time
+            const filteredMonths = getMonthsToShow(monthsToShow, 'all');
             
-            let datasets = [];
+            let dataset;
             if (selectedDepartment === 'all') {
-                // Show total for all departments in the time range
                 const totals = filteredMonths.map(month => {
                     const depts = newData[month]?.departments || {};
                     return Object.values(depts).reduce((sum, d) => sum + (d?.geral || 0), 0);
                 });
-
-                datasets.push({
+                
+                dataset = {
                     label: 'Gastos Totais',
                     data: totals,
                     borderColor: '#024B59',
@@ -1118,15 +1112,14 @@ function createTotalExpendituresChart(data, months, departments) {
                     borderWidth: 2,
                     fill: true,
                     tension: 0.4
-                });
+                };
             } else {
-                // Show specific department in the time range
                 const deptData = filteredMonths.map(month => 
                     newData[month]?.departments[selectedDepartment]?.geral || 0);
                 
                 const color = colorsByDepartment[selectedDepartment] || '#cccccc';
                 
-                datasets.push({
+                dataset = {
                     label: `Gastos - ${selectedDepartment}`,
                     data: deptData,
                     borderColor: color,
@@ -1134,11 +1127,11 @@ function createTotalExpendituresChart(data, months, departments) {
                     borderWidth: 2,
                     fill: true,
                     tension: 0.4
-                });
+                };
             }
 
             chart.data.labels = filteredMonths.map(formatMonthShort);
-            chart.data.datasets = datasets;
+            chart.data.datasets = [dataset];
             chart.update();
         }
     };
@@ -1208,6 +1201,7 @@ function showError(message) {
         </div>
     `;
 }
+
 
 
 
