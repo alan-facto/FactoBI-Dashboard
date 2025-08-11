@@ -563,38 +563,62 @@ function setupTableToggle() {
 }
 
 function setupDepartmentTrendsFilters() {
-    try {
-        // Department Trends Filters
-        const trendsWrapper = document.getElementById('department-trends-wrapper');
-        if (!trendsWrapper) {
-            console.warn('Department trends wrapper not found');
-            return;
+    const trendsWrapper = document.getElementById('department-trends-wrapper');
+    if (!trendsWrapper) {
+        console.warn('Department trends wrapper not found');
+        return;
+    }
+
+    // Helper function to update the chart
+    const updateChart = () => {
+        try {
+            const activeTimeBtn = trendsWrapper.querySelector('.time-btn.active');
+            const activeFilterBtn = trendsWrapper.querySelector('.filter-btn.active');
+            
+            if (!activeTimeBtn || !activeFilterBtn || !charts.departmentTrends?.update) return;
+
+            const monthsToShow = getMonthsToShow(
+                data.months,
+                activeTimeBtn.dataset?.months || 'all'
+            );
+
+            const selectedDepartments = activeFilterBtn.dataset.departments === 'all' 
+                ? data.departments 
+                : tryParseJSON(activeFilterBtn.dataset.departments);
+
+            charts.departmentTrends.update(monthsToShow, selectedDepartments);
+        } catch (e) {
+            console.error('Error updating department trends chart:', e);
         }
+    };
 
-        // Time filter buttons
-        trendsWrapper.querySelectorAll('.time-btn').forEach(button => {
-            button.addEventListener('click', () => {
-                try {
-                    trendsWrapper.querySelectorAll('.time-btn').forEach(btn => btn.classList.remove('active'));
-                    button.classList.add('active');
-
-                    const rawDepartments = trendsWrapper.querySelector('.filter-btn.active')?.dataset?.departments;
-                    const selectedDepartments = raw === 'all' ? data.departments : tryParseJSON(raw);
-
-                    const monthsToShow = getMonthsToShow(
-                        data.months, 
-                        button.dataset?.months || 'all'
-                    );
-
-                    if (charts.departmentTrends?.update) {
-                        charts.departmentTrends.update(monthsToShow, selectedDepartments);
-                    }
-                } catch (e) {
-                    console.error('Error handling time filter click:', e);
-                }
-            });
+    // Setup time filter buttons
+    trendsWrapper.querySelectorAll('.time-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            trendsWrapper.querySelectorAll('.time-btn').forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            updateChart();
         });
+    });
 
+    // Setup department filter buttons
+    trendsWrapper.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            trendsWrapper.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            updateChart();
+        });
+    });
+
+    // Initialize with default active buttons
+    const defaultTimeBtn = trendsWrapper.querySelector('.time-btn[data-months="all"]');
+    const defaultFilterBtn = trendsWrapper.querySelector('.filter-btn[data-departments="all"]');
+    if (defaultTimeBtn && defaultFilterBtn) {
+        defaultTimeBtn.classList.add('active');
+        defaultFilterBtn.classList.add('active');
+        updateChart();
+    }
+}
 		function tryParseJSON(jsonString) {
     try {
         return JSON.parse(jsonString);
@@ -1257,6 +1281,7 @@ function showError(message) {
         </div>
     `;
 }
+
 
 
 
