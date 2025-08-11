@@ -1,8 +1,8 @@
 body {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  background: #004d4d;
   margin: 0;
-  padding: 0;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background-color: #013220;
+  color: #fff;
 }
 
 .container {
@@ -14,80 +14,92 @@ header {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
-  color: white;
 }
 
 .view-toggle button {
-  background: #006666;
-  color: white;
-  border: none;
-  padding: 8px 14px;
+  background-color: transparent;
+  color: #fff;
+  border: 2px solid #fff;
+  padding: 8px 16px;
   margin-left: 5px;
-  border-radius: 6px;
   cursor: pointer;
+  border-radius: 6px;
 }
 
 .view-toggle button.active {
-  background: white;
-  color: #006666;
+  background-color: #fff;
+  color: #013220;
 }
 
-/* ===== Charts Layout ===== */
-#charts-view .chart-row {
+.chart-row {
   display: flex;
-  gap: 20px;
+  flex-wrap: wrap;
   margin-bottom: 20px;
 }
 
-#charts-view .chart-row.single .chart-card {
-  flex: 1;
+.chart-row.single .card {
+  flex: 1 1 100%;
 }
 
-#charts-view .chart-row.double .chart-card {
-  flex: 1;
+.chart-row.double .card.half {
+  flex: 1 1 50%;
+  box-sizing: border-box;
 }
 
-.chart-card {
-  background: white;
+.card {
+  background-color: #fff;
+  color: #000;
   border-radius: 10px;
-  padding: 15px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  padding: 16px;
+  margin: 10px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
 }
 
-.chart-card h2 {
-  font-size: 18px;
-  margin-bottom: 10px;
+.card h2 {
+  margin-top: 0;
+  font-size: 1.2rem;
 }
 
-/* ===== Pie charts scroll ===== */
-.pie-scroll {
+.chart-container {
+  position: relative;
+  height: 300px;
+}
+
+#department-breakdown-charts {
   display: flex;
-  gap: 20px;
+  justify-content: space-between;
+  flex-wrap: nowrap;
   overflow-x: auto;
-  padding-bottom: 10px;
 }
 
-.pie-scroll canvas {
-  width: 200px !important;
-  height: 200px !important;
+#department-breakdown-charts canvas {
+  height: 250px !important;
+  width: 250px !important;
 }
 
-/* ===== Tables Layout ===== */
-#tables-view .table-buttons {
+.department-legend {
   display: flex;
-  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 15px;
+}
+
+.table-buttons {
   margin-bottom: 20px;
 }
 
-#tables-view table {
-  width: 100%;
-  border-collapse: collapse;
-  background: white;
+.table-buttons button {
+  background-color: transparent;
+  color: #fff;
+  border: 2px solid #fff;
+  padding: 8px 16px;
+  margin-right: 5px;
+  cursor: pointer;
+  border-radius: 6px;
 }
 
-#tables-view th, #tables-view td {
-  padding: 10px;
-  border: 1px solid #ddd;
+.table-buttons button.active {
+  background-color: #fff;
+  color: #013220;
 }
 
 .hidden {
