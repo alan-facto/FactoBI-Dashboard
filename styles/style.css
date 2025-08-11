@@ -405,6 +405,40 @@ body {
   animation: fadeIn 0.3s ease-out;
 }
 
+/* Table view toggle buttons container */
+.table-toggle-container {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding: 10px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+}
+
+/* Table view toggle buttons */
+.table-toggle-btn {
+  background-color: #024B59;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.table-toggle-btn:hover {
+  background-color: #036881;
+  transform: translateY(-1px);
+}
+
+.table-toggle-btn.active {
+  background-color: #F28E2B;
+  font-weight: bold;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
 #tables-view > div.active-table {
   display: block;
 }
@@ -413,6 +447,7 @@ body {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
 
 
 
