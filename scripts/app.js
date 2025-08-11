@@ -109,11 +109,6 @@ fetch(apiUrl)
       `;
     }
   });
-    initDashboard();
-  .catch(error => {
-    console.error("Error loading data:", error);
-  });
-
 
 const translations = {
   "Total Expenditures": "Gastos Totais",
@@ -1192,6 +1187,7 @@ function showError(message) {
         </div>
     `;
 }
+
 
 
 
