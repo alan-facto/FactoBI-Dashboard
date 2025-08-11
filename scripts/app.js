@@ -204,6 +204,7 @@ function generateDepartmentLegend(departments, colorMap) {
   });
 }
 
+// Replace the current setupTableToggle() with this:
 function setupTableToggle() {
   const buttons = {
     'btn-summary-month': 'table-summary-month',
@@ -234,7 +235,7 @@ function setupTableToggle() {
           tableEl.style.display = 'block';
           button.classList.add('active');
           
-          // Clear and regenerate content every time to ensure freshness
+          // Clear and regenerate content every time
           tableEl.innerHTML = '';
           
           if (btnId === 'btn-summary-month') generateSummaryByMonth();
@@ -578,9 +579,7 @@ function setupDepartmentTrendsFilters() {
                     button.classList.add('active');
 
                     const rawDepartments = trendsWrapper.querySelector('.filter-btn.active')?.dataset?.departments;
-                    const selectedDepartments = rawDepartments === 'all' ? 
-                        data.departments : 
-                        (rawDepartments ? JSON.parse(rawDepartments) : []);
+                    const selectedDepartments = raw === 'all' ? data.departments : tryParseJSON(raw);
 
                     const monthsToShow = getMonthsToShow(
                         data.months, 
@@ -1258,6 +1257,7 @@ function showError(message) {
         </div>
     `;
 }
+
 
 
 
