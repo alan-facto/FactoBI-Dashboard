@@ -201,6 +201,8 @@ function formatCurrencyBRL(value) {
 
 function generateDepartmentLegend(departments, colorMap) {
   const legendContainer = document.getElementById("department-legend");
+  if (!legendContainer) return;
+  
   legendContainer.innerHTML = "";
 
   departments.forEach(dept => {
@@ -461,6 +463,8 @@ function generateDetailedByDepartment() {
 
 function generateDepartmentTable() {
   const container = document.getElementById('table-by-department');
+  if (!container) return;
+  
   container.innerHTML = '';
 
   const table = document.createElement('table');
@@ -613,7 +617,7 @@ function setupDepartmentFilters() {
     // Keeping it for compatibility but it's no longer needed
 }
 
-// Chart creation classes
+// Chart creation classes - FROM NEW FILES
 class TotalExpendituresChart {
     constructor(canvasId) {
         this.canvas = document.getElementById(canvasId);
@@ -755,6 +759,75 @@ class DepartmentTrendsChart {
     }
 }
 
+class PercentageStackedChart {
+    constructor(canvasId) {
+        this.canvas = document.getElementById(canvasId);
+        this.ctx = this.canvas.getContext('2d');
+        this.chart = null;
+    }
+
+    update(dataObj, monthsToShow) {
+        const labels = monthsToShow.map(formatMonthShort);
+        
+        const datasets = data.departments.map(dept => ({
+            label: dept,
+            data: monthsToShow.map(month => {
+                const monthData = dataObj[month];
+                if (!monthData || monthData.total === 0) return 0;
+                const deptValue = monthData.departments[dept]?.geral || 0;
+                return (deptValue / monthData.total) * 100;
+            }),
+            backgroundColor: colorsByDepartment[dept] || '#ccc'
+        }));
+
+        const config = {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'bottom'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.dataset.label}: ${context.raw.toFixed(1)}%`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        stacked: true
+                    },
+                    y: {
+                        stacked: true,
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        if (this.chart) {
+            this.chart.destroy();
+        }
+        this.chart = new Chart(this.ctx, config);
+    }
+}
+
+// Chart creation classes - FROM OLD FILES
 class AvgExpenditureChart {
     constructor(canvasId) {
         this.canvas = document.getElementById(canvasId);
@@ -879,76 +952,10 @@ class EmployeesChart {
     }
 }
 
-class PercentageStackedChart {
-    constructor(canvasId) {
-        this.canvas = document.getElementById(canvasId);
-        this.ctx = this.canvas.getContext('2d');
-        this.chart = null;
-    }
-
-    update(dataObj, monthsToShow) {
-        const labels = monthsToShow.map(formatMonthShort);
-        
-        const datasets = data.departments.map(dept => ({
-            label: dept,
-            data: monthsToShow.map(month => {
-                const monthData = dataObj[month];
-                if (!monthData || monthData.total === 0) return 0;
-                const deptValue = monthData.departments[dept]?.geral || 0;
-                return (deptValue / monthData.total) * 100;
-            }),
-            backgroundColor: colorsByDepartment[dept] || '#ccc'
-        }));
-
-        const config = {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: datasets
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'bottom'
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return `${context.dataset.label}: ${context.raw.toFixed(1)}%`;
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-                        stacked: true
-                    },
-                    y: {
-                        stacked: true,
-                        beginAtZero: true,
-                        max: 100,
-                        ticks: {
-                            callback: function(value) {
-                                return value + '%';
-                            }
-                        }
-                    }
-                }
-            }
-        };
-
-        if (this.chart) {
-            this.chart.destroy();
-        }
-        this.chart = new Chart(this.ctx, config);
-    }
-}
-
 function createDepartmentBreakdownCharts(dataObj, monthsToShow) {
     const container = document.getElementById('department-breakdown-charts');
+    if (!container) return;
+    
     container.innerHTML = '';
 
     // Use last 6 months for breakdown
@@ -1018,12 +1025,12 @@ function createDepartmentBreakdownCharts(dataObj, monthsToShow) {
 function initDashboard() {
     console.log('Initializing dashboard with data:', data);
     
-    // Create chart instances
+    // Create chart instances - combining from both files
     charts["total-expenditures-chart"] = new TotalExpendituresChart("total-expenditures-chart");
     charts["department-trends-chart"] = new DepartmentTrendsChart("department-trends-chart");
+    charts["percentage-stacked-chart"] = new PercentageStackedChart("percentage-stacked-chart");
     charts["avg-expenditure-chart"] = new AvgExpenditureChart("avg-expenditure-chart");
     charts["employees-chart"] = new EmployeesChart("employees-chart");
-    charts["percentage-stacked-chart"] = new PercentageStackedChart("percentage-stacked-chart");
 
     // FIXED: Set correct default values and update charts
     const defaultMonths = data.months.slice(-12); // Last 12 months
@@ -1031,9 +1038,9 @@ function initDashboard() {
     // Update all charts with default values
     charts["total-expenditures-chart"].update(data.data, defaultMonths, 'all');
     charts["department-trends-chart"].update(data.data, defaultMonths, data.departments); // Show all departments
+    charts["percentage-stacked-chart"].update(data.data, defaultMonths);
     charts["avg-expenditure-chart"].update(data.data, defaultMonths);
     charts["employees-chart"].update(data.data, defaultMonths);
-    charts["percentage-stacked-chart"].update(data.data, defaultMonths);
     
     // Create department breakdown charts
     createDepartmentBreakdownCharts(data.data, defaultMonths);
