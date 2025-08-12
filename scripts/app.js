@@ -1294,7 +1294,7 @@ function initDashboard() {
         console.error('Dashboard initialization failed:', error);
         showError('Falha ao carregar o dashboard. Por favor, recarregue a página.');
     }
-
+});
 
 function showError(message) {
     const container = document.querySelector('.container') || document.body;
@@ -1324,3 +1324,4 @@ function showError(message) {
         </div>
     `;
 }
+
