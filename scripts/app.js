@@ -1246,14 +1246,14 @@ function initDashboard() {
         };
 
         Object.entries(chartElements).forEach(([id, creator]) => {
-		    try {
-		        if (document.getElementById(id)) {
-		            charts[id] = creator();
-		        }
-		    } catch (chartError) {
-		        console.error(`Failed to create chart ${id}:`, chartError);
-		    }
-		});
+    try {
+        if (document.getElementById(id)) {
+            charts[id] = creator();
+        }
+    } catch (chartError) {
+        console.error(`Failed to create chart ${id}:`, chartError);
+    }
+});
 		
 		// Now that charts exist, bind filters
 		setupTimeFilters();
@@ -1324,6 +1324,7 @@ function showError(message) {
         </div>
     `;
 }
+
 
 
 
