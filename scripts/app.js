@@ -557,11 +557,15 @@ document.querySelectorAll('#department-trends-wrapper .time-btn').forEach(button
         document.querySelectorAll('#department-trends-wrapper .time-btn').forEach(btn => btn.classList.remove('active'));
         button.classList.add('active');
 
-        const raw = document.querySelector('#department-trends-wrapper .filter-buttons .filter-btn.active').dataset.departments;
+        const raw = document.querySelector('#department-trends-wrapper .filter-buttons .filter-btn.active')?.dataset?.departments || 'all';
         const selectedDepartments = tryParseJSON(raw);
         const monthsToShow = getMonthsToShow(data.months, button.dataset.months);
 
-        charts.departmentTrends.update(monthsToShow, selectedDepartments);
+        if (charts.departmentTrends?.update) {
+            charts.departmentTrends.update(monthsToShow, selectedDepartments);
+        } else {
+            console.warn('Department trends chart not ready yet');
+        }
     });
 });
 
@@ -571,11 +575,15 @@ document.querySelectorAll('#department-trends-wrapper .filter-buttons .filter-bt
         document.querySelectorAll('#department-trends-wrapper .filter-buttons .filter-btn').forEach(btn => btn.classList.remove('active'));
         button.classList.add('active');
 
-        const selectedDepartments = tryParseJSON(button.dataset.departments);
-        const activeMonths = document.querySelector('#department-trends-wrapper .time-btn.active').dataset.months;
+        const selectedDepartments = tryParseJSON(button.dataset.departments || 'all');
+        const activeMonths = document.querySelector('#department-trends-wrapper .time-btn.active')?.dataset?.months || 'all';
         const monthsToShow = getMonthsToShow(data.months, activeMonths);
 
-        charts.departmentTrends.update(monthsToShow, selectedDepartments);
+        if (charts.departmentTrends?.update) {
+            charts.departmentTrends.update(monthsToShow, selectedDepartments);
+        } else {
+            console.warn('Department trends chart not ready yet');
+        }
     });
 });
 
@@ -1224,16 +1232,10 @@ function initDashboard() {
         // Initialize UI components
         try {
             setupViewToggle();
-            setupTableToggle();
-            setupTimeFilters();
-            setupDepartmentTrendsFilters();
-        } catch (uiError) {
-            console.error('UI initialization failed:', uiError);
-            throw new Error('Failed to initialize dashboard controls');
-        }
+			setupTableToggle();
 
-        // Initialize charts with additional checks
-        charts = {};
+		// Initialize charts with additional checks
+		charts = {};
         const chartElements = {
             'total-expenditures-chart': () => createTotalExpendituresChart(data.data, data.months, data.departments),
             'department-breakdown-charts': () => createDepartmentBreakdownCharts(data.data, data.months, data.departments),
@@ -1244,14 +1246,18 @@ function initDashboard() {
         };
 
         Object.entries(chartElements).forEach(([id, creator]) => {
-            try {
-                if (document.getElementById(id)) {
-                    charts[id] = creator();
-                }
-            } catch (chartError) {
-                console.error(`Failed to create chart ${id}:`, chartError);
-            }
-        });
+		    try {
+		        if (document.getElementById(id)) {
+		            charts[id] = creator();
+		        }
+		    } catch (chartError) {
+		        console.error(`Failed to create chart ${id}:`, chartError);
+		    }
+		});
+		
+		// Now that charts exist, bind filters
+		setupTimeFilters();
+		setupDepartmentTrendsFilters();
 
         // Generate initial table view
         if (document.getElementById('table-summary-month')) {
@@ -1318,6 +1324,7 @@ function showError(message) {
         </div>
     `;
 }
+
 
 
 
