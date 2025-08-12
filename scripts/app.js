@@ -1129,7 +1129,7 @@ function createTotalExpendituresChart(data, months, departments) {
             // Rebuild from newData if needed (handles case where department keys differ)
             Object.keys(departmentData).forEach(short => {
                 // if lengths mismatch or months differ, rebuild
-                departmentData[short] = monthsArr.map(m => newData[m]?.departments?.[short]?.geral || 0);
+                departmentData[short] = monthsArr.map(m => (newData?.[m]?.departments?.[short]?.geral) || 0);
             });
 
             chart.data.labels = monthsArr.map(formatMonthShort);
@@ -1278,6 +1278,7 @@ function showError(message) {
         </div>
     `;
 }
+
 
 
 
