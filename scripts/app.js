@@ -844,38 +844,44 @@ class AvgExpenditureChart {
         });
 
         const config = {
-            type: 'bar',
+            type: 'line',
             data: {
                 labels: labels,
                 datasets: [{
-                    label: 'Média por Funcionário',
+                    label: 'Média de Gastos por Funcionário',
                     data: avgData,
-                    backgroundColor: 'rgba(0, 114, 181, 0.8)',
-                    borderColor: '#0072B5',
-                    borderWidth: 1
+                    borderColor: '#024B59',
+                    backgroundColor: hexToRGBA('#024B59', 0.1),
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: {
-                        display: false
-                    },
                     tooltip: {
                         callbacks: {
                             label: function(context) {
-                                return `Média: ${formatCurrencyBRL(context.raw)}`;
+                                const value = context.raw;
+                                return `Média: R$ ${value.toLocaleString('pt-BR', {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2
+                                })}`;
                             }
                         }
-                    }
+                    },
+                    legend: { display: false }
                 },
                 scales: {
                     y: {
-                        beginAtZero: true,
+                        beginAtZero: false,
                         ticks: {
                             callback: function(value) {
-                                return formatCurrencyBRL(value);
+                                return `R$ ${value.toLocaleString('pt-BR', {
+                                    maximumFractionDigits: 0
+                                })}`;
                             }
                         }
                     }
@@ -953,9 +959,10 @@ class EmployeesChart {
 }
 
 function createDepartmentBreakdownCharts(dataObj, monthsToShow) {
-    const container = document.getElementById('department-breakdown-charts');
+    const container = document.getElementById("department-breakdown-charts");
     if (!container) return;
     
+    // Clear previous charts and canvases to prevent memory leaks and recursion
     container.innerHTML = '';
 
     // Use last 6 months for breakdown
@@ -965,21 +972,21 @@ function createDepartmentBreakdownCharts(dataObj, monthsToShow) {
         const monthData = dataObj[month];
         if (!monthData) return;
 
-        const chartDiv = document.createElement('div');
-        chartDiv.className = 'breakdown-chart';
+        const chartDiv = document.createElement("div");
+        chartDiv.className = "breakdown-chart";
         
-        const title = document.createElement('h4');
+        const title = document.createElement("h4");
         title.textContent = formatMonthLabel(month);
         chartDiv.appendChild(title);
 
-        const canvas = document.createElement('canvas');
+        const canvas = document.createElement("canvas");
         canvas.id = `breakdown-${month}`;
         chartDiv.appendChild(canvas);
         
         container.appendChild(chartDiv);
 
         // Create pie chart for this month
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext("2d");
         const deptData = Object.entries(monthData.departments).map(([dept, data]) => ({
             label: dept,
             value: data.geral,
