@@ -1324,11 +1324,3 @@ function showError(message) {
         </div>
     `;
 }
-
-
-
-
-
-
-
-
