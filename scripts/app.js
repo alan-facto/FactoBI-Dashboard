@@ -529,7 +529,7 @@ function setupTimeFilters() {
             button.classList.add('active');
 
             const activeDepartment = document.querySelector('#total-expenditures-wrapper .filter-btn.active').dataset.department;
-            charts.totalExpenditures.update(data.data, monthsToShow, activeDepartment);
+            charts["total-expenditures-chart"].update(data.data, monthsToShow, activeDepartment);
         });
     });
 
@@ -541,8 +541,8 @@ function setupTimeFilters() {
             button.classList.add('active');
 
             const raw = document.querySelector('#department-trends-wrapper .filter-btn.active').dataset.departments;
-            const selectedDepartments = raw === 'all' ? data.departments : JSON.parse(raw);
-            charts.departmentTrends.update(monthsToShow, selectedDepartments);
+            const selectedDepartments = tryParseJSON(raw);
+            charts["department-trends-chart"].update(monthsToShow, selectedDepartments);
         });
     });
 }
@@ -597,10 +597,10 @@ function setupDepartmentTrendsFilters() {
 
     // Safely update the chart
     const updateChart = () => {
-        if (!charts.departmentTrends?.update) {
-            console.warn('Department trends chart not available for update');
-            return;
-        }
+        if (!charts["department-trends-chart"]?.update) {
+    console.warn('Department trends chart not available for update');
+    return;
+}
 
         try {
             const activeTimeBtn = trendsWrapper.querySelector('.time-btn.active');
@@ -608,7 +608,7 @@ function setupDepartmentTrendsFilters() {
             const monthsToShow = getMonthsToShow(data.months, monthsRange);
             const departmentsToShow = getActiveDepartments();
             
-            charts.departmentTrends.update(monthsToShow, departmentsToShow);
+            charts["department-trends-chart"].update(monthsToShow, departmentsToShow);
         } catch (e) {
             console.error('Chart update failed:', e);
         }
@@ -1278,6 +1278,7 @@ function showError(message) {
         </div>
     `;
 }
+
 
 
 
