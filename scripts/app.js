@@ -522,31 +522,62 @@ function translateTooltip(context) {
 
 function setupTimeFilters() {
     // Total Expenditures
-    document.querySelectorAll('#total-expenditures-wrapper .time-btn').forEach(button => {
-        button.addEventListener('click', () => {
-            const monthsToShow = getMonthsToShow(data.months, button.dataset.months);
-            document.querySelectorAll('#total-expenditures-wrapper .time-btn').forEach(btn => btn.classList.remove('active'));
-            button.classList.add('active');
+document.querySelectorAll('#total-expenditures-wrapper .time-btn').forEach(button => {
+    button.addEventListener('click', () => {
+        // Toggle active state
+        document.querySelectorAll('#total-expenditures-wrapper .time-btn').forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
 
-            const activeDepartment = document.querySelector('#total-expenditures-wrapper .filter-btn.active').dataset.department;
-            charts.totalExpenditures.update(data.data, monthsToShow, activeDepartment);
-        });
+        // Get currently selected department filter
+        const activeDepartment = document.querySelector('#total-expenditures-wrapper .filter-btn.active').dataset.department;
+        // Get months based on clicked button
+        const monthsToShow = getMonthsToShow(data.months, button.dataset.months);
+
+        charts.totalExpenditures.update(data.data, monthsToShow, activeDepartment);
     });
+});
 
-    // Department Trends
-    document.querySelectorAll('#department-trends-wrapper .time-btn').forEach(button => {
-        button.addEventListener('click', () => {
-            const monthsToShow = getMonthsToShow(data.months, button.dataset.months);
-            document.querySelectorAll('#department-trends-wrapper .time-btn').forEach(btn => btn.classList.remove('active'));
-            button.classList.add('active');
+// Department filter for Total Expenditures
+document.querySelectorAll('#total-expenditures-wrapper .filter-buttons .filter-btn').forEach(button => {
+    button.addEventListener('click', () => {
+        document.querySelectorAll('#total-expenditures-wrapper .filter-buttons .filter-btn').forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
 
-            const raw = document.querySelector('#department-trends-wrapper .filter-btn.active').dataset.departments;
-            const selectedDepartments = raw === 'all' ? data.departments : JSON.parse(raw);
-            charts.departmentTrends.update(monthsToShow, selectedDepartments);
-        });
+        const selectedDepartment = button.dataset.department;
+        const activeMonths = document.querySelector('#total-expenditures-wrapper .time-btn.active').dataset.months;
+        const monthsToShow = getMonthsToShow(data.months, activeMonths);
+
+        charts.totalExpenditures.update(data.data, monthsToShow, selectedDepartment);
     });
-}
+});
 
+    // Department Trends - Time Filters
+document.querySelectorAll('#department-trends-wrapper .time-btn').forEach(button => {
+    button.addEventListener('click', () => {
+        document.querySelectorAll('#department-trends-wrapper .time-btn').forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
+
+        const raw = document.querySelector('#department-trends-wrapper .filter-buttons .filter-btn.active').dataset.departments;
+        const selectedDepartments = tryParseJSON(raw);
+        const monthsToShow = getMonthsToShow(data.months, button.dataset.months);
+
+        charts.departmentTrends.update(monthsToShow, selectedDepartments);
+    });
+});
+
+// Department Trends - Department Filters
+document.querySelectorAll('#department-trends-wrapper .filter-buttons .filter-btn').forEach(button => {
+    button.addEventListener('click', () => {
+        document.querySelectorAll('#department-trends-wrapper .filter-buttons .filter-btn').forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
+
+        const selectedDepartments = tryParseJSON(button.dataset.departments);
+        const activeMonths = document.querySelector('#department-trends-wrapper .time-btn.active').dataset.months;
+        const monthsToShow = getMonthsToShow(data.months, activeMonths);
+
+        charts.departmentTrends.update(monthsToShow, selectedDepartments);
+    });
+});
 
 function setupTableToggle() {
   const buttons = {
@@ -1234,8 +1265,17 @@ function initDashboard() {
         // Trigger initial updates with better error handling
         setTimeout(() => {
             try {
-                const totalExpBtn = document.querySelector('#total-expenditures-wrapper .time-btn[data-months="3"]');
-                const deptTrendsBtn = document.querySelector('#department-trends-wrapper .time-btn[data-months="3"]');
+                // Default to 12 Meses for both charts
+				const totalExpBtn = document.querySelector('#total-expenditures-wrapper .time-btn[data-months="12"]');
+				const deptTrendsBtn = document.querySelector('#department-trends-wrapper .time-btn[data-months="12"]');
+				
+				// Ensure default department filters are set
+				const totalExpDeptBtn = document.querySelector('#total-expenditures-wrapper .filter-btn[data-department="all"]');
+				const deptTrendsDeptBtn = document.querySelector('#department-trends-wrapper .filter-btn[data-departments="all"]');
+				
+				if (totalExpDeptBtn) totalExpDeptBtn.classList.add('active');
+				if (deptTrendsDeptBtn) deptTrendsDeptBtn.classList.add('active');
+
                 
                 if (totalExpBtn) totalExpBtn.click();
                 if (deptTrendsBtn) deptTrendsBtn.click();
@@ -1278,6 +1318,7 @@ function showError(message) {
         </div>
     `;
 }
+
 
 
 
