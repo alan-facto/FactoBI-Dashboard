@@ -109,14 +109,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             // Process earnings data from the hardcoded CSV content
-            const earningsRows = earningsCsvContent.split('\n').slice(1).map(row => {
-                const [monthStr, faturamentoStr] = row.split(',');
-                return {
-                    month: monthStr.trim(),
-                    faturamento: parseFloat(faturamentoStr.replace(/["R$\s.]/g, '').replace(',', '.')) || 0
-                };
-            });
-
             earningsRows.forEach(row => {
                 const monthKey = convertMonthToYYYYMM(row.month);
                 if (!structuredData[monthKey]) {
@@ -264,7 +256,8 @@ function setupTableToggle() {
         'btn-summary-month': 'table-summary-month',
         'btn-summary-department': 'table-summary-department',
         'btn-detailed-month': 'table-detailed-month',
-        'btn-detailed-department': 'table-detailed-department'
+        'btn-detailed-department': 'table-detailed-department',
+        'btn-earnings-table': 'table-earnings' // New earnings table button
     };
 
     Object.entries(buttons).forEach(([btnId, tableId]) => {
@@ -293,73 +286,81 @@ function setupTableToggle() {
                     if (btnId === 'btn-summary-department') generateSummaryByDepartment();
                     if (btnId === 'btn-detailed-month') generateDetailedByMonth();
                     if (btnId === 'btn-detailed-department') generateDetailedByDepartment();
+                    if (btnId === 'btn-earnings-table') generateEarningsTable(); // Call new function
                 }
             });
         }
     });
-    // Ensure one table button is active on init
-    document.getElementById('btn-summary-month')?.click(); // Simulate a click to activate default table
+    // Ensure one table button is active on init if tables view is visible
+    // This will be triggered only if the main "Tabelas" button is clicked
+    // and its parent view is made visible.
 }
 
 
-// Setup logic for main view toggle (Graphs vs. Tables vs. Earnings)
+// Setup logic for main view toggle (Gastos vs. Faturamento vs. Tabelas)
 function setupViewToggle() {
-    const btnGraphs = document.getElementById('btn-graphs');
-    const btnTables = document.getElementById('btn-tables');
-    const btnEarnings = document.getElementById('btn-earnings'); // New Earnings button
+    const btnExpensesMain = document.getElementById('btn-expenses-main'); // Renamed
+    const btnEarningsMain = document.getElementById('btn-earnings-main'); // New
+    const btnTablesMain = document.getElementById('btn-tables-main');     // Renamed
     const chartsView = document.getElementById('charts-view');
     const tablesView = document.getElementById('tables-view');
-    const earningsView = document.getElementById('earnings-view'); // New Earnings view div
+    const earningsView = document.getElementById('earnings-view');
 
-    if (!btnGraphs || !btnTables || !chartsView || !tablesView || !btnEarnings || !earningsView) {
-        console.warn('One or more view toggle elements not found. Skipping setupViewToggle.');
+    if (!btnExpensesMain || !btnEarningsMain || !btnTablesMain || !chartsView || !tablesView || !earningsView) {
+        console.warn('One or more main view toggle elements not found. Skipping setupViewToggle.');
         return;
     }
 
-    // Initialize view states
-    chartsView.style.display = 'block'; // Default to charts view
-    tablesView.style.display = 'none';
-    earningsView.style.display = 'none';
-
     // Function to set active view
     const setActiveView = (activeBtn, activeViewDiv) => {
-        [btnGraphs, btnTables, btnEarnings].forEach(btn => btn.classList.remove('active'));
+        [btnExpensesMain, btnEarningsMain, btnTablesMain].forEach(btn => btn.classList.remove('active'));
         [chartsView, tablesView, earningsView].forEach(view => view.style.display = 'none');
 
         activeBtn.classList.add('active');
-        activeViewDiv.style.display = 'flex'; // Use flex for chart/earnings views
+        activeViewDiv.style.display = 'flex'; // Use flex for chart/earnings views, block for tables
 
-        // Redraw charts if switching to a chart-based view
-        if (activeViewDiv === chartsView || activeViewDiv === earningsView) {
+        // Trigger updates/generation based on the view
+        if (activeViewDiv === tablesView) {
+            // When switching to tables view, ensure the default summary table is generated
+            const defaultTableButton = document.getElementById('btn-summary-month');
+            if (defaultTableButton && !defaultTableButton.classList.contains('active')) {
+                defaultTableButton.click(); // Simulate click to generate content
+            } else if (defaultTableButton && defaultTableButton.classList.contains('active')) {
+                 // If it's already active, just regenerate content
+                 generateSummaryByMonth();
+            }
+        } else if (activeViewDiv === chartsView || activeViewDiv === earningsView) {
+            // Redraw charts when switching back to chart-based views
             setTimeout(() => {
-                // Only update charts that are currently visible within the active view
                 Object.keys(charts).forEach(chartKey => {
                     const chartInstance = charts[chartKey];
-                    if (chartInstance && typeof chartInstance.update === 'function') {
-                        // Check if the chart's canvas is within the active view's DOM
-                        const canvasElement = document.getElementById(chartKey.replace(/charts$/, 'chart')); // Get canvas ID
-                        if (canvasElement && activeViewDiv.contains(canvasElement)) {
-                            // Pass current months range to ensure updates are based on current filter state
-                            const currentMonthsRange = document.querySelector('.time-btn.active')?.dataset?.months || 'all';
-                            const monthsToShow = getMonthsToShow(data.months, currentMonthsRange);
-                            
-                            // Specific updates for charts that need more context (like earningsPerEmployee)
-                            if (chartKey === 'earningsPerEmployee' && document.getElementById('toggle-earnings-per-employee')) {
-                                const mode = document.getElementById('toggle-earnings-per-employee').textContent.includes('(Geral)') ? 'company' : 'operation';
-                                chartInstance.update(monthsToShow, mode);
-                            } else if (chartKey === 'totalExpenditures' || chartKey === 'departmentTrends') {
-                                // These charts have their own filter setup, trigger their internal update
-                                if (chartKey === 'totalExpenditures' && charts.totalExpenditures) {
-                                    const activeDept = document.querySelector('#total-expenditures-wrapper .filter-btn.active').dataset.department;
-                                    charts.totalExpenditures.update(data.data, monthsToShow, activeDept);
-                                } else if (chartKey === 'departmentTrends' && charts.departmentTrends) {
-                                    const activeDept = document.querySelector('#department-trends-wrapper .filter-btn.active')?.dataset?.departments || 'all';
-                                    charts.departmentTrends.update(monthsToShow, tryParseJSON(activeDept));
-                                }
-                                // No explicit call for percentageStacked or avgExpenditure/employees as they are simpler
-                            } else {
-                                chartInstance.update(monthsToShow);
-                            }
+                    // Check if chart's canvas is within the *currently active* view
+                    const canvasId = chartKey.replace(/([A-Z])/g, '-$1').toLowerCase(); // e.g., 'totalExpenditures' -> 'total-expenditures'
+                    const canvasElement = document.getElementById(`${canvasId}-chart`);
+                    
+                    // Specific check for departmentBreakdown which uses a div ID
+                    const containerId = (chartKey === 'departmentBreakdown') ? 'department-breakdown-charts' : null;
+                    const containerElement = document.getElementById(containerId);
+
+                    const isChartVisible = (canvasElement && activeViewDiv.contains(canvasElement)) ||
+                                           (containerElement && activeViewDiv.contains(containerElement));
+
+                    if (chartInstance && typeof chartInstance.update === 'function' && isChartVisible) {
+                        const currentMonthsRange = document.querySelector('.time-btn.active')?.dataset?.months || 'all';
+                        const monthsToShow = getMonthsToShow(data.months, currentMonthsRange);
+                        
+                        // Handle specific chart update needs
+                        if (chartKey === 'totalExpenditures') {
+                            const activeDept = document.querySelector('#total-expenditures-wrapper .filter-btn.active')?.dataset?.department || 'all';
+                            chartInstance.update(data.data, monthsToShow, activeDept);
+                        } else if (chartKey === 'departmentTrends') {
+                            const activeDeptsFilter = document.querySelector('#department-trends-wrapper .filter-btn.active')?.dataset?.departments || 'all';
+                            chartInstance.update(monthsToShow, tryParseJSON(activeDeptsFilter));
+                        } else if (chartKey === 'earningsPerEmployee') {
+                            const mode = document.getElementById('toggle-earnings-per-employee')?.textContent.includes('(Geral)') ? 'company' : 'operation';
+                            chartInstance.update(monthsToShow, mode);
+                        } else {
+                            chartInstance.update(monthsToShow);
                         }
                     }
                 });
@@ -367,20 +368,13 @@ function setupViewToggle() {
         }
     };
 
-    btnGraphs.addEventListener('click', () => setActiveView(btnGraphs, chartsView));
-    btnTables.addEventListener('click', () => {
-        setActiveView(btnTables, tablesView);
-        // Generate default table view if needed
-        if (document.getElementById('table-summary-month')?.innerHTML === '') {
-            generateSummaryByMonth();
-        }
-    });
-    btnEarnings.addEventListener('click', () => {
-        setActiveView(btnEarnings, earningsView);
-    });
+    btnExpensesMain.addEventListener('click', () => setActiveView(btnExpensesMain, chartsView));
+    btnEarningsMain.addEventListener('click', () => setActiveView(btnEarningsMain, earningsView));
+    btnTablesMain.addEventListener('click', () => setActiveView(btnTablesMain, tablesView));
     
-    // Initial active button
-    btnGraphs.classList.add('active'); // Default to graphs view
+    // Set initial active button (Gastos)
+    btnExpensesMain.classList.add('active');
+    chartsView.style.display = 'flex'; // Ensure initial view is 'flex'
 }
 
 // Functions to generate different table views
@@ -550,6 +544,51 @@ function generateDetailedByDepartment() {
         section.appendChild(table);
         container.appendChild(section);
     });
+}
+
+// NEW FUNCTION: Generate Earnings Table
+function generateEarningsTable() {
+    const container = document.getElementById('table-earnings');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const section = document.createElement('div');
+    section.innerHTML = `<h3>Faturamento Mensal</h3>`; // Table title
+
+    const table = document.createElement('table');
+    table.className = 'summary'; // Using summary class for styling
+    table.innerHTML = `
+        <thead>
+            <tr>
+                <th>Mês</th>
+                <th>Faturamento</th>
+                <th>Gastos Totais</th>
+                <th>Lucro / Prejuízo Líquido</th>
+                <th>Margem de Lucro (%)</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${data.months.map(month => {
+                const monthData = data.data[month];
+                const earnings = monthData.earnings || 0;
+                const totalCosts = monthData.total || 0;
+                const netProfit = earnings - totalCosts;
+                const profitMargin = (earnings > 0) ? (netProfit / earnings) * 100 : 0;
+
+                return `
+                    <tr>
+                        <td>${formatMonthLabel(month)}</td>
+                        <td>${formatCurrencyBRL(earnings)}</td>
+                        <td>${formatCurrencyBRL(totalCosts)}</td>
+                        <td style="color: ${netProfit >= 0 ? 'green' : 'red'}; font-weight: bold;">${formatCurrencyBRL(netProfit)}</td>
+                        <td style="color: ${profitMargin >= 0 ? 'green' : 'red'}; font-weight: bold;">${profitMargin.toFixed(2)}%</td>
+                    </tr>
+                `;
+            }).join('')}
+        </tbody>
+    `;
+    section.appendChild(table);
+    container.appendChild(section);
 }
 
 
@@ -1384,7 +1423,7 @@ function initDashboard() {
             throw new Error('Invalid or incomplete data received from server. Cannot initialize dashboard.');
         }
 
-        // Setup UI view toggles (Charts, Tables, Earnings)
+        // Setup UI view toggles (Gastos, Faturamento, Tabelas)
         setupViewToggle();
         setupTableToggle(); // Setup table toggle logic
 
@@ -1415,12 +1454,14 @@ function initDashboard() {
                 const totalExpBtn = document.querySelector('#total-expenditures-wrapper .time-btn[data-months="12"]');
                 const totalExpDeptBtn = document.querySelector('#total-expenditures-wrapper .filter-btn[data-department="all"]');
                 if (totalExpBtn) totalExpBtn.click();
-                if (totalExpDeptBtn) totalExpDeptBtn.classList.add('active'); // Directly add active as click handled by time button
+                // For totalExpDeptBtn, just ensure active class. Click is handled by time button if exists.
+                if (totalExpDeptBtn) totalExpDeptBtn.classList.add('active');
 
                 const deptTrendsBtn = document.querySelector('#department-trends-wrapper .time-btn[data-months="12"]');
                 const deptTrendsDeptBtn = document.querySelector('#department-trends-wrapper .filter-btn[data-departments="all"]');
                 if (deptTrendsBtn) deptTrendsBtn.click();
-                if (deptTrendsDeptBtn) deptTrendsDeptBtn.classList.add('active'); // Directly add active
+                // For deptTrendsDeptBtn, just ensure active class.
+                if (deptTrendsDeptBtn) deptTrendsDeptBtn.classList.add('active');
 
                 // For new earnings charts, ensure they are updated on initial load (assuming earnings-view is hidden at start)
                 // These are handled by setupViewToggle when it changes to earnings view.
