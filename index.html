@@ -16,6 +16,7 @@
     <div class="view-toggle">
       <button id="btn-graphs" class="active">Gráficos</button>
       <button id="btn-tables">Tabelas</button>
+      <button id="btn-earnings">Faturamento</button> <!-- New Faturamento button -->
     </div>
 
     <!-- Charts View -->
@@ -108,22 +109,79 @@
     <div id="tables-view">
       <div class="card">
         <div id="tables-view">
-  <div class="table-toggle-container">
-    <button id="btn-summary-month" class="table-toggle-btn active">Resumo por Mês</button>
-    <button id="btn-summary-department" class="table-toggle-btn">Resumo por Departamento</button>
-    <button id="btn-detailed-month" class="table-toggle-btn">Detalhado por Mês</button>
-    <button id="btn-detailed-department" class="table-toggle-btn">Detalhado por Departamento</button>
-  </div>
+          <div class="table-toggle-container">
+            <button id="btn-summary-month" class="table-toggle-btn active">Resumo por Mês</button>
+            <button id="btn-summary-department" class="table-toggle-btn">Resumo por Departamento</button>
+            <button id="btn-detailed-month" class="table-toggle-btn">Detalhado por Mês</button>
+            <button id="btn-detailed-department" class="table-toggle-btn">Detalhado por Departamento</button>
+          </div>
 
-  <div id="table-summary-month" style="display: block;"></div>
-  <div id="table-summary-department" style="display: none;"></div>
-  <div id="table-detailed-month" style="display: none;"></div>
-  <div id="table-detailed-department" style="display: none;"></div>
-</div>
+          <div id="table-summary-month" style="display: block;"></div>
+          <div id="table-summary-department" style="display: none;"></div>
+          <div id="table-detailed-month" style="display: none;"></div>
+          <div id="table-detailed-department" style="display: none;"></div>
+        </div>
+      </div>
     </div>
+
+    <!-- New Earnings View -->
+    <div id="earnings-view" style="display: none;">
+        <!-- Row 1: Earnings vs Total Costs -->
+        <div class="chart-row single">
+            <div class="card">
+                <h2>Faturamento vs. Gastos Totais</h2>
+                <div class="chart-container">
+                    <canvas id="earnings-vs-costs-chart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Row 2: Net Profit/Loss -->
+        <div class="chart-row single">
+            <div class="card">
+                <h2>Lucro / Prejuízo Líquido Mensal</h2>
+                <div class="chart-container">
+                    <canvas id="net-profit-loss-chart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Row 3: Profit Margin Percentage -->
+        <div class="chart-row single">
+            <div class="card">
+                <h2>Margem de Lucro Percentual</h2>
+                <div class="chart-container">
+                    <canvas id="profit-margin-chart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Row 4: Earnings per Employee -->
+        <div class="chart-row single">
+            <div class="card">
+                <h2>Faturamento por Funcionário</h2>
+                <div class="filter-buttons">
+                    <button class="filter-btn active" id="toggle-earnings-per-employee">Ver Faturamento por Funcionário (Operação)</button>
+                </div>
+                <div class="chart-container">
+                    <canvas id="earnings-per-employee-chart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Row 5: Contribution/Efficiency per Department -->
+        <div class="chart-row single">
+            <div class="card">
+                <h2>Contribuição de Gastos por Departamento ao Faturamento Total (%)</h2>
+                <div class="chart-container">
+                    <canvas id="contribution-efficiency-chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
   </div>
 
   <script src="scripts/app.js"></script>
 </body>
 </html>
-
