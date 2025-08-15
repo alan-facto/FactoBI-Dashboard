@@ -34,7 +34,6 @@ function convertMonthToYYYYMM(monthShortStr) {
 }
 
 // Hardcoded earnings data from FactoBI_Data.xlsx - Sheet2.csv
-// This content is now parsed immediately after definition, making earningsRows globally available.
 const earningsCsvContent = `Mês,Faturamento
 set.-24,"R$ 623.628,74"
 out.-24,"R$ 490.251,93"
@@ -48,18 +47,18 @@ mai.-25,"R$ 133.723,72"
 jun.-25,"R$ 567.155,13"
 jul.-25,"R$ 513.826,17"`;
 
-// Parse earnings data once, outside the fetch chain, so it's ready when needed.
-const earningsRows = earningsCsvContent.split('\n').slice(1).map(row => {
-    const [monthStr, faturamentoStr] = row.split(',');
-    return {
-        month: monthStr.trim(),
-        faturamento: parseFloat(faturamentoStr.replace(/["R$\s.]/g, '').replace(',', '.')) || 0
-    };
-});
-
-
 // Ensure dashboard initialization happens AFTER the DOM is fully loaded.
 document.addEventListener('DOMContentLoaded', () => {
+    // Parse earnings data *inside* DOMContentLoaded to ensure it's available
+    // within this scope when needed, even if global scope has issues.
+    const earningsRows = earningsCsvContent.split('\n').slice(1).map(row => {
+        const [monthStr, faturamentoStr] = row.split(',');
+        return {
+            month: monthStr.trim(),
+            faturamento: parseFloat(faturamentoStr.replace(/["R$\s.]/g, '').replace(',', '.')) || 0
+        };
+    });
+
     // Fetch and process live data (Sheet1)
     fetch(apiUrl)
         .then(response => {
