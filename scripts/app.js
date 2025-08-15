@@ -592,8 +592,8 @@ function generateEarningsTable() {
                         <td>${formatMonthLabel(month)}</td>
                         <td>${formatCurrencyBRL(earnings)}</td>
                         <td>${formatCurrencyBRL(totalCosts)}</td>
-                        <td style="color: ${netProfit >= 0 ? 'green' : 'red'}; font-weight: bold;">${formatCurrencyBRL(netProfit)}</td>
-                        <td style="color: ${profitMargin >= 0 ? 'green' : 'red'}; font-weight: bold;">${profitMargin.toFixed(2)}%</td>
+                        <td style="color: ${netProfit >= 0 ? '#00A86B' : '#E44D42'}; font-weight: bold;">${formatCurrencyBRL(netProfit)}</td>
+                        <td style="color: ${profitMargin >= 0 ? '#00A86B' : '#E44D42'}; font-weight: bold;">${profitMargin.toFixed(2)}%</td>
                     </tr>
                 `;
             }).join('')}
@@ -635,7 +635,7 @@ function setupTimeFilters() {
         button.addEventListener('click', () => {
             document.querySelectorAll('#total-expenditures-wrapper .time-btn').forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
-            const activeDepartment = document.querySelector('#total-expenditures-wrapper .filter-btn.active').dataset.department;
+            const activeDepartment = document.querySelector('#total-expenditures-wrapper .filter-buttons .filter-btn.active').dataset.department; // Get current active department filter
             const monthsToShow = getMonthsToShow(data.months, button.dataset.months);
             charts.totalExpenditures.update(data.data, monthsToShow, activeDepartment);
         });
@@ -647,7 +647,7 @@ function setupTimeFilters() {
             document.querySelectorAll('#total-expenditures-wrapper .filter-buttons .filter-btn').forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
             const selectedDepartment = button.dataset.department;
-            const activeMonths = document.querySelector('#total-expenditures-wrapper .time-btn.active').dataset.months;
+            const activeMonths = document.querySelector('#total-expenditures-wrapper .time-btn.active').dataset.months; // Get current active time filter
             const monthsToShow = getMonthsToShow(data.months, activeMonths);
             charts.totalExpenditures.update(data.data, monthsToShow, selectedDepartment);
         });
@@ -665,7 +665,7 @@ function setupTimeFilters() {
             const monthsRange = activeTimeBtn?.dataset?.months || 'all';
             const monthsToShow = getMonthsToShow(data.months, monthsRange);
 
-            const activeDeptBtn = trendsWrapper.querySelector('.filter-btn.active');
+            const activeDeptBtn = trendsWrapper.querySelector('.filter-buttons .filter-btn.active'); // Ensure correct selector
             const selectedDepartments = tryParseJSON(activeDeptBtn?.dataset?.departments || 'all');
 
             charts.departmentTrends.update(monthsToShow, selectedDepartments);
@@ -679,24 +679,15 @@ function setupTimeFilters() {
             });
         });
 
-        trendsWrapper.querySelectorAll('.filter-btn').forEach(button => {
+        trendsWrapper.querySelectorAll('.filter-buttons .filter-btn').forEach(button => { // Ensure correct selector
             button.addEventListener('click', function() {
-                trendsWrapper.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+                trendsWrapper.querySelectorAll('.filter-buttons .filter-btn').forEach(btn => btn.classList.remove('active'));
                 this.classList.add('active');
                 updateDepartmentTrendsChart();
             });
         });
 
-        // Initialize default state for department trends
-        setTimeout(() => {
-            if (!trendsWrapper.querySelector('.time-btn.active')) {
-                trendsWrapper.querySelector('.time-btn[data-months="12"]')?.classList.add('active');
-            }
-            if (!trendsWrapper.querySelector('.filter-btn.active')) {
-                trendsWrapper.querySelector('.filter-btn[data-departments="all"]')?.classList.add('active');
-            }
-            updateDepartmentTrendsChart();
-        }, 150);
+        // Initial state for department trends is now handled by initDashboard directly
     }
 }
 
@@ -1462,23 +1453,37 @@ function initDashboard() {
         // Trigger initial chart updates to set default views (e.g., 12 months, 'All' departments)
         setTimeout(() => {
             try {
-                // Activate default time and department filters for existing charts
-                const totalExpBtn = document.querySelector('#total-expenditures-wrapper .time-btn[data-months="12"]');
-                const totalExpDeptBtn = document.querySelector('#total-expenditures-wrapper .filter-btn[data-department="all"]');
-                if (totalExpBtn) totalExpBtn.click();
-                // For totalExpDeptBtn, just ensure active class. Click is handled by time button if exists.
-                if (totalExpDeptBtn) totalExpDeptBtn.classList.add('active');
+                // Set default department filters FIRST
+                const totalExpDeptBtn = document.querySelector('#total-expenditures-wrapper .filter-buttons .filter-btn[data-department="all"]');
+                if (totalExpDeptBtn) {
+                    document.querySelectorAll('#total-expenditures-wrapper .filter-buttons .filter-btn').forEach(btn => btn.classList.remove('active'));
+                    totalExpDeptBtn.classList.add('active');
+                }
 
-                const deptTrendsBtn = document.querySelector('#department-trends-wrapper .time-btn[data-months="12"]');
-                const deptTrendsDeptBtn = document.querySelector('#department-trends-wrapper .filter-btn[data-departments="all"]');
-                if (deptTrendsBtn) deptTrendsBtn.click();
-                // For deptTrendsDeptBtn, just ensure active class.
-                if (deptTrendsDeptBtn) deptTrendsDeptBtn.classList.add('active');
+                const deptTrendsDeptBtn = document.querySelector('#department-trends-wrapper .filter-buttons .filter-btn[data-departments="all"]');
+                if (deptTrendsDeptBtn) {
+                    document.querySelectorAll('#department-trends-wrapper .filter-buttons .filter-btn').forEach(btn => btn.classList.remove('active'));
+                    deptTrendsDeptBtn.classList.add('active');
+                }
+
+                // Then set default time filters and trigger chart updates
+                const totalExpTimeBtn = document.querySelector('#total-expenditures-wrapper .time-btn[data-months="12"]');
+                if (totalExpTimeBtn) {
+                    document.querySelectorAll('#total-expenditures-wrapper .time-btn').forEach(btn => btn.classList.remove('active'));
+                    totalExpTimeBtn.classList.add('active');
+                    // Directly call update with default states
+                    charts.totalExpenditures.update(data.data, getMonthsToShow(data.months, '12'), 'all');
+                }
+
+                const deptTrendsTimeBtn = document.querySelector('#department-trends-wrapper .time-btn[data-months="12"]');
+                if (deptTrendsTimeBtn) {
+                    document.querySelectorAll('#department-trends-wrapper .time-btn').forEach(btn => btn.classList.remove('active'));
+                    deptTrendsTimeBtn.classList.add('active');
+                    // Directly call update with default states
+                    charts.departmentTrends.update(getMonthsToShow(data.months, '12'), data.departments); // 'all' is data.departments
+                }
 
                 // For new earnings charts, ensure they are updated on initial load (assuming earnings-view is hidden at start)
-                // These are handled by setupViewToggle when it changes to earnings view.
-                // However, if the initial view IS earnings, we need to ensure they draw.
-                // For now, these explicit updates are sufficient.
                 if (charts.earningsVsCosts) charts.earningsVsCosts.update(data.months);
                 if (charts.netProfitLoss) charts.netProfitLoss.update(data.months);
                 if (charts.profitMargin) charts.profitMargin.update(data.months);
