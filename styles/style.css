@@ -239,7 +239,7 @@ body {
 #tables-view table {
   width: 100%;
   border-collapse: collapse;
-  table-layout: fixed;
+  /* Removed table-layout: fixed; for more flexible column widths */
   margin-bottom: 30px;
   background-color: white;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
@@ -250,7 +250,7 @@ body {
   padding: 12px 15px;
   text-align: left;
   border-bottom: 1px solid #e0e0e0;
-  word-wrap: break-word;
+  word-wrap: break-word; /* Allow long words to break */
 }
 
 #tables-view th {
@@ -267,21 +267,45 @@ body {
 
 /* Detailed tables (5 columns) */
 #tables-view table:not(.summary) th:nth-child(1),
-#tables-view table:not(.summary) td:nth-child(1) { width: 25%; }
+#tables-view table:not(.summary) td:nth-child(1) { width: 20%; } /* Department */
 #tables-view table:not(.summary) th:nth-child(2),
-#tables-view table:not(.summary) td:nth-child(2) { width: 15%; }
+#tables-view table:not(.summary) td:nth-child(2) { width: 15%; } /* Employees */
 #tables-view table:not(.summary) th:nth-child(3),
-#tables-view table:not(.summary) td:nth-child(3) { width: 20%; }
+#tables-view table:not(.summary) td:nth-child(3) { width: 20%; } /* Total */
 #tables-view table:not(.summary) th:nth-child(4),
-#tables-view table:not(.summary) td:nth-child(4) { width: 20%; }
+#tables-view table:not(.summary) td:nth-child(4) { width: 25%; } /* Bonificacao */
 #tables-view table:not(.summary) th:nth-child(5),
-#tables-view table:not(.summary) td:nth-child(5) { width: 20%; }
+#tables-view table:not(.summary) td:nth-child(5) { width: 20%; } /* Total Geral */
 
-/* Summary tables (2 columns) */
-#tables-view table.summary th:nth-child(1),
-#tables-view table.summary td:nth-child(1) { width: 60%; }
-#tables-view table.summary th:nth-child(2),
-#tables-view table.summary td:nth-child(2) { width: 40%; }
+
+/* Specific column widths for summary-by-month table (2 columns + 2 new rows) */
+#table-summary-month table.summary th:nth-child(1),
+#table-summary-month table.summary td:nth-child(1) { width: 60%; }
+#table-summary-month table.summary th:nth-child(2),
+#table-summary-month table.summary td:nth-child(2) { width: 40%; }
+
+/* Specific column widths for summary-by-department table (3 columns) */
+#table-summary-department table.summary th:nth-child(1),
+#table-summary-department table.summary td:nth-child(1) { width: 35%; } /* Mês */
+#table-summary-department table.summary th:nth-child(2),
+#table-summary-department table.summary td:nth-child(2) { width: 35%; } /* Total Gasto */
+#table-summary-department table.summary th:nth-child(3),
+#table-summary-department table.summary td:nth-child(3) { width: 30%; } /* Funcionários */
+
+/* Specific column widths for earnings table (5 columns) */
+#table-earnings table.summary th:nth-child(1),
+#table-earnings table.summary td:nth-child(1) { width: 20%; } /* Mês */
+#table-earnings table.summary th:nth-child(2),
+#table-earnings table.summary td:nth-child(2) { width: 20%; } /* Faturamento */
+#table-earnings table.summary th:nth-child(3),
+#table-earnings table.summary td:nth-child(3) { width: 20%; } /* Gastos Totais */
+#table-earnings table.summary th:nth-child(4),
+#table-earnings table.summary td:nth-child(4) { width: 20%; } /* Lucro / Prejuízo Líquido */
+#table-earnings table.summary td:nth-child(4) { color: inherit; } /* Remove green/red for table cells, handled by JS inline style */
+#table-earnings table.summary th:nth-child(5),
+#table-earnings table.summary td:nth-child(5) { width: 20%; } /* Margem de Lucro (%) */
+#table-earnings table.summary td:nth-child(5) { color: inherit; } /* Remove green/red for table cells, handled by JS inline style */
+
 
 /* Responsive tables */
 @media (max-width: 768px) {
@@ -399,8 +423,10 @@ body {
   transform: translateY(-1px);
 }
 
+/* Updated active button color for tables */
 .table-toggle-btn.active {
-  background-color: #F28E2B;
+  background-color: #3eec90; /* New active color */
+  color: #024B59; /* Dark green font */
   font-weight: bold;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
