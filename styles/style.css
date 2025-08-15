@@ -79,13 +79,13 @@ body {
   margin-bottom: 0;
 }
 
-#charts-view {
+#charts-view, #earnings-view { /* Apply to both charts and new earnings view */
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-.chart-row.single: .chart-container {
+.chart-row.single .chart-container {
   height: 400px;
   display: block;
   margin: 0 auto;
@@ -93,14 +93,14 @@ body {
 }
 
 @media (max-width: 1200px) {
-  .chart-row.single: .chart-container {
+  .chart-row.single .chart-container {
     max-width: 85%;
   }
 }
 
 /* On small screens, full width for usability */
 @media (max-width: 768px) {
-  .chart-row.single: .chart-container {
+  .chart-row.single .chart-container {
     max-width: 100%;
   }
 }
@@ -418,3 +418,4 @@ body {
     from { opacity: 0; transform: translateY(-10px); }
     to { opacity: 1; transform: translateY(0); }
 }
+
