@@ -34,7 +34,7 @@ function convertMonthToYYYYMM(monthShortStr) {
 }
 
 // Hardcoded earnings data from FactoBI_Data.xlsx - Sheet2.csv
-// In a real application, this would ideally come from another API call or combined data source.
+// This content is now parsed immediately after definition, making earningsRows globally available.
 const earningsCsvContent = `Mês,Faturamento
 set.-24,"R$ 623.628,74"
 out.-24,"R$ 490.251,93"
@@ -47,6 +47,16 @@ abr.-25,"R$ 529.025,05"
 mai.-25,"R$ 133.723,72"
 jun.-25,"R$ 567.155,13"
 jul.-25,"R$ 513.826,17"`;
+
+// Parse earnings data once, outside the fetch chain, so it's ready when needed.
+const earningsRows = earningsCsvContent.split('\n').slice(1).map(row => {
+    const [monthStr, faturamentoStr] = row.split(',');
+    return {
+        month: monthStr.trim(),
+        faturamento: parseFloat(faturamentoStr.replace(/["R$\s.]/g, '').replace(',', '.')) || 0
+    };
+});
+
 
 // Ensure dashboard initialization happens AFTER the DOM is fully loaded.
 document.addEventListener('DOMContentLoaded', () => {
@@ -67,6 +77,21 @@ document.addEventListener('DOMContentLoaded', () => {
             const departmentsSet = new Set();
             const structuredData = {};
 
+            // Initialize structure for all months that will be present in the data (from both sources)
+            const allPossibleMonths = new Set([
+                ...fetchedRows.map(row => row["Month"]),
+                ...earningsRows.map(row => convertMonthToYYYYMM(row.month))
+            ]);
+            Array.from(allPossibleMonths).sort().forEach(month => {
+                structuredData[month] = {
+                    departments: {},
+                    total: 0,
+                    totalEmployees: 0,
+                    earnings: 0
+                };
+            });
+
+
             // Process Sheet1 data first
             fetchedRows.forEach(row => {
                 try {
@@ -80,18 +105,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     monthsSet.add(month);
 
-                    if (!structuredData[month]) {
-                        structuredData[month] = {
-                            departments: {},
-                            total: 0, // Sum of general costs for the month
-                            totalEmployees: 0, // Sum of employees for the month
-                            earnings: 0 // Will be populated from Sheet2 data
-                        };
-                    }
-
                     if (dept.toLowerCase() !== "total geral") { // Exclude overall total if present
                         departmentsSet.add(dept);
 
+                        // Ensure department exists for the month
                         if (!structuredData[month].departments[dept]) {
                             structuredData[month].departments[dept] = {
                                 total: 0, bonificacao: 0, count: 0, geral: 0
@@ -108,23 +125,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            // Process earnings data from the hardcoded CSV content
+            // Merge earnings data into structuredData
             earningsRows.forEach(row => {
                 const monthKey = convertMonthToYYYYMM(row.month);
-                if (!structuredData[monthKey]) {
-                    // If a month only exists in earnings data, initialize its structure
-                    structuredData[monthKey] = {
-                        departments: {}, total: 0, totalEmployees: 0, earnings: 0
-                    };
-                    monthsSet.add(monthKey);
+                if (structuredData[monthKey]) { // Only add if the month exists from sheet1 or was pre-initialized
+                    structuredData[monthKey].earnings = row.faturamento;
                 }
-                structuredData[monthKey].earnings = row.faturamento;
+                monthsSet.add(monthKey); // Ensure all months from earnings are included
             });
 
             // Final data assignment
             data = {
                 months: Array.from(monthsSet).sort(),
-                departments: Array.from(departmentsSet),
+                departments: Array.from(departmentsSet).sort(), // Ensure departments are sorted for consistency
                 data: structuredData
             };
 
