@@ -48,100 +48,103 @@ mai.-25,"R$ 133.723,72"
 jun.-25,"R$ 567.155,13"
 jul.-25,"R$ 513.826,17"`;
 
+// Ensure dashboard initialization happens AFTER the DOM is fully loaded.
+document.addEventListener('DOMContentLoaded', () => {
+    // Fetch and process live data (Sheet1)
+    fetch(apiUrl)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(fetchedRows => {
+            if (!fetchedRows || !Array.isArray(fetchedRows)) {
+                throw new Error('Invalid data format received from API');
+            }
 
-// Fetch and process live data (Sheet1)
-fetch(apiUrl)
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-    })
-    .then(fetchedRows => {
-        if (!fetchedRows || !Array.isArray(fetchedRows)) {
-            throw new Error('Invalid data format received from API');
-        }
+            const monthsSet = new Set();
+            const departmentsSet = new Set();
+            const structuredData = {};
 
-        const monthsSet = new Set();
-        const departmentsSet = new Set();
-        const structuredData = {};
+            // Process Sheet1 data first
+            fetchedRows.forEach(row => {
+                try {
+                    const month = row["Month"];
+                    const rawDept = row["Department"];
+                    const dept = deptMap[rawDept] || rawDept; // Map department names
+                    const total = parseFloat(row["Total"]) || 0;
+                    const bonificacao = parseFloat(row["Bonificacao 20"]) || 0;
+                    const count = parseInt(row["Employee Count"]) || 0;
+                    const geral = parseFloat(row["Total Geral"]) || (total + bonificacao); // Total costs + bonuses
 
-        // Process Sheet1 data first
-        fetchedRows.forEach(row => {
-            try {
-                const month = row["Month"];
-                const rawDept = row["Department"];
-                const dept = deptMap[rawDept] || rawDept; // Map department names
-                const total = parseFloat(row["Total"]) || 0;
-                const bonificacao = parseFloat(row["Bonificacao 20"]) || 0;
-                const count = parseInt(row["Employee Count"]) || 0;
-                const geral = parseFloat(row["Total Geral"]) || (total + bonificacao); // Total costs + bonuses
+                    monthsSet.add(month);
 
-                monthsSet.add(month);
-
-                if (!structuredData[month]) {
-                    structuredData[month] = {
-                        departments: {},
-                        total: 0, // Sum of general costs for the month
-                        totalEmployees: 0, // Sum of employees for the month
-                        earnings: 0 // Will be populated from Sheet2 data
-                    };
-                }
-
-                if (dept.toLowerCase() !== "total geral") { // Exclude overall total if present
-                    departmentsSet.add(dept);
-
-                    if (!structuredData[month].departments[dept]) {
-                        structuredData[month].departments[dept] = {
-                            total: 0, bonificacao: 0, count: 0, geral: 0
+                    if (!structuredData[month]) {
+                        structuredData[month] = {
+                            departments: {},
+                            total: 0, // Sum of general costs for the month
+                            totalEmployees: 0, // Sum of employees for the month
+                            earnings: 0 // Will be populated from Sheet2 data
                         };
                     }
-                    structuredData[month].departments[dept] = {
-                        total, bonificacao, count, geral
-                    };
-                    structuredData[month].total += geral; // Aggregate total costs for the month
-                    structuredData[month].totalEmployees += count; // Aggregate total employees for the month
+
+                    if (dept.toLowerCase() !== "total geral") { // Exclude overall total if present
+                        departmentsSet.add(dept);
+
+                        if (!structuredData[month].departments[dept]) {
+                            structuredData[month].departments[dept] = {
+                                total: 0, bonificacao: 0, count: 0, geral: 0
+                            };
+                        }
+                        structuredData[month].departments[dept] = {
+                            total, bonificacao, count, geral
+                        };
+                        structuredData[month].total += geral; // Aggregate total costs for the month
+                        structuredData[month].totalEmployees += count; // Aggregate total employees for the month
+                    }
+                } catch (error) {
+                    console.error('Error processing row from Sheet1:', row, error);
                 }
-            } catch (error) {
-                console.error('Error processing row from Sheet1:', row, error);
-            }
-        });
+            });
 
-        // Process earnings data from the hardcoded CSV content
-        const earningsRows = earningsCsvContent.split('\n').slice(1).map(row => {
-            const [monthStr, faturamentoStr] = row.split(',');
-            return {
-                month: monthStr.trim(),
-                faturamento: parseFloat(faturamentoStr.replace(/["R$\s.]/g, '').replace(',', '.')) || 0
-            };
-        });
-
-        earningsRows.forEach(row => {
-            const monthKey = convertMonthToYYYYMM(row.month);
-            if (!structuredData[monthKey]) {
-                // If a month only exists in earnings data, initialize its structure
-                structuredData[monthKey] = {
-                    departments: {}, total: 0, totalEmployees: 0, earnings: 0
+            // Process earnings data from the hardcoded CSV content
+            const earningsRows = earningsCsvContent.split('\n').slice(1).map(row => {
+                const [monthStr, faturamentoStr] = row.split(',');
+                return {
+                    month: monthStr.trim(),
+                    faturamento: parseFloat(faturamentoStr.replace(/["R$\s.]/g, '').replace(',', '.')) || 0
                 };
-                monthsSet.add(monthKey);
-            }
-            structuredData[monthKey].earnings = row.faturamento;
+            });
+
+            earningsRows.forEach(row => {
+                const monthKey = convertMonthToYYYYMM(row.month);
+                if (!structuredData[monthKey]) {
+                    // If a month only exists in earnings data, initialize its structure
+                    structuredData[monthKey] = {
+                        departments: {}, total: 0, totalEmployees: 0, earnings: 0
+                    };
+                    monthsSet.add(monthKey);
+                }
+                structuredData[monthKey].earnings = row.faturamento;
+            });
+
+            // Final data assignment
+            data = {
+                months: Array.from(monthsSet).sort(),
+                departments: Array.from(departmentsSet),
+                data: structuredData
+            };
+
+            sortedMonths = data.months.slice(); // Keep a sorted list of all months
+            initDashboard(); // Initialize the dashboard once all data is processed
+        })
+        .catch(error => {
+            console.error("Error loading data:", error);
+            showError('Falha ao carregar os dados. Por favor, recarregue a página.');
         });
+});
 
-        // Final data assignment
-        data = {
-            months: Array.from(monthsSet).sort(),
-            departments: Array.from(departmentsSet),
-            data: structuredData
-        };
-
-        sortedMonths = data.months.slice(); // Keep a sorted list of all months
-        initDashboard(); // Initialize the dashboard once all data is processed
-    })
-    .catch(error => {
-        console.error("Error loading data:", error);
-        showError('Falha ao carregar os dados. Por favor, recarregue a página.');
-    });
 
 const translations = {
     "Total Expenditures": "Gastos Totais",
@@ -294,7 +297,10 @@ function setupTableToggle() {
             });
         }
     });
+    // Ensure one table button is active on init
+    document.getElementById('btn-summary-month')?.click(); // Simulate a click to activate default table
 }
+
 
 // Setup logic for main view toggle (Graphs vs. Tables vs. Earnings)
 function setupViewToggle() {
@@ -311,7 +317,7 @@ function setupViewToggle() {
     }
 
     // Initialize view states
-    chartsView.style.display = 'block';
+    chartsView.style.display = 'block'; // Default to charts view
     tablesView.style.display = 'none';
     earningsView.style.display = 'none';
 
@@ -321,13 +327,41 @@ function setupViewToggle() {
         [chartsView, tablesView, earningsView].forEach(view => view.style.display = 'none');
 
         activeBtn.classList.add('active');
-        activeViewDiv.style.display = 'block';
+        activeViewDiv.style.display = 'flex'; // Use flex for chart/earnings views
 
         // Redraw charts if switching to a chart-based view
         if (activeViewDiv === chartsView || activeViewDiv === earningsView) {
             setTimeout(() => {
-                Object.values(charts).forEach(chart => {
-                    if (chart && chart.update) chart.update();
+                // Only update charts that are currently visible within the active view
+                Object.keys(charts).forEach(chartKey => {
+                    const chartInstance = charts[chartKey];
+                    if (chartInstance && typeof chartInstance.update === 'function') {
+                        // Check if the chart's canvas is within the active view's DOM
+                        const canvasElement = document.getElementById(chartKey.replace(/charts$/, 'chart')); // Get canvas ID
+                        if (canvasElement && activeViewDiv.contains(canvasElement)) {
+                            // Pass current months range to ensure updates are based on current filter state
+                            const currentMonthsRange = document.querySelector('.time-btn.active')?.dataset?.months || 'all';
+                            const monthsToShow = getMonthsToShow(data.months, currentMonthsRange);
+                            
+                            // Specific updates for charts that need more context (like earningsPerEmployee)
+                            if (chartKey === 'earningsPerEmployee' && document.getElementById('toggle-earnings-per-employee')) {
+                                const mode = document.getElementById('toggle-earnings-per-employee').textContent.includes('(Geral)') ? 'company' : 'operation';
+                                chartInstance.update(monthsToShow, mode);
+                            } else if (chartKey === 'totalExpenditures' || chartKey === 'departmentTrends') {
+                                // These charts have their own filter setup, trigger their internal update
+                                if (chartKey === 'totalExpenditures' && charts.totalExpenditures) {
+                                    const activeDept = document.querySelector('#total-expenditures-wrapper .filter-btn.active').dataset.department;
+                                    charts.totalExpenditures.update(data.data, monthsToShow, activeDept);
+                                } else if (chartKey === 'departmentTrends' && charts.departmentTrends) {
+                                    const activeDept = document.querySelector('#department-trends-wrapper .filter-btn.active')?.dataset?.departments || 'all';
+                                    charts.departmentTrends.update(monthsToShow, tryParseJSON(activeDept));
+                                }
+                                // No explicit call for percentageStacked or avgExpenditure/employees as they are simpler
+                            } else {
+                                chartInstance.update(monthsToShow);
+                            }
+                        }
+                    }
                 });
             }, 100);
         }
@@ -343,13 +377,10 @@ function setupViewToggle() {
     });
     btnEarnings.addEventListener('click', () => {
         setActiveView(btnEarnings, earningsView);
-        // Ensure earnings charts are drawn when navigating
-        if (charts.earningsVsCosts?.update) charts.earningsVsCosts.update(data.months);
-        if (charts.netProfitLoss?.update) charts.netProfitLoss.update(data.months);
-        if (charts.profitMargin?.update) charts.profitMargin.update(data.months);
-        if (charts.earningsPerEmployee?.update) charts.earningsPerEmployee.update(data.months, 'company');
-        if (charts.contributionEfficiency?.update) charts.contributionEfficiency.update(data.months);
     });
+    
+    // Initial active button
+    btnGraphs.classList.add('active'); // Default to graphs view
 }
 
 // Functions to generate different table views
@@ -1377,11 +1408,6 @@ function initDashboard() {
         // Setup filter listeners for charts
         setupTimeFilters();
 
-        // Generate initial table view (if tables view is active by default)
-        if (document.getElementById('table-summary-month')) {
-            generateSummaryByMonth();
-        }
-
         // Trigger initial chart updates to set default views (e.g., 12 months, 'All' departments)
         setTimeout(() => {
             try {
@@ -1397,6 +1423,9 @@ function initDashboard() {
                 if (deptTrendsDeptBtn) deptTrendsDeptBtn.classList.add('active'); // Directly add active
 
                 // For new earnings charts, ensure they are updated on initial load (assuming earnings-view is hidden at start)
+                // These are handled by setupViewToggle when it changes to earnings view.
+                // However, if the initial view IS earnings, we need to ensure they draw.
+                // For now, these explicit updates are sufficient.
                 if (charts.earningsVsCosts) charts.earningsVsCosts.update(data.months);
                 if (charts.netProfitLoss) charts.netProfitLoss.update(data.months);
                 if (charts.profitMargin) charts.profitMargin.update(data.months);
@@ -1427,9 +1456,3 @@ function showError(message) {
         </div>
     `;
 }
-
-// Ensure Chart.js is ready before trying to create charts
-document.addEventListener('DOMContentLoaded', () => {
-    // Data fetching and initDashboard call happens in the fetch's .then() block
-    // No explicit call here as it's triggered by data loading.
-});
