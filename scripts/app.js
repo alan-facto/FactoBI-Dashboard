@@ -430,20 +430,12 @@ const globalChartOptions = {
     responsive: true, maintainAspectRatio: false,
     animation: { 
         duration: 800,
-        // Fix for first-column animation issue by delaying the animation slightly
-        // on initial load, ensuring the canvas is ready.
-        onComplete: () => {
-            if (Chart.instances[0] && !Chart.instances[0].isInitialRender) {
-                Chart.instances[0].isInitialRender = true;
-            }
+        onProgress: function(animation) {
+            // This can be used for more complex animations if needed
         },
-        delay: (context) => {
-            let delay = 0;
-            if (context.type === 'data' && context.mode === 'default' && !context.chart.isInitialRender) {
-                delay = context.dataIndex * 50 + context.datasetIndex * 100;
-            }
-            return delay;
-        },
+        onComplete: function() {
+            // This can be used for actions after animation completes
+        }
     }
 };
 
@@ -466,7 +458,6 @@ function createTotalExpendituresChart(chartData, months) {
     return {
         update: function(newData, monthsToShow, selectedDepartment = 'all') {
             if (!monthsToShow) return;
-            chart.isInitialRender = false; // Reset for animation
             chart.data.labels = monthsToShow.map(formatMonthShort);
             const dataset = { borderColor: '#024B59', backgroundColor: hexToRGBA('#024B59', 0.1), borderWidth: 2, fill: true, tension: 0.4 };
             if (selectedDepartment === 'all') {
@@ -502,7 +493,6 @@ function createDepartmentTrendsChart(chartData, months, departments) {
     return {
         update: function(monthsToShow = months, filteredDepartments = departments) {
             if (!monthsToShow) return;
-            chart.isInitialRender = false; // Reset for animation
             chart.data.labels = monthsToShow.map(formatMonthShort);
             chart.data.datasets = filteredDepartments.map(dept => ({
                 label: dept, data: monthsToShow.map(month => data.data[month]?.departments[dept]?.geral || 0),
@@ -723,35 +713,6 @@ function createEarningsPerEmployeeChart(chartData, months) {
     });
 }
 
-// NEW CHART FUNCTION
-function createAllocationChart(chartData, months, departments) {
-    const ctx = document.getElementById('allocation-chart');
-    if (!ctx) return null;
-    new Chart(ctx.getContext('2d'), {
-        type: 'bar',
-        data: {
-            labels: months.map(formatMonthShort),
-            datasets: departments.map(dept => ({
-                label: dept,
-                data: months.map(month => {
-                    const earnings = chartData[month]?.earnings || 1;
-                    const departmentCost = chartData[month]?.departments[dept]?.geral || 0;
-                    return (earnings > 0) ? (departmentCost / earnings) * 100 : 0;
-                }),
-                backgroundColor: colorsByDepartment[dept] || "#ccc"
-            }))
-        },
-        options: { 
-            ...globalChartOptions, 
-            plugins: { legend: { position: 'right' } }, 
-            scales: { 
-                x: { stacked: true }, 
-                y: { stacked: true, ticks: { callback: (value) => value.toFixed(1) + "%" } } 
-            } 
-        }
-    });
-}
-
 
 // --- Pie Chart Section Functions ---
 function setupDepartmentBreakdown() {
@@ -899,7 +860,7 @@ function updateDepartmentBreakdownCharts() {
             .sort((a, b) => b.value - a.value);
 
         const chart = new Chart(canvas, {
-            type: 'doughnut',
+            type: 'pie',
             data: {
                 labels: filteredDeptData.map(d => d.name),
                 datasets: [{
@@ -909,9 +870,8 @@ function updateDepartmentBreakdownCharts() {
                 }]
             },
             options: {
-                ...globalChartOptions, // Use global animation options
+                ...globalChartOptions,
                 responsive: true, maintainAspectRatio: true,
-                cutout: '50%',
                 plugins: {
                     legend: { display: false },
                     tooltip: {
@@ -992,8 +952,7 @@ async function initDashboard() {
             earningsVsCosts: createEarningsVsCostsChart(data.data, data.months),
             netProfitLoss: createNetProfitLossChart(data.data, data.months),
             profitMargin: createProfitMarginChart(data.data, data.months),
-            earningsPerEmployee: createEarningsPerEmployeeChart(data.data, data.months),
-            allocation: createAllocationChart(data.data, data.months, data.departments)
+            earningsPerEmployee: createEarningsPerEmployeeChart(data.data, data.months)
         };
         
         setupDepartmentBreakdown();
