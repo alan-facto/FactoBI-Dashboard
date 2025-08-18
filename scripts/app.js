@@ -80,13 +80,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const departmentsSet = new Set();
             const structuredData = {};
 
-            // Initialize structure for all months that will be present in the data (from both sources)
-            const allPossibleMonths = new Set([
-                ...fetchedRows.map(row => row["Month"]),
-                ...earningsRows.map(row => convertMonthToYYYYMM(row.month))
-            ]);
-            Array.from(allPossibleMonths).sort().forEach(month => {
-                if(month) { // Ensure we don't create keys for null/undefined months
+            // Process Sheet1 data first to establish the months
+            fetchedRows.forEach(row => {
+                const month = row["Month"];
+                if (month && !structuredData[month]) {
+                    monthsSet.add(month);
                     structuredData[month] = {
                         departments: {},
                         total: 0,
@@ -96,67 +94,58 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-
-            // Process Sheet1 data first
+            // Now process the rows to populate the data
             fetchedRows.forEach(row => {
                 try {
                     const month = row["Month"];
-                    
-                    // =================== FIX STARTS HERE ===================
-                    // If the month is missing, skip this row to prevent errors
                     if (!month) {
                         console.warn("Skipping row with missing month data:", row);
-                        return; // Exits the current iteration and continues with the next row
+                        return;
                     }
-                    // =================== FIX ENDS HERE =====================
 
                     const rawDept = row["Department"];
-                    const dept = deptMap[rawDept] || rawDept; // Map department names
+                    const dept = deptMap[rawDept] || rawDept;
                     const total = parseFloat(row["Total"]) || 0;
                     const bonificacao = parseFloat(row["Bonificacao 20"]) || 0;
                     const count = parseInt(row["Employee Count"]) || 0;
-                    const geral = parseFloat(row["Total Geral"]) || (total + bonificacao); // Total costs + bonuses
+                    const geral = parseFloat(row["Total Geral"]) || (total + bonificacao);
 
-                    monthsSet.add(month);
-
-                    if (dept.toLowerCase() !== "total geral") { // Exclude overall total if present
+                    if (dept.toLowerCase() !== "total geral") {
                         departmentsSet.add(dept);
-
-                        // Ensure department exists for the month
                         if (!structuredData[month].departments[dept]) {
-                            structuredData[month].departments[dept] = {
-                                total: 0, bonificacao: 0, count: 0, geral: 0
-                            };
+                            structuredData[month].departments[dept] = { total: 0, bonificacao: 0, count: 0, geral: 0 };
                         }
-                        structuredData[month].departments[dept] = {
-                            total, bonificacao, count, geral
-                        };
-                        structuredData[month].total += geral; // Aggregate total costs for the month
-                        structuredData[month].totalEmployees += count; // Aggregate total employees for the month
+                        structuredData[month].departments[dept] = { total, bonificacao, count, geral };
+                        structuredData[month].total += geral;
+                        structuredData[month].totalEmployees += count;
                     }
                 } catch (error) {
                     console.error('Error processing row from Sheet1:', row, error);
                 }
             });
 
-            // Merge earnings data into structuredData
+            // =================== FIX STARTS HERE ===================
+            // Merge earnings data ONLY into existing months
             earningsRows.forEach(row => {
                 const monthKey = convertMonthToYYYYMM(row.month);
-                if (structuredData[monthKey]) { // Only add if the month exists from sheet1 or was pre-initialized
+                // This check ensures we only add earnings to months that
+                // were already created from the main sheet data.
+                if (structuredData[monthKey]) {
                     structuredData[monthKey].earnings = row.faturamento;
                 }
-                if(monthKey) monthsSet.add(monthKey); // Ensure all months from earnings are included
             });
+            // =================== FIX ENDS HERE =====================
+
 
             // Final data assignment
             data = {
                 months: Array.from(monthsSet).sort(),
-                departments: Array.from(departmentsSet).sort(), // Ensure departments are sorted for consistency
+                departments: Array.from(departmentsSet).sort(),
                 data: structuredData
             };
 
-            sortedMonths = data.months.slice(); // Keep a sorted list of all months
-            initDashboard(); // Initialize the dashboard once all data is processed
+            sortedMonths = data.months.slice();
+            initDashboard();
         })
         .catch(error => {
             console.error("Error loading data:", error);
