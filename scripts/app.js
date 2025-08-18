@@ -824,5 +824,5 @@ function initDashboard() {
 
 function showError(message) {
     const container = document.querySelector('.container') || document.body;
-    container.innerHTML = `<div class="error-message"><h2>Erro</h2><p>${message}</p><button onclick="window.location.reload()">Recarregar Página</button></div>`
+    container.innerHTML = `<div class="error-message"><h2>Erro</h2><p>${message}</p><button onclick="window.location.reload()">Recarregar Página</button></div>`;
 }
