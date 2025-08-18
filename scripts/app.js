@@ -52,12 +52,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(apiData.error);
             }
             
-            const fetchedRows = apiData.expenditures;
-            const earningsData = apiData.earnings;
+            // =================== FIX STARTS HERE ===================
+            // This makes the app resilient to both old and new API formats.
+            let fetchedRows;
+            let earningsData;
 
-            if (!fetchedRows || !Array.isArray(fetchedRows) || !earningsData || !Array.isArray(earningsData)) {
+            if (apiData.expenditures && Array.isArray(apiData.expenditures)) {
+                // New format: API is sending both datasets correctly.
+                fetchedRows = apiData.expenditures;
+                earningsData = apiData.earnings || [];
+            } else if (Array.isArray(apiData)) {
+                // Old format: API is only sending the expenditures array.
+                // Handle it gracefully without crashing.
+                console.warn("API is returning data in an outdated format. The app will work, but earnings data may be missing. Please update and redeploy the Google Apps Script.");
+                fetchedRows = apiData;
+                earningsData = []; // Set earnings to empty to avoid errors.
+            } else {
+                 // The format is completely unexpected.
                 throw new Error('Invalid data format received from API');
             }
+            // =================== FIX ENDS HERE =====================
 
             const monthsSet = new Set();
             const departmentsSet = new Set();
@@ -109,8 +123,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Merge earnings data from Sheet2
             earningsData.forEach(row => {
-                const monthShortStr = row["Mês"]; 
-                const faturamentoStr = row["Faturamento"];
+                const monthShortStr = row && row["Mês"]; 
+                const faturamentoStr = row && row["Faturamento"];
 
                 if (monthShortStr && faturamentoStr) {
                     const monthKey = convertMonthToYYYYMM(String(monthShortStr).trim());
