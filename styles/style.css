@@ -12,6 +12,7 @@ body {
   max-width: 1400px;
   margin: 0 auto;
   padding: 20px;
+  position: relative; /* Added for logo positioning context */
 }
 
 /* ====== VIEW TOGGLE ====== */
@@ -344,9 +345,10 @@ body {
 /* ====== LOGO STYLING ====== */
 .facto-logo {
   position: absolute;
-  top: 15px;
-  right: 15px;
+  top: 25px; /* Adjusted Y position */
+  right: 25px; /* Adjusted X position for consistency */
   height: 40px;
+  z-index: 10; /* Ensures logo is above other elements */
 }
 
 /* ====== RESPONSIVE ADJUSTMENTS ====== */
@@ -436,8 +438,8 @@ body {
 
 /* Updated active button color for tables */
 .table-toggle-btn.active {
-  background-color: #3eec90 !important; /* New active color with !important */
-  color: #024B59 !important; /* Dark green font with !important */
+  background-color: #3eec90 !important;
+  color: #024B59 !important;
   font-weight: bold;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
@@ -455,7 +457,3 @@ body {
     from { opacity: 0; transform: translateY(-10px); }
     to { opacity: 1; transform: translateY(0); }
 }
-
-
-
-
