@@ -109,7 +109,7 @@ body {
   height: 350px;
 }
 
-/* ====== FILTER BUTTONS ====== */
+/* ====== FILTER BUTTONS (Modern Style) ====== */
 .filter-buttons-wrapper {
     display: flex;
     justify-content: center;
@@ -121,10 +121,14 @@ body {
   flex-wrap: wrap;
   gap: 10px;
   justify-content: center;
-  max-width: 80%; /* Constrains the width of the button group */
+  max-width: 80%;
 }
 
-.filter-btn {
+.time-filters, .centered-toggle .filter-buttons {
+    max-width: 100%;
+}
+
+.filter-btn, .pie-time-btn, .pie-chart-nav button {
   background-color: #e9ecef;
   color: #495057;
   border: none;
@@ -133,9 +137,10 @@ body {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
+  font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
-.filter-btn.active {
+.filter-btn.active, .pie-time-btn.active {
   background-color: #024B59;
   color: #fff;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
@@ -227,6 +232,11 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+#pie-department-filters .filter-btn {
+    width: 100%;
+    justify-content: flex-start;
 }
 
 .department-legend-item {
