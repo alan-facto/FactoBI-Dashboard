@@ -7,13 +7,12 @@ import { getFirestore, collection, getDocs } from "https://www.gstatic.com/fireb
 // Firebase project's configuration. You can find this in your
 // Firebase project settings under "Your apps" -> "SDK setup and configuration".
 const firebaseConfig = {
-  apiKey: "AIzaSyDuXzhFCIUICOV4xrf7uYl3hYPAQp6qhbs",
-  authDomain: "financialdashboard-a60a6.firebaseapp.com",
-  projectId: "financialdashboard-a60a6",
-  storageBucket: "financialdashboard-a60a6.firebasestorage.app",
-  messagingSenderId: "876071686917",
-  appId: "1:876071686917:web:4c1fc89d1fc21fdec49d6c",
-  measurementId: "G-C8GQJJR945"
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  appId: "YOUR_APP_ID"
 };
 
 // Initialize Firebase
@@ -396,6 +395,11 @@ function generateEarningsTable() {
     container.appendChild(section);
 }
 
+function getMonthsToShow(allMonths, range) {
+    if (range === 'all') return allMonths;
+    return allMonths.slice(-parseInt(range));
+}
+
 function setupTimeFilters() {
     const trendsWrapper = document.getElementById('department-trends-wrapper');
     
@@ -439,11 +443,7 @@ function setupTimeFilters() {
     }
 }
 
-// --- Chart Creation Functions (Remain largely the same) ---
-// ... [All chart creation functions like createTotalExpendituresChart, etc., are here] ...
-// NOTE: For brevity, the chart creation functions are omitted here, but they are the same as the previous version.
-// They should be included in the final file. The following is a placeholder for them.
-
+// --- Chart Creation Functions ---
 function createTotalExpendituresChart(chartData, months, departments) {
     const canvas = document.getElementById('total-expenditures-chart');
     if (!canvas) return null;
@@ -825,4 +825,4 @@ function initDashboard() {
 
 function showError(message) {
     const container = document.querySelector('.container') || document.body;
-    container.innerHTML = `<div class="error-message"><h2>Erro</h2><p>${message}</p><button onclick="window.location.reload()">Recarregar Página</button></div>`
+    container.innerHTML = `<div class="error-message"><h2>Erro</h2><p>${message}</p><button onclick="window.location.reload()">Recarregar Página</button></div>
