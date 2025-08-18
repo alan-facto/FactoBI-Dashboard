@@ -33,8 +33,10 @@ let pieChartState = {
 // --- Mappings and Helpers ---
 const deptMap = {
     "Administrativo Financeiro": "Administrativo", "Apoio": "Apoio", "Comercial": "Comercial",
-    "Diretoria": "Diretoria", "Jurídico Externo": "Jurídico", "Marketing": "Marketing",
-    "NEC": "NEC", "Operação Geral": "Operação", "RH / Departamento Pessoal": "RH"
+    "Diretoria": "Diretoria", "Direção": "Diretoria", // [NEW] Unify "Direção"
+    "Jurídico Externo": "Jurídico", "Marketing": "Marketing",
+    "NEC": "NEC", "Operação Geral": "Operação", "RH / Departamento Pessoal": "RH",
+    "Planejamento Estratégico": "Planejamento Estratégico"
 };
 
 function convertMonthToYYYYMM(monthStr) {
@@ -106,7 +108,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (!structuredData[monthKey].departments[dept]) {
                     structuredData[monthKey].departments[dept] = { total: 0, bonificacao: 0, valeAlimentacao: 0, count: 0, geral: 0 };
                 }
-                structuredData[monthKey].departments[dept] = { total, bonificacao, valeAlimentacao, count, geral };
+                // Use += to aggregate data if a department appears multiple times (like "Diretoria" and "Direção")
+                structuredData[monthKey].departments[dept].total += total;
+                structuredData[monthKey].departments[dept].bonificacao += bonificacao;
+                structuredData[monthKey].departments[dept].valeAlimentacao += valeAlimentacao;
+                structuredData[monthKey].departments[dept].count += count;
+                structuredData[monthKey].departments[dept].geral += geral;
+
                 structuredData[monthKey].total += geral;
                 structuredData[monthKey].totalEmployees += count;
             }
@@ -140,7 +148,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 const colorsByDepartment = {
     "Administrativo": "#6B5B95", "Apoio": "#FF6F61", "Comercial": "#E44D42",
     "Diretoria": "#0072B5", "Jurídico": "#2E8B57", "Marketing": "#FFA500",
-    "NEC": "#9370DB", "Operação": "#00A86B", "RH": "#FF69B4"
+    "NEC": "#9370DB", "Operação": "#00A86B", "RH": "#FF69B4",
+    "Planejamento Estratégico": "#D95F02" // [NEW] Color for new department
 };
 
 // --- Utility Functions ---
@@ -167,7 +176,7 @@ function formatCurrencyBRL(value) {
 }
 
 function formatVA(value, month) {
-    if (month < '2025-07' && (value === 0 || value === null || value === undefined)) {
+    if (month < '2025-01' && (value === 0 || value === null || value === undefined)) {
         return 'N/A';
     }
     return formatCurrencyBRL(value);
@@ -266,7 +275,6 @@ function generateSummaryByDepartment() {
     });
 }
 
-// [UPDATED] Fixed table width issue
 function generateDetailedByMonth() {
     const container = document.getElementById('table-detailed-month');
     if (!container) return;
@@ -285,7 +293,7 @@ function generateDetailedByMonth() {
         table.innerHTML = `
             <thead><tr><th>Departamento</th><th>Funcionários</th><th>Total Simples</th><th>Vale Alimentação</th><th>Bonificação (Dia 20)</th><th>Total Geral</th></tr></thead>
             <tbody>
-                ${data.departments.map(dept => {
+                ${Object.keys(colorsByDepartment).map(dept => { // Iterate to maintain order
                     const d = monthData.departments[dept];
                     return d ? `<tr>
                         <td>${dept}</td><td>${d.count || 0}</td><td>${formatCurrencyBRL(d.total)}</td>
@@ -302,7 +310,6 @@ function generateDetailedByMonth() {
     });
 }
 
-// [UPDATED] Fixed table width issue
 function generateDetailedByDepartment() {
     const container = document.getElementById('table-detailed-department');
     if (!container) return;
@@ -313,7 +320,7 @@ function generateDetailedByDepartment() {
             if (d) {
                 totalSimples += d.total; totalVA += d.valeAlimentacao; totalBonificacao += d.bonificacao;
                 totalGeral += d.geral; employeeSum += d.count; monthCount++;
-                if (d.valeAlimentacao > 0 || month >= '2025-07') lastMonthWithVA = month;
+                if (d.valeAlimentacao > 0 || month >= '2025-01') lastMonthWithVA = month;
             }
         });
         const avgEmployees = monthCount > 0 ? (employeeSum / monthCount).toFixed(1) : 0;
@@ -377,6 +384,17 @@ function setupTimeFilters() {
         try { return JSON.parse(jsonString); } catch (e) { return []; }
     };
     
+    // [NEW] Dynamically create filter buttons
+    const filterButtonsContainer = document.querySelector('#total-expenditures-wrapper .filter-buttons');
+    filterButtonsContainer.innerHTML = '<button class="filter-btn active" data-department="all">Todos</button>'; // Start with 'All'
+    data.departments.forEach(dept => {
+        const button = document.createElement('button');
+        button.className = 'filter-btn';
+        button.dataset.department = dept;
+        button.textContent = dept;
+        filterButtonsContainer.appendChild(button);
+    });
+
     document.querySelectorAll('#total-expenditures-wrapper .time-btn').forEach(button => {
         button.addEventListener('click', () => {
             document.querySelectorAll('#total-expenditures-wrapper .time-btn').forEach(btn => btn.classList.remove('active'));
@@ -784,7 +802,7 @@ function updateDepartmentBreakdownCharts() {
     }
 
     let gridTemplate = 'repeat(3, 1fr)';
-    if (pieChartState.range === 12) gridTemplate = 'repeat(4, 1fr)';
+    if (pieChartState.range === 12) gridTemplate = 'repeat(6, 1fr)'; // 2x6 layout
     if (pieChartState.range === 3) gridTemplate = 'repeat(3, 1fr)';
     if (pieChartState.range === 1) gridTemplate = '1fr';
     container.style.gridTemplateColumns = gridTemplate;
@@ -798,17 +816,23 @@ function updateDepartmentBreakdownCharts() {
         if (pieChartState.range === 1) pieItem.classList.add('single-view');
         
         const canvas = document.createElement('canvas');
-        pieItem.appendChild(canvas);
-
+        
         const label = document.createElement('div');
         label.className = 'pie-label';
         label.textContent = formatMonthLabel(month);
-        pieItem.appendChild(label);
         
         if (pieChartState.range === 1) {
             const customLegend = document.createElement('div');
             customLegend.className = 'custom-legend-container';
-            pieItem.insertBefore(customLegend, canvas); // Place legend before canvas
+            pieItem.appendChild(customLegend);
+            const chartWrapper = document.createElement('div');
+            chartWrapper.style.position = 'relative';
+            chartWrapper.appendChild(canvas);
+            chartWrapper.appendChild(label);
+            pieItem.appendChild(chartWrapper);
+        } else {
+            pieItem.appendChild(canvas);
+            pieItem.appendChild(label);
         }
 
         container.appendChild(pieItem);
@@ -888,7 +912,6 @@ function renderCustomLegend(container, chartData) {
             <div class="legend-name">${item.name}</div>
             <div class="legend-percent">${Math.round((item.value / total) * 100)}%</div>
         `;
-        // Simple split for now, can be enhanced with angle logic if needed
         if (index < (chartData.length + 1) / 2) {
             leftColumn.appendChild(legendItem);
         } else {
@@ -914,11 +937,11 @@ function prepareDOMForPieCharts() {
             #department-breakdown-wrapper .card { display: flex; flex-direction: column; }
             .pie-chart-controls { display: flex; justify-content: center; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
             .pie-chart-main-content { display: flex; gap: 25px; flex-grow: 1; align-items: center; }
-            #department-breakdown-charts { flex-grow: 1; display: grid; gap: 20px; align-items: center; }
+            #department-breakdown-charts { flex-grow: 1; display: grid; gap: 15px; }
             .pie-item { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s ease-in-out; }
-            .pie-item.single-view { flex-direction: row; align-items: center; justify-content: center; gap: 20px; max-width: 90%; margin: 0 auto; }
-            .pie-item.single-view .custom-legend-container { flex: 1; }
-            .pie-item.single-view canvas { max-width: 350px; }
+            .pie-item.single-view { flex-direction: row-reverse; align-items: center; justify-content: center; gap: 30px; max-width: 100%; margin: 0 auto; }
+            .pie-item.single-view .custom-legend-container { flex-basis: 40%; }
+            .pie-item.single-view canvas { max-height: 380px; }
             .pie-label { margin-top: 10px; font-weight: 600; color: #333; text-align: center; font-size: 1rem; }
             .department-legend-sidebar { flex-basis: 220px; flex-shrink: 0; border-left: 1px solid #e0e0e0; padding-left: 20px; }
             #pie-department-filters { display: flex; flex-direction: column; gap: 8px; }
@@ -977,7 +1000,6 @@ async function initDashboard() {
             throw new Error('Invalid or incomplete data. Cannot initialize dashboard.');
         }
         
-        // [MODIFIED] No longer need to load the datalabels plugin
         await prepareDOMForPieCharts();
 
         setupViewToggle();
