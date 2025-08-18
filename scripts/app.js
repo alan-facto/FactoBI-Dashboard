@@ -1,7 +1,6 @@
 const apiUrl = "https://script.google.com/macros/s/AKfycbyHUho9j0-swZTJO4Fka_59Nv3GVFqo-Qfbp3yydchcKZaUUcs7HxlWZ5mUO6vjH4mPTA/exec";
 
 // Structure to hold processed data
-// Added 'earnings' property to each month's data to store revenue
 let data = { months: [], departments: [], data: {} };
 let sortedMonths = [];
 
@@ -37,33 +36,9 @@ function convertMonthToYYYYMM(monthShortStr) {
     return `${yearFull}-${monthNum}`;
 }
 
-// Hardcoded earnings data from FactoBI_Data.xlsx - Sheet2.csv
-const earningsCsvContent = `Mês,Faturamento
-set.-24,"R$ 623.628,74"
-out.-24,"R$ 490.251,93"
-nov.-24,"R$ 444.936,70"
-dez.-24,"R$ 242.416,72"
-jan.-25,"R$ 708.662,16"
-fev.-25,"R$ 482.203,04"
-mar.-25,"R$ 571.218,45"
-abr.-25,"R$ 529.025,05"
-mai.-25,"R$ 133.723,72"
-jun.-25,"R$ 567.155,13"
-jul.-25,"R$ 513.826,17"`;
-
 // Ensure dashboard initialization happens AFTER the DOM is fully loaded.
 document.addEventListener('DOMContentLoaded', () => {
-    // Parse earnings data *inside* DOMContentLoaded to ensure it's available
-    // within this scope when needed, even if global scope has issues.
-    const earningsRows = earningsCsvContent.split('\n').slice(1).map(row => {
-        const [monthStr, faturamentoStr] = row.split(',');
-        return {
-            month: monthStr.trim(),
-            faturamento: parseFloat(faturamentoStr.replace(/["R$\s.]/g, '').replace(',', '.')) || 0
-        };
-    });
-
-    // Fetch and process live data (Sheet1)
+    // Fetch and process live data from both sheets
     fetch(apiUrl)
         .then(response => {
             if (!response.ok) {
@@ -71,8 +46,16 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             return response.json();
         })
-        .then(fetchedRows => {
-            if (!fetchedRows || !Array.isArray(fetchedRows)) {
+        .then(apiData => {
+            // Check for an error returned from the Apps Script itself
+            if (apiData.error) {
+                throw new Error(apiData.error);
+            }
+            
+            const fetchedRows = apiData.expenditures;
+            const earningsData = apiData.earnings;
+
+            if (!fetchedRows || !Array.isArray(fetchedRows) || !earningsData || !Array.isArray(earningsData)) {
                 throw new Error('Invalid data format received from API');
             }
 
@@ -80,7 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const departmentsSet = new Set();
             const structuredData = {};
 
-            // Process Sheet1 data first to establish the months
+            // Process Sheet1 (expenditures) data first to establish the months
             fetchedRows.forEach(row => {
                 const month = row["Month"];
                 if (month && !structuredData[month]) {
@@ -94,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            // Now process the rows to populate the data
+            // Now process the rows to populate the expenditure data
             fetchedRows.forEach(row => {
                 try {
                     const month = row["Month"];
@@ -110,7 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const count = parseInt(row["Employee Count"]) || 0;
                     const geral = parseFloat(row["Total Geral"]) || (total + bonificacao);
 
-                    if (dept.toLowerCase() !== "total geral") {
+                    if (dept && dept.toLowerCase() !== "total geral") {
                         departmentsSet.add(dept);
                         if (!structuredData[month].departments[dept]) {
                             structuredData[month].departments[dept] = { total: 0, bonificacao: 0, count: 0, geral: 0 };
@@ -120,22 +103,23 @@ document.addEventListener('DOMContentLoaded', () => {
                         structuredData[month].totalEmployees += count;
                     }
                 } catch (error) {
-                    console.error('Error processing row from Sheet1:', row, error);
+                    console.error('Error processing expenditure row:', row, error);
                 }
             });
 
-            // =================== FIX STARTS HERE ===================
-            // Merge earnings data ONLY into existing months
-            earningsRows.forEach(row => {
-                const monthKey = convertMonthToYYYYMM(row.month);
-                // This check ensures we only add earnings to months that
-                // were already created from the main sheet data.
-                if (structuredData[monthKey]) {
-                    structuredData[monthKey].earnings = row.faturamento;
+            // Merge earnings data from Sheet2
+            earningsData.forEach(row => {
+                const monthShortStr = row["Mês"]; 
+                const faturamentoStr = row["Faturamento"];
+
+                if (monthShortStr && faturamentoStr) {
+                    const monthKey = convertMonthToYYYYMM(String(monthShortStr).trim());
+                    if (structuredData[monthKey]) {
+                        const faturamentoValue = parseFloat(String(faturamentoStr).replace(/["R$\s.]/g, '').replace(',', '.')) || 0;
+                        structuredData[monthKey].earnings = faturamentoValue;
+                    }
                 }
             });
-            // =================== FIX ENDS HERE =====================
-
 
             // Final data assignment
             data = {
@@ -149,7 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         .catch(error => {
             console.error("Error loading data:", error);
-            showError('Falha ao carregar os dados. Por favor, recarregue a página.');
+            showError(`Falha ao carregar os dados: ${error.message}`);
         });
 });
 
