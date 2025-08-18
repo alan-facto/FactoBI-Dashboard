@@ -36,41 +36,62 @@ const deptMap = {
     "RH / Departamento Pessoal": "RH"
 };
 
+/**
+ * [FIXED] Converts various date string formats into a standardized "YYYY-MM" format.
+ * This new version correctly handles "YYYY-MM-DD" from your CSVs and other common formats.
+ * @param {string} monthStr - The date string to convert.
+ * @returns {string|null} The date in "YYYY-MM" format or null if parsing fails.
+ */
 function convertMonthToYYYYMM(monthStr) {
     if (!monthStr) {
-        console.warn('Invalid month string passed to convertMonthToYYYYMM:', monthStr);
+        console.warn('Invalid month string passed:', monthStr);
         return null;
     }
     const s = String(monthStr).trim();
 
-    // Handle "MM/YYYY" format (e.g., "03/2025")
-    if (s.includes('/')) {
-        const [month, year] = s.split('/');
-        if (month && year && year.length === 4) {
-            return `${year}-${month.padStart(2, '0')}`;
-        }
-    } 
-    // Handle "YYYY-MM" format (already correct)
-    else if (s.match(/^\d{4}-\d{2}$/)) {
-        return s;
+    // Try parsing as YYYY-MM-DD or YYYY-MM. This handles the format from your CSV files.
+    let match = s.match(/^(\d{4}-\d{2})/);
+    if (match) {
+        return `${match[1]}-${match[2]}`; // Returns "YYYY-MM"
     }
-    // Handle "mmm.-yy" format (e.g., "mar.-25")
-    else if (s.includes('-')) {
-        const [monthAbbr, yearShort] = s.split('-');
+
+    // Try parsing as DD/MM/YYYY (as requested for robustness)
+    match = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (match) {
+        const month = match[2].padStart(2, '0');
+        const year = match[3];
+        return `${year}-${month}`;
+    }
+
+    // Try parsing as MM/YYYY
+    match = s.match(/^(\d{1,2})\/(\d{4})$/);
+    if (match) {
+        const month = match[1].padStart(2, '0');
+        const year = match[2];
+        return `${year}-${month}`;
+    }
+
+    // Try parsing as mmm.-yy (e.g., "mar.-25") from the original function
+    match = s.match(/(\w{3,})\.-(\d{2})$/);
+    if (match) {
+        const monthAbbr = match[1];
+        const yearShort = match[2];
         const yearFull = parseInt(yearShort, 10) < 50 ? `20${yearShort}` : `19${yearShort}`;
         const monthMap = {
-            "jan.": "01", "fev.": "02", "mar.": "03", "abr.": "04", "mai.": "05", "jun.": "06",
-            "jul.": "07", "ago.": "08", "set.": "09", "out.": "10", "nov.": "11", "dez.": "12"
+            "jan": "01", "fev": "02", "mar": "03", "abr": "04", "mai": "05", "jun": "06",
+            "jul": "07", "ago": "08", "set": "09", "out": "10", "nov": "11", "dez": "12"
         };
-        const monthNum = monthMap[monthAbbr.toLowerCase()];
+        // Use substring to handle "jan." vs "jan"
+        const monthNum = monthMap[monthAbbr.toLowerCase().substring(0, 3)];
         if (monthNum) {
             return `${yearFull}-${monthNum}`;
         }
     }
-    
-    console.warn('Unrecognized month format:', monthStr);
+
+    console.warn('Unrecognized month format:', s);
     return null;
 }
+
 
 // --- Main Data Fetching and Processing ---
 document.addEventListener('DOMContentLoaded', async () => {
@@ -147,7 +168,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             const monthKey = convertMonthToYYYYMM(row["Mês"]);
             const faturamentoStr = row["Faturamento"];
             if (monthKey && faturamentoStr && structuredData[monthKey]) {
-                const faturamentoValue = parseFloat(String(faturamentoStr).replace(/["R$\s.]/g, '').replace(',', '.')) || 0;
+                // Ensure faturamento is treated as a number, not a string
+                const faturamentoValue = typeof faturamentoStr === 'number' ? faturamentoStr : parseFloat(String(faturamentoStr).replace(/["R$\s.]/g, '').replace(',', '.')) || 0;
                 structuredData[monthKey].earnings = faturamentoValue;
             }
         });
