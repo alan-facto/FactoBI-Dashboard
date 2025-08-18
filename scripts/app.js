@@ -21,71 +21,41 @@ const db = getFirestore(app);
 let data = { months: [], departments: [], data: {} };
 let sortedMonths = [];
 let charts = {};
+// [NEW] State for the dynamic pie chart section
+let pieChartState = {
+    range: 6,
+    offset: 0,
+    selectedDepartments: [],
+    chartInstances: []
+};
+
 
 // --- Mappings and Helpers ---
 const deptMap = {
-    "Administrativo Financeiro": "Administrativo",
-    "Apoio": "Apoio",
-    "Comercial": "Comercial",
-    "Diretoria": "Diretoria",
-    "Jurídico Externo": "Jurídico",
-    "Marketing": "Marketing",
-    "NEC": "NEC",
-    "Operação Geral": "Operação",
-    "RH / Departamento Pessoal": "RH"
+    "Administrativo Financeiro": "Administrativo", "Apoio": "Apoio", "Comercial": "Comercial",
+    "Diretoria": "Diretoria", "Jurídico Externo": "Jurídico", "Marketing": "Marketing",
+    "NEC": "NEC", "Operação Geral": "Operação", "RH / Departamento Pessoal": "RH"
 };
 
-/**
- * [FIXED] Converts various date string formats into a standardized "YYYY-MM" format.
- * This new version is more robust and uses explicit regex matching for each expected
- * format to prevent misinterpretation and ensure consistent keys for data consolidation.
- * @param {string} monthStr - The date string to convert.
- * @returns {string|null} The date in "YYYY-MM" format or null if parsing fails.
- */
 function convertMonthToYYYYMM(monthStr) {
-    if (!monthStr || typeof monthStr !== 'string') {
-        return null;
-    }
+    if (!monthStr || typeof monthStr !== 'string') return null;
     const s = monthStr.trim();
-
-    // Priority 1: YYYY-MM-DD or YYYY-MM
     let match = s.match(/^(\d{4})-(\d{2})/);
-    if (match) {
-        // match[1] is YYYY, match[2] is MM
-        return `${match[1]}-${match[2]}`;
-    }
-
-    // Priority 2: DD/MM/YYYY
+    if (match) return `${match[1]}-${match[2]}`;
     match = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-    if (match) {
-        // match[1] is DD, match[2] is MM, match[3] is YYYY
-        return `${match[3]}-${match[2].padStart(2, '0')}`;
-    }
-
-    // Priority 3: MM/YYYY
+    if (match) return `${match[3]}-${match[2].padStart(2, '0')}`;
     match = s.match(/^(\d{1,2})\/(\d{4})$/);
-    if (match) {
-        // match[1] is MM, match[2] is YYYY
-        return `${match[2]}-${match[1].padStart(2, '0')}`;
-    }
-
-    // Priority 4: mmm.-yy (e.g., "mar.-25")
-    match = s.match(/(\w{3,})\.-(\d{2})$/i); // case-insensitive
+    if (match) return `${match[2]}-${match[1].padStart(2, '0')}`;
+    match = s.match(/(\w{3,})\.-(\d{2})$/i);
     if (match) {
         const monthAbbr = match[1].substring(0, 3).toLowerCase();
         const yearShort = match[2];
         const yearFull = parseInt(yearShort, 10) < 70 ? `20${yearShort}` : `19${yearShort}`;
-        const monthMap = {
-            "jan": "01", "fev": "02", "mar": "03", "abr": "04", "mai": "05", "jun": "06",
-            "jul": "07", "ago": "08", "set": "09", "out": "10", "nov": "11", "dez": "12"
-        };
+        const monthMap = { "jan": "01", "fev": "02", "mar": "03", "abr": "04", "mai": "05", "jun": "06", "jul": "07", "ago": "08", "set": "09", "out": "10", "nov": "11", "dez": "12" };
         const monthNum = monthMap[monthAbbr];
-        if (monthNum) {
-            return `${yearFull}-${monthNum}`;
-        }
+        if (monthNum) return `${yearFull}-${monthNum}`;
     }
-
-    console.warn('Unrecognized month format, could not parse:', s);
+    console.warn('Unrecognized month format:', s);
     return null;
 }
 
@@ -109,45 +79,39 @@ document.addEventListener('DOMContentLoaded', async () => {
         const departmentsSet = new Set();
         const structuredData = {};
 
-        // Discover all unique months from BOTH sources first
         [...fetchedRows, ...earningsData].forEach(row => {
             const monthKey = convertMonthToYYYYMM(row["Month"] || row["Mês"]);
             if (monthKey) monthsSet.add(monthKey);
         });
 
-        // Initialize the data structure for all discovered months
         monthsSet.forEach(month => {
             if (!structuredData[month]) {
                 structuredData[month] = { departments: {}, total: 0, totalEmployees: 0, earnings: 0 };
             }
         });
 
-        // Populate with expenditure data
         fetchedRows.forEach(row => {
             const monthKey = convertMonthToYYYYMM(row["Month"]);
             if (!monthKey || !structuredData[monthKey]) return;
-
             const rawDept = row["Department"];
             const dept = deptMap[rawDept] || rawDept;
             const total = parseFloat(row["Total"]) || 0;
             const bonificacao = parseFloat(row["Bonificacao 20"]) || 0;
             const valeAlimentacao = parseFloat(row["Vale Alimentação"]) || 0;
             const count = parseInt(row["Employee Count"]) || 0;
-            const geral = total + bonificacao; // Total Geral is base + bonificação
+            const geral = total + bonificacao;
 
             if (dept && dept.toLowerCase() !== "total geral") {
                 departmentsSet.add(dept);
                 if (!structuredData[monthKey].departments[dept]) {
                     structuredData[monthKey].departments[dept] = { total: 0, bonificacao: 0, valeAlimentacao: 0, count: 0, geral: 0 };
                 }
-                // Assign new values
                 structuredData[monthKey].departments[dept] = { total, bonificacao, valeAlimentacao, count, geral };
                 structuredData[monthKey].total += geral;
                 structuredData[monthKey].totalEmployees += count;
             }
         });
 
-        // Merge earnings data
         earningsData.forEach(row => {
             const monthKey = convertMonthToYYYYMM(row["Mês"]);
             const faturamentoStr = row["Faturamento"];
@@ -308,44 +272,29 @@ function generateDetailedByMonth() {
     data.months.forEach(month => {
         const monthData = data.data[month];
         if (!monthData) return;
-
-        // Calculate totals for the footer
         const totalSimples = Object.values(monthData.departments).reduce((sum, dept) => sum + dept.total, 0);
         const totalVA = Object.values(monthData.departments).reduce((sum, dept) => sum + dept.valeAlimentacao, 0);
         const totalBonificacao = Object.values(monthData.departments).reduce((sum, dept) => sum + dept.bonificacao, 0);
         const totalGeral = Object.values(monthData.departments).reduce((sum, dept) => sum + dept.geral, 0);
-
         const section = document.createElement('div');
         section.innerHTML = `<h3>${formatMonthLabel(month)}</h3>`;
         const table = document.createElement('table');
-        table.style.tableLayout = 'auto'; // [FIX] Override fixed layout to prevent overflow
-
+        table.style.tableLayout = 'auto';
         table.innerHTML = `
             <thead><tr><th>Departamento</th><th>Funcionários</th><th>Total Simples</th><th>Vale Alimentação</th><th>Bonificação (Dia 20)</th><th>Total Geral</th></tr></thead>
             <tbody>
                 ${data.departments.map(dept => {
                     const d = monthData.departments[dept];
                     return d ? `<tr>
-                        <td>${dept}</td>
-                        <td>${d.count || 0}</td>
-                        <td>${formatCurrencyBRL(d.total)}</td>
-                        <td>${formatVA(d.valeAlimentacao, month)}</td>
-                        <td>${formatCurrencyBRL(d.bonificacao)}</td>
-                        <td>${formatCurrencyBRL(d.geral)}</td>
+                        <td>${dept}</td><td>${d.count || 0}</td><td>${formatCurrencyBRL(d.total)}</td>
+                        <td>${formatVA(d.valeAlimentacao, month)}</td><td>${formatCurrencyBRL(d.bonificacao)}</td><td>${formatCurrencyBRL(d.geral)}</td>
                     </tr>` : '';
                 }).join('')}
             </tbody>
-            <tfoot>
-                <tr style="font-weight: bold; background-color: #f0f0f0;">
-                    <td>Total Mensal</td>
-                    <td>${monthData.totalEmployees}</td>
-                    <td>${formatCurrencyBRL(totalSimples)}</td>
-                    <td>${formatVA(totalVA, month)}</td>
-                    <td>${formatCurrencyBRL(totalBonificacao)}</td>
-                    <td>${formatCurrencyBRL(totalGeral)}</td>
-                </tr>
-            </tfoot>
-        `;
+            <tfoot><tr style="font-weight: bold; background-color: #f0f0f0;">
+                <td>Total Mensal</td><td>${monthData.totalEmployees}</td><td>${formatCurrencyBRL(totalSimples)}</td>
+                <td>${formatVA(totalVA, month)}</td><td>${formatCurrencyBRL(totalBonificacao)}</td><td>${formatCurrencyBRL(totalGeral)}</td>
+            </tr></tfoot>`;
         section.appendChild(table);
         container.appendChild(section);
     });
@@ -355,62 +304,35 @@ function generateDetailedByDepartment() {
     const container = document.getElementById('table-detailed-department');
     if (!container) return;
     data.departments.forEach(dept => {
-        // Calculate totals and averages for the footer
-        let totalSimples = 0;
-        let totalVA = 0;
-        let totalBonificacao = 0;
-        let totalGeral = 0;
-        let employeeSum = 0;
-        let monthCount = 0;
-        let lastMonthWithVA = '0000-00';
-
+        let totalSimples = 0, totalVA = 0, totalBonificacao = 0, totalGeral = 0, employeeSum = 0, monthCount = 0, lastMonthWithVA = '0000-00';
         data.months.forEach(month => {
             const d = data.data[month]?.departments[dept];
             if (d) {
-                totalSimples += d.total;
-                totalVA += d.valeAlimentacao;
-                totalBonificacao += d.bonificacao;
-                totalGeral += d.geral;
-                employeeSum += d.count;
-                monthCount++;
-                if (d.valeAlimentacao > 0 || month >= '2025-07') {
-                    lastMonthWithVA = month;
-                }
+                totalSimples += d.total; totalVA += d.valeAlimentacao; totalBonificacao += d.bonificacao;
+                totalGeral += d.geral; employeeSum += d.count; monthCount++;
+                if (d.valeAlimentacao > 0 || month >= '2025-07') lastMonthWithVA = month;
             }
         });
         const avgEmployees = monthCount > 0 ? (employeeSum / monthCount).toFixed(1) : 0;
-
         const section = document.createElement('div');
         section.innerHTML = `<h3>${dept}</h3>`;
         const table = document.createElement('table');
-        table.style.tableLayout = 'auto'; // [FIX] Override fixed layout to prevent overflow
-
+        table.style.tableLayout = 'auto';
         table.innerHTML = `
             <thead><tr><th>Mês</th><th>Funcionários</th><th>Total Simples</th><th>Vale Alimentação</th><th>Bonificação (Dia 20)</th><th>Total Geral</th></tr></thead>
             <tbody>
                 ${data.months.map(month => {
                     const d = data.data[month]?.departments[dept];
                     return d ? `<tr>
-                        <td>${formatMonthLabel(month)}</td>
-                        <td>${d.count || 0}</td>
-                        <td>${formatCurrencyBRL(d.total)}</td>
-                        <td>${formatVA(d.valeAlimentacao, month)}</td>
-                        <td>${formatCurrencyBRL(d.bonificacao)}</td>
-                        <td>${formatCurrencyBRL(d.geral)}</td>
+                        <td>${formatMonthLabel(month)}</td><td>${d.count || 0}</td><td>${formatCurrencyBRL(d.total)}</td>
+                        <td>${formatVA(d.valeAlimentacao, month)}</td><td>${formatCurrencyBRL(d.bonificacao)}</td><td>${formatCurrencyBRL(d.geral)}</td>
                     </tr>` : '';
                 }).join('')}
             </tbody>
-            <tfoot>
-                 <tr style="font-weight: bold; background-color: #f0f0f0;">
-                    <td>Total / Média</td>
-                    <td>${avgEmployees} (Média)</td>
-                    <td>${formatCurrencyBRL(totalSimples)}</td>
-                    <td>${formatVA(totalVA, lastMonthWithVA)}</td>
-                    <td>${formatCurrencyBRL(totalBonificacao)}</td>
-                    <td>${formatCurrencyBRL(totalGeral)}</td>
-                </tr>
-            </tfoot>
-        `;
+            <tfoot><tr style="font-weight: bold; background-color: #f0f0f0;">
+                <td>Total / Média</td><td>${avgEmployees} (Média)</td><td>${formatCurrencyBRL(totalSimples)}</td>
+                <td>${formatVA(totalVA, lastMonthWithVA)}</td><td>${formatCurrencyBRL(totalBonificacao)}</td><td>${formatCurrencyBRL(totalGeral)}</td>
+            </tr></tfoot>`;
         section.appendChild(table);
         container.appendChild(section);
     });
@@ -429,14 +351,10 @@ function generateEarningsTable() {
             ${data.months.map(month => {
                 const monthData = data.data[month];
                 if (!monthData) return '';
-                const earnings = monthData.earnings || 0;
-                const totalCosts = monthData.total || 0;
-                const netProfit = earnings - totalCosts;
+                const earnings = monthData.earnings || 0, totalCosts = monthData.total || 0, netProfit = earnings - totalCosts;
                 const profitMargin = (earnings > 0) ? (netProfit / earnings) * 100 : 0;
                 return `<tr>
-                    <td>${formatMonthLabel(month)}</td>
-                    <td>${formatCurrencyBRL(earnings)}</td>
-                    <td>${formatCurrencyBRL(totalCosts)}</td>
+                    <td>${formatMonthLabel(month)}</td><td>${formatCurrencyBRL(earnings)}</td><td>${formatCurrencyBRL(totalCosts)}</td>
                     <td style="color: ${netProfit >= 0 ? '#00A86B' : '#E44D42'}; font-weight: bold;">${formatCurrencyBRL(netProfit)}</td>
                     <td style="color: ${profitMargin >= 0 ? '#00A86B' : '#E44D42'}; font-weight: bold;">${profitMargin.toFixed(2)}%</td>
                 </tr>`;
@@ -452,9 +370,7 @@ function setupTimeFilters() {
     const tryParseJSON = (jsonString) => {
         if (!jsonString || jsonString === 'undefined' || jsonString === 'null') return [];
         if (jsonString === 'all') return data.departments || [];
-        try {
-            return JSON.parse(jsonString);
-        } catch (e) { return []; }
+        try { return JSON.parse(jsonString); } catch (e) { return []; }
     };
     
     document.querySelectorAll('#total-expenditures-wrapper .time-btn').forEach(button => {
@@ -494,7 +410,7 @@ function setupTimeFilters() {
     }
 }
 
-// --- Chart Creation Functions (no changes needed) ---
+// --- Chart Creation Functions ---
 function createTotalExpendituresChart(chartData, months, departments) {
     const canvas = document.getElementById('total-expenditures-chart');
     if (!canvas) return null;
@@ -504,13 +420,9 @@ function createTotalExpendituresChart(chartData, months, departments) {
         data: {
             labels: months.map(formatMonthShort),
             datasets: [{
-                label: 'Gastos Totais',
-                data: months.map(month => chartData[month]?.total || 0),
-                borderColor: '#024B59',
-                backgroundColor: hexToRGBA('#024B59', 0.1),
-                borderWidth: 2,
-                fill: true,
-                tension: 0.4
+                label: 'Gastos Totais', data: months.map(month => chartData[month]?.total || 0),
+                borderColor: '#024B59', backgroundColor: hexToRGBA('#024B59', 0.1),
+                borderWidth: 2, fill: true, tension: 0.4
             }]
         },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
@@ -519,13 +431,7 @@ function createTotalExpendituresChart(chartData, months, departments) {
         update: function(newData, monthsToShow, selectedDepartment = 'all') {
             if (!monthsToShow) return;
             chart.data.labels = monthsToShow.map(formatMonthShort);
-            const dataset = {
-                borderColor: '#024B59',
-                backgroundColor: hexToRGBA('#024B59', 0.1),
-                borderWidth: 2,
-                fill: true,
-                tension: 0.4
-            };
+            const dataset = { borderColor: '#024B59', backgroundColor: hexToRGBA('#024B59', 0.1), borderWidth: 2, fill: true, tension: 0.4 };
             if (selectedDepartment === 'all') {
                 dataset.label = 'Gastos Totais';
                 dataset.data = monthsToShow.map(month => newData[month]?.total || 0);
@@ -550,12 +456,8 @@ function createDepartmentTrendsChart(chartData, months, departments) {
         data: {
             labels: months.map(formatMonthShort),
             datasets: departments.map(dept => ({
-                label: dept,
-                data: months.map(month => chartData[month]?.departments[dept]?.geral || 0),
-                borderColor: colorsByDepartment[dept] || "#ccc",
-                borderWidth: 2,
-                fill: false,
-                tension: 0.3
+                label: dept, data: months.map(month => chartData[month]?.departments[dept]?.geral || 0),
+                borderColor: colorsByDepartment[dept] || "#ccc", borderWidth: 2, fill: false, tension: 0.3
             }))
         },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
@@ -565,12 +467,8 @@ function createDepartmentTrendsChart(chartData, months, departments) {
             if (!monthsToShow) return;
             chart.data.labels = monthsToShow.map(formatMonthShort);
             chart.data.datasets = filteredDepartments.map(dept => ({
-                label: dept,
-                data: monthsToShow.map(month => data.data[month]?.departments[dept]?.geral || 0),
-                borderColor: colorsByDepartment[dept] || "#ccc",
-                borderWidth: 2,
-                fill: false,
-                tension: 0.3
+                label: dept, data: monthsToShow.map(month => data.data[month]?.departments[dept]?.geral || 0),
+                borderColor: colorsByDepartment[dept] || "#ccc", borderWidth: 2, fill: false, tension: 0.3
             }));
             chart.update();
         }
@@ -587,11 +485,7 @@ function createAvgExpenditureChart(chartData, months) {
             datasets: [{
                 label: 'Média de Gastos por Funcionário',
                 data: months.map(month => (chartData[month]?.totalEmployees > 0) ? chartData[month].total / chartData[month].totalEmployees : 0),
-                borderColor: '#024B59',
-                backgroundColor: hexToRGBA('#024B59', 0.1),
-                borderWidth: 2,
-                fill: true,
-                tension: 0.4
+                borderColor: '#024B59', backgroundColor: hexToRGBA('#024B59', 0.1), borderWidth: 2, fill: true, tension: 0.4
             }]
         },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
@@ -612,13 +506,8 @@ function createEmployeesChart(chartData, months) {
         data: {
             labels: months.map(formatMonthShort),
             datasets: [{
-                label: 'Total de Funcionários',
-                data: months.map(month => chartData[month]?.totalEmployees || 0),
-                borderColor: '#024B59',
-                backgroundColor: hexToRGBA('#024B59', 0.1),
-                borderWidth: 2,
-                fill: true,
-                tension: 0.4
+                label: 'Total de Funcionários', data: months.map(month => chartData[month]?.totalEmployees || 0),
+                borderColor: '#024B59', backgroundColor: hexToRGBA('#024B59', 0.1), borderWidth: 2, fill: true, tension: 0.4
             }]
         },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
@@ -663,35 +552,8 @@ function createPercentageStackedChart(chartData, months, departments) {
     }};
 }
 
-function createDepartmentBreakdownCharts(chartData, months, departments) {
-    const container = document.getElementById('department-breakdown-charts');
-    if (!container) return null;
-    container.innerHTML = '';
-    const recentMonths = months.slice(-6);
-    recentMonths.forEach(month => {
-        const pieItem = document.createElement('div');
-        pieItem.className = 'pie-item';
-        const canvas = document.createElement('canvas');
-        pieItem.appendChild(canvas);
-        const label = document.createElement('div');
-        label.className = 'pie-label';
-        label.textContent = formatMonthLabel(month);
-        pieItem.appendChild(label);
-        container.appendChild(pieItem);
-        new Chart(canvas.getContext('2d'), {
-            type: 'pie',
-            data: {
-                labels: departments,
-                datasets: [{
-                    data: departments.map(dept => chartData[month]?.departments[dept]?.geral || 0),
-                    backgroundColor: departments.map(dept => colorsByDepartment[dept] || "#ccc")
-                }]
-            },
-            options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false } } }
-        });
-    });
-    return { update: () => {} };
-}
+// [REWRITTEN] This function is now just a placeholder; the new setup and update functions handle everything.
+function createDepartmentBreakdownCharts() { /* Handled by setupDepartmentBreakdown and updateDepartmentBreakdownCharts */ }
 
 function createEarningsVsCostsChart(chartData, months) {
     const ctx = document.getElementById('earnings-vs-costs-chart');
@@ -845,12 +707,244 @@ function createContributionEfficiencyChart(chartData, months, departments) {
     }};
 }
 
+// --- [NEW] Pie Chart Section Functions ---
+
+function setupDepartmentBreakdown() {
+    // Initialize selected departments to all
+    pieChartState.selectedDepartments = data.departments.slice();
+
+    // --- Setup Event Listeners ---
+    document.querySelectorAll('.pie-time-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            document.querySelectorAll('.pie-time-btn').forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            pieChartState.range = parseInt(button.dataset.months);
+            pieChartState.offset = 0; // Reset offset when range changes
+            updateDepartmentBreakdownCharts();
+        });
+    });
+
+    document.getElementById('pie-nav-prev').addEventListener('click', () => {
+        const maxOffset = data.months.length - pieChartState.range;
+        if (pieChartState.offset < maxOffset) {
+            pieChartState.offset += pieChartState.range;
+            updateDepartmentBreakdownCharts();
+        }
+    });
+
+    document.getElementById('pie-nav-next').addEventListener('click', () => {
+        if (pieChartState.offset > 0) {
+            pieChartState.offset -= pieChartState.range;
+            updateDepartmentBreakdownCharts();
+        }
+    });
+
+    // Initial render
+    updateDepartmentBreakdownCharts();
+}
+
+function updateDepartmentBreakdownCharts() {
+    const container = document.getElementById('department-breakdown-charts');
+    const filterContainer = document.getElementById('pie-department-filters');
+    const navRangeEl = document.getElementById('pie-nav-range');
+    const prevBtn = document.getElementById('pie-nav-prev');
+    const nextBtn = document.getElementById('pie-nav-next');
+    if (!container || !filterContainer) return;
+
+    // --- Clean up previous state ---
+    pieChartState.chartInstances.forEach(chart => chart.destroy());
+    pieChartState.chartInstances = [];
+    container.innerHTML = '';
+    filterContainer.innerHTML = ''; 
+
+    // --- Calculate months to display ---
+    const totalMonths = data.months.length;
+    const startIndex = Math.max(0, totalMonths - pieChartState.range - pieChartState.offset);
+    const endIndex = totalMonths - pieChartState.offset;
+    const monthsToShow = data.months.slice(startIndex, endIndex);
+
+    // --- Update Navigation UI ---
+    const isNavVisible = pieChartState.range < 12;
+    [prevBtn, nextBtn, navRangeEl].forEach(el => el.style.visibility = isNavVisible ? 'visible' : 'hidden');
+
+    if (monthsToShow.length > 0) {
+        navRangeEl.textContent = `${formatMonthLabel(monthsToShow[0])} - ${formatMonthLabel(monthsToShow[monthsToShow.length - 1])}`;
+    } else {
+        navRangeEl.textContent = "Sem dados";
+    }
+    nextBtn.disabled = pieChartState.offset === 0;
+    prevBtn.disabled = (startIndex === 0);
+
+    // --- Generate Department Filters/Legend ---
+    const allButton = document.createElement('button');
+    allButton.className = 'filter-btn' + (pieChartState.selectedDepartments.length === data.departments.length ? ' active' : '');
+    allButton.textContent = 'Todos';
+    allButton.onclick = () => {
+        pieChartState.selectedDepartments = pieChartState.selectedDepartments.length === data.departments.length ? [] : data.departments.slice();
+        updateDepartmentBreakdownCharts();
+    };
+    filterContainer.appendChild(allButton);
+
+    data.departments.forEach(dept => {
+        const item = document.createElement('div');
+        const isActive = pieChartState.selectedDepartments.includes(dept);
+        item.className = 'department-legend-item' + (isActive ? '' : ' inactive');
+        item.style.cursor = 'pointer';
+        item.innerHTML = `<div class="department-legend-swatch" style="background-color: ${colorsByDepartment[dept] || '#ccc'};"></div><span>${dept}</span>`;
+        item.onclick = () => {
+            const index = pieChartState.selectedDepartments.indexOf(dept);
+            if (index > -1) pieChartState.selectedDepartments.splice(index, 1);
+            else pieChartState.selectedDepartments.push(dept);
+            updateDepartmentBreakdownCharts();
+        };
+        filterContainer.appendChild(item);
+    });
+
+    // --- Generate Pie Charts ---
+    if (monthsToShow.length === 0) {
+        container.innerHTML = '<p class="text-center p-8">Não há dados para o período selecionado.</p>';
+        return;
+    }
+
+    let gridCols = 'repeat(6, 1fr)';
+    if (monthsToShow.length <= 4) gridCols = `repeat(${monthsToShow.length}, 1fr)`;
+    container.style.gridTemplateColumns = gridCols;
+
+    monthsToShow.forEach(month => {
+        const monthData = data.data[month];
+        if (!monthData) return;
+
+        const pieItem = document.createElement('div');
+        pieItem.className = 'pie-item';
+        const canvas = document.createElement('canvas');
+        pieItem.appendChild(canvas);
+        const label = document.createElement('div');
+        label.className = 'pie-label';
+        label.textContent = formatMonthLabel(month);
+        pieItem.appendChild(label);
+        container.appendChild(pieItem);
+
+        const filteredDeptData = pieChartState.selectedDepartments
+            .map(dept => ({ name: dept, value: monthData.departments[dept]?.geral || 0 }))
+            .filter(d => d.value > 0);
+        const totalForMonth = filteredDeptData.reduce((sum, d) => sum + d.value, 0);
+
+        const chart = new Chart(canvas.getContext('2d'), {
+            type: 'pie',
+            data: {
+                labels: filteredDeptData.map(d => d.name),
+                datasets: [{
+                    data: filteredDeptData.map(d => d.value),
+                    backgroundColor: filteredDeptData.map(d => colorsByDepartment[d.name] || "#ccc")
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: true,
+                plugins: {
+                    legend: { display: false },
+                    datalabels: {
+                        formatter: (value, ctx) => {
+                            if (totalForMonth === 0) return '0%';
+                            const percentage = (value / totalForMonth) * 100;
+                            return percentage > 5 ? `${percentage.toFixed(0)}%` : '';
+                        },
+                        color: '#fff', font: { weight: 'bold' }
+                    }
+                }
+            }
+        });
+        pieChartState.chartInstances.push(chart);
+    });
+}
+
+// --- [NEW] DOM Preparation Function ---
+function prepareDOMForPieCharts() {
+    return new Promise((resolve) => {
+        // 1. Reorder elements
+        const chartsView = document.getElementById('charts-view');
+        const breakdownWrapper = document.getElementById('department-breakdown-wrapper')?.closest('.chart-row');
+        const stackedWrapper = document.getElementById('percentage-stacked-chart')?.closest('.chart-row');
+        if (breakdownWrapper && stackedWrapper) {
+            chartsView.insertBefore(breakdownWrapper, stackedWrapper);
+        }
+
+        // 2. Inject CSS
+        const css = `
+            #department-breakdown-wrapper .card { display: flex; flex-direction: column; }
+            .pie-chart-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
+            .pie-chart-nav { display: flex; align-items: center; gap: 15px; }
+            .pie-chart-nav button { background-color: #024B59; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; transition: background-color 0.2s; }
+            .pie-chart-nav button:hover:not(:disabled) { background-color: #036881; }
+            .pie-chart-nav button:disabled { background-color: #ccc; cursor: not-allowed; }
+            #pie-nav-range { font-weight: 600; color: #333; }
+            .pie-chart-main-content { display: flex; gap: 25px; flex-grow: 1; }
+            #department-breakdown-charts { flex-grow: 1; display: grid; gap: 20px; align-items: center; }
+            .department-legend-sidebar { flex-basis: 220px; flex-shrink: 0; border-left: 1px solid #e0e0e0; padding-left: 20px; }
+            .department-legend-sidebar h4 { margin-top: 0; margin-bottom: 15px; color: #024B59; }
+            #pie-department-filters { display: flex; flex-direction: column; gap: 8px; }
+            #pie-department-filters .filter-btn { width: 100%; margin-bottom: 5px; }
+            #pie-department-filters .department-legend-item { padding: 8px; border-radius: 6px; transition: background-color 0.2s; display: flex; align-items: center; }
+            #pie-department-filters .department-legend-item:hover { background-color: #e9e9e9; }
+            #pie-department-filters .department-legend-item.inactive { opacity: 0.5; }
+            #pie-department-filters .department-legend-swatch { width: 16px; height: 16px; margin-right: 8px; border-radius: 3px; }
+        `;
+        const style = document.createElement('style');
+        style.textContent = css;
+        document.head.appendChild(style);
+
+        // 3. Inject HTML Structure
+        const card = document.getElementById('department-breakdown-wrapper');
+        if(card) {
+            card.innerHTML = `
+                <h2>Distribuição de Gastos por Departamento</h2>
+                <div class="pie-chart-controls">
+                    <div class="time-filters">
+                        <button class="filter-btn pie-time-btn" data-months="1">1 Mês</button>
+                        <button class="filter-btn pie-time-btn" data-months="3">3 Meses</button>
+                        <button class="filter-btn pie-time-btn active" data-months="6">6 Meses</button>
+                        <button class="filter-btn pie-time-btn" data-months="12">12 Meses</button>
+                    </div>
+                    <div class="pie-chart-nav">
+                        <button id="pie-nav-prev">&lt; Anterior</button>
+                        <span id="pie-nav-range"></span>
+                        <button id="pie-nav-next">Próximo &gt;</button>
+                    </div>
+                </div>
+                <div class="pie-chart-main-content">
+                    <div id="department-breakdown-charts"></div>
+                    <div class="department-legend-sidebar">
+                        <h4>Departamentos</h4>
+                        <div id="pie-department-filters"></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 4. Inject Chart.js Plugin and resolve promise on load
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0';
+        script.onload = () => {
+            Chart.register(ChartDataLabels); // Register the plugin
+            resolve();
+        };
+        script.onerror = () => {
+            console.error("Failed to load Chart.js Datalabels plugin.");
+            resolve(); // Resolve anyway so the rest of the app doesn't break
+        }
+        document.head.appendChild(script);
+    });
+}
+
+
 // --- DASHBOARD INITIALIZATION ---
-function initDashboard() {
+async function initDashboard() {
     try {
         if (!data || !data.months.length) {
             throw new Error('Invalid or incomplete data. Cannot initialize dashboard.');
         }
+
+        // [MODIFIED] Prepare the DOM and wait for the plugin script to load
+        await prepareDOMForPieCharts();
 
         setupViewToggle();
         setupTableToggle();
@@ -861,14 +955,16 @@ function initDashboard() {
             avgExpenditure: createAvgExpenditureChart(data.data, data.months),
             employees: createEmployeesChart(data.data, data.months),
             percentageStacked: createPercentageStackedChart(data.data, data.months, data.departments),
-            departmentBreakdown: createDepartmentBreakdownCharts(data.data, data.months, data.departments),
             earningsVsCosts: createEarningsVsCostsChart(data.data, data.months),
             netProfitLoss: createNetProfitLossChart(data.data, data.months),
             profitMargin: createProfitMarginChart(data.data, data.months),
             earningsPerEmployee: createEarningsPerEmployeeChart(data.data, data.months),
             contributionEfficiency: createContributionEfficiencyChart(data.data, data.months, data.departments)
         };
-
+        
+        // [NEW] Setup the interactive pie charts
+        setupDepartmentBreakdown();
+        
         setupTimeFilters();
 
         setTimeout(() => {
