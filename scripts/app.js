@@ -3,11 +3,12 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // --- Firebase Configuration ---
+// It's best practice to manage API keys securely, for example, using environment variables.
 const firebaseConfig = {
   apiKey: "AIzaSyDuXzhFCIUICOV4xrf7uYl3hYPAQp6qhbs",
   authDomain: "financialdashboard-a60a6.firebaseapp.com",
   projectId: "financialdashboard-a60a6",
-  storageBucket: "financialdashboard-a60a6.firebasestorage.app",
+  storageBucket: "financialdashboard-a60a6.appspot.com",
   messagingSenderId: "876071686917",
   appId: "1:876071686917:web:4c1fc89d1fc21fdec49d6c",
   measurementId: "G-C8GQJJR945"
@@ -16,7 +17,6 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-
 
 // --- Global Variables ---
 let data = { months: [], departments: [], data: {} };
@@ -36,19 +36,35 @@ const deptMap = {
     "RH / Departamento Pessoal": "RH"
 };
 
-function convertMonthToYYYYMM(monthShortStr) {
-    if (!monthShortStr || !monthShortStr.includes('-')) {
-        console.warn('Invalid month string passed to convertMonthToYYYYMM:', monthShortStr);
+function convertMonthToYYYYMM(monthStr) {
+    if (!monthStr) {
+        console.warn('Invalid month string passed to convertMonthToYYYYMM:', monthStr);
         return null;
     }
-    const [monthAbbr, yearShort] = monthShortStr.split('-');
-    const yearFull = parseInt(yearShort, 10) < 50 ? `20${yearShort}` : `19${yearShort}`;
-    const monthMap = {
-        "jan.": "01", "fev.": "02", "mar.": "03", "abr.": "04", "mai.": "05", "jun.": "06",
-        "jul.": "07", "ago.": "08", "set.": "09", "out.": "10", "nov.": "11", "dez.": "12"
-    };
-    const monthNum = monthMap[monthAbbr.toLowerCase()];
-    return `${yearFull}-${monthNum}`;
+
+    // Handle "MM/YYYY" format
+    if (monthStr.includes('/')) {
+        const [month, year] = monthStr.split('/');
+        if (month && year && year.length === 4) {
+            return `${year}-${month.padStart(2, '0')}`;
+        }
+    } 
+    // Handle "mmm.-yy" format
+    else if (monthStr.includes('-')) {
+        const [monthAbbr, yearShort] = monthStr.split('-');
+        const yearFull = parseInt(yearShort, 10) < 50 ? `20${yearShort}` : `19${yearShort}`;
+        const monthMap = {
+            "jan.": "01", "fev.": "02", "mar.": "03", "abr.": "04", "mai.": "05", "jun.": "06",
+            "jul.": "07", "ago.": "08", "set.": "09", "out.": "10", "nov.": "11", "dez.": "12"
+        };
+        const monthNum = monthMap[monthAbbr.toLowerCase()];
+        if (monthNum) {
+            return `${yearFull}-${monthNum}`;
+        }
+    }
+    
+    console.warn('Unrecognized month format:', monthStr);
+    return null;
 }
 
 // --- Main Data Fetching and Processing ---
@@ -115,7 +131,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const faturamentoStr = row["Faturamento"];
             if (monthShortStr && faturamentoStr) {
                 const monthKey = convertMonthToYYYYMM(String(monthShortStr).trim());
-                if (structuredData[monthKey]) {
+                if (monthKey && structuredData[monthKey]) {
                     const faturamentoValue = parseFloat(String(faturamentoStr).replace(/["R$\s.]/g, '').replace(',', '.')) || 0;
                     structuredData[monthKey].earnings = faturamentoValue;
                 }
@@ -137,7 +153,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         showError(`Falha ao carregar os dados: ${error.message}`);
     }
 });
-
 
 // --- Translations and Color Mappings ---
 const translations = {
@@ -265,10 +280,6 @@ function setupViewToggle() {
 
         if (activeViewDiv === tablesView) {
             document.getElementById('btn-summary-month')?.click();
-        } else {
-            setTimeout(() => {
-                Object.values(charts).forEach(chart => chart?.update(data.months));
-            }, 100);
         }
     };
 
@@ -464,6 +475,7 @@ function createTotalExpendituresChart(chartData, months, departments) {
     });
     return {
         update: function(newData, monthsToShow, selectedDepartment = 'all') {
+            if (!monthsToShow) return; // Guard clause
             chart.data.labels = monthsToShow.map(formatMonthShort);
             const dataset = {
                 borderColor: '#024B59',
@@ -508,6 +520,7 @@ function createDepartmentTrendsChart(chartData, months, departments) {
     });
     return {
         update: function(monthsToShow = months, filteredDepartments = departments) {
+             if (!monthsToShow) return; // Guard clause
             chart.data.labels = monthsToShow.map(formatMonthShort);
             chart.data.datasets = filteredDepartments.map(dept => ({
                 label: dept,
@@ -542,6 +555,7 @@ function createAvgExpenditureChart(chartData, months) {
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
     });
     return { update: (newMonths) => {
+        if (!newMonths) return; // Guard clause
         chart.data.labels = newMonths.map(formatMonthShort);
         chart.data.datasets[0].data = newMonths.map(month => (data.data[month]?.totalEmployees > 0) ? data.data[month].total / data.data[month].totalEmployees : 0);
         chart.update();
@@ -568,6 +582,7 @@ function createEmployeesChart(chartData, months) {
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
     });
     return { update: (newMonths) => {
+        if (!newMonths) return; // Guard clause
         chart.data.labels = newMonths.map(formatMonthShort);
         chart.data.datasets[0].data = newMonths.map(month => data.data[month]?.totalEmployees || 0);
         chart.update();
@@ -593,6 +608,7 @@ function createPercentageStackedChart(chartData, months, departments) {
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } }, scales: { x: { stacked: true }, y: { stacked: true, max: 100, ticks: { callback: (value) => value + "%" } } } }
     });
     return { update: (newMonths) => {
+        if (!newMonths) return; // Guard clause
         chart.data.labels = newMonths.map(formatMonthShort);
         chart.data.datasets.forEach((dataset, idx) => {
             const dept = departments[idx];
@@ -650,6 +666,7 @@ function createEarningsVsCostsChart(chartData, months) {
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
     });
      return { update: (newMonths) => {
+        if (!newMonths) return; // Guard clause
         chart.data.labels = newMonths.map(formatMonthShort);
         chart.data.datasets[0].data = newMonths.map(m => data.data[m]?.earnings || 0);
         chart.data.datasets[1].data = newMonths.map(m => data.data[m]?.total || 0);
@@ -673,6 +690,7 @@ function createNetProfitLossChart(chartData, months) {
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
     });
     return { update: (newMonths) => {
+        if (!newMonths) return; // Guard clause
         chart.data.labels = newMonths.map(formatMonthShort);
         const newData = newMonths.map(m => (data.data[m]?.earnings || 0) - (data.data[m]?.total || 0));
         chart.data.datasets[0].data = newData;
@@ -702,6 +720,7 @@ function createProfitMarginChart(chartData, months) {
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: (value) => value.toFixed(0) + "%" } } } }
     });
     return { update: (newMonths) => {
+        if (!newMonths) return; // Guard clause
         chart.data.labels = newMonths.map(formatMonthShort);
         chart.data.datasets[0].data = newMonths.map(m => {
             const earnings = data.data[m]?.earnings || 0;
@@ -745,6 +764,7 @@ function createEarningsPerEmployeeChart(chartData, months) {
         chart.update();
     });
     return { update: (newMonths) => {
+        if (!newMonths) return; // Guard clause
         chart.data.labels = newMonths.map(formatMonthShort);
         chart.data.datasets[0].data = newMonths.map(m => getChartData(m, mode));
         chart.update();
@@ -770,6 +790,7 @@ function createContributionEfficiencyChart(chartData, months, departments) {
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } }, scales: { x: { stacked: true }, y: { stacked: true, ticks: { callback: (value) => value.toFixed(0) + "%" } } } }
     });
     return { update: (newMonths) => {
+        if (!newMonths) return; // Guard clause
         chart.data.labels = newMonths.map(formatMonthShort);
         chart.data.datasets.forEach((dataset, idx) => {
             const dept = departments[idx];
@@ -781,7 +802,6 @@ function createContributionEfficiencyChart(chartData, months, departments) {
         chart.update();
     }};
 }
-
 
 // --- DASHBOARD INITIALIZATION ---
 function initDashboard() {
@@ -825,4 +845,3 @@ function showError(message) {
     const container = document.querySelector('.container') || document.body;
     container.innerHTML = `<div class="error-message"><h2>Erro</h2><p>${message}</p><button onclick="window.location.reload()">Recarregar Página</button></div>`;
 }
-
