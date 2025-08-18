@@ -184,51 +184,57 @@ function formatVA(value, month) {
 
 // --- UI Setup and Generation ---
 function setupTableToggle() {
-    const buttons = {
+    const container = document.querySelector('.table-toggle-container');
+    const buttons = container.querySelectorAll('.table-toggle-btn');
+    const tables = {
         'btn-summary-month': 'table-summary-month', 'btn-summary-department': 'table-summary-department',
         'btn-detailed-month': 'table-detailed-month', 'btn-detailed-department': 'table-detailed-department',
         'btn-earnings-table': 'table-earnings'
     };
-    Object.entries(buttons).forEach(([btnId, tableId]) => {
-        document.getElementById(btnId)?.addEventListener('click', () => {
-            Object.values(buttons).forEach(id => document.getElementById(id).style.display = 'none');
-            Object.keys(buttons).forEach(id => document.getElementById(id)?.classList.remove('active'));
+    buttons.forEach(button => {
+        button.addEventListener('click', () => {
+            buttons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            const tableId = tables[button.id];
+            
+            Object.values(tables).forEach(id => document.getElementById(id).style.display = 'none');
             const tableEl = document.getElementById(tableId);
             tableEl.style.display = 'block';
-            document.getElementById(btnId).classList.add('active');
             tableEl.innerHTML = '';
-            if (btnId === 'btn-summary-month') generateSummaryByMonth();
-            if (btnId === 'btn-summary-department') generateSummaryByDepartment();
-            if (btnId === 'btn-detailed-month') generateDetailedByMonth();
-            if (btnId === 'btn-detailed-department') generateDetailedByDepartment();
-            if (btnId === 'btn-earnings-table') generateEarningsTable();
+
+            if (button.id === 'btn-summary-month') generateSummaryByMonth();
+            if (button.id === 'btn-summary-department') generateSummaryByDepartment();
+            if (button.id === 'btn-detailed-month') generateDetailedByMonth();
+            if (button.id === 'btn-detailed-department') generateDetailedByDepartment();
+            if (button.id === 'btn-earnings-table') generateEarningsTable();
         });
     });
 }
 
 function setupViewToggle() {
-    const btnExpensesMain = document.getElementById('btn-expenses-main');
-    const btnEarningsMain = document.getElementById('btn-earnings-main');
-    const btnTablesMain = document.getElementById('btn-tables-main');
-    const chartsView = document.getElementById('charts-view');
-    const tablesView = document.getElementById('tables-view');
-    const earningsView = document.getElementById('earnings-view');
-
-    const setActiveView = (activeBtn, activeViewDiv) => {
-        [btnExpensesMain, btnEarningsMain, btnTablesMain].forEach(btn => btn.classList.remove('active'));
-        [chartsView, tablesView, earningsView].forEach(view => view.style.display = 'none');
-        activeBtn.classList.add('active');
-        activeViewDiv.style.display = 'flex';
-        if (activeViewDiv === tablesView) {
-            document.getElementById('btn-summary-month')?.click();
-        }
+    const container = document.querySelector('.view-toggle');
+    const buttons = container.querySelectorAll('button');
+    const views = {
+        'btn-expenses-main': 'charts-view',
+        'btn-earnings-main': 'earnings-view',
+        'btn-tables-main': 'tables-view'
     };
 
-    btnExpensesMain.addEventListener('click', () => setActiveView(btnExpensesMain, chartsView));
-    btnEarningsMain.addEventListener('click', () => setActiveView(btnEarningsMain, earningsView));
-    btnTablesMain.addEventListener('click', () => setActiveView(btnTablesMain, tablesView));
-    
-    setActiveView(btnExpensesMain, chartsView);
+    buttons.forEach(button => {
+        button.addEventListener('click', () => {
+            buttons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            const viewId = views[button.id];
+
+            Object.values(views).forEach(id => document.getElementById(id).style.display = 'none');
+            const viewEl = document.getElementById(viewId);
+            viewEl.style.display = 'flex';
+
+            if (viewId === 'tables-view') {
+                document.getElementById('btn-summary-month')?.click();
+            }
+        });
+    });
 }
 
 function generateSummaryByMonth() {
@@ -287,8 +293,7 @@ function generateDetailedByMonth() {
         const section = document.createElement('div');
         section.innerHTML = `<h3>${formatMonthLabel(month)}</h3>`;
         const table = document.createElement('table');
-        table.style.width = '100%'; 
-        table.style.tableLayout = 'auto';
+        table.className = 'full-width-table'; 
         table.innerHTML = `
             <thead><tr><th>Departamento</th><th>Funcionários</th><th>Total Simples</th><th>Vale Alimentação</th><th>Bonificação (Dia 20)</th><th>Total Geral</th></tr></thead>
             <tbody>
@@ -326,8 +331,7 @@ function generateDetailedByDepartment() {
         const section = document.createElement('div');
         section.innerHTML = `<h3>${dept}</h3>`;
         const table = document.createElement('table');
-        table.style.width = '100%';
-        table.style.tableLayout = 'auto';
+        table.className = 'full-width-table';
         table.innerHTML = `
             <thead><tr><th>Mês</th><th>Funcionários</th><th>Total Simples</th><th>Vale Alimentação</th><th>Bonificação (Dia 20)</th><th>Total Geral</th></tr></thead>
             <tbody>
@@ -356,7 +360,7 @@ function generateEarningsTable() {
     const table = document.createElement('table');
     table.className = 'summary';
     table.innerHTML = `
-        <thead><tr><th>Mês</th><th>Faturamento</th><th>Gastos Totais</th><th>Diferença</th><th>Margem (%)</th></tr></thead>
+        <thead><tr><th>Mês</th><th>Faturamento</th><th>Gastos com Pessoal</th><th>Diferença</th><th>Margem (%)</th></tr></thead>
         <tbody>
             ${data.months.map(month => {
                 const monthData = data.data[month];
@@ -365,8 +369,8 @@ function generateEarningsTable() {
                 const profitMargin = (earnings > 0) ? (netProfit / earnings) * 100 : 0;
                 return `<tr>
                     <td>${formatMonthLabel(month)}</td><td>${formatCurrencyBRL(earnings)}</td><td>${formatCurrencyBRL(totalCosts)}</td>
-                    <td style="color: ${netProfit >= 0 ? '#00A86B' : '#E44D42'}; font-weight: bold;">${formatCurrencyBRL(netProfit)}</td>
-                    <td style="color: ${profitMargin >= 0 ? '#00A86B' : '#E44D42'}; font-weight: bold;">${profitMargin.toFixed(2)}%</td>
+                    <td style="color: ${netProfit >= 0 ? '#024B59' : '#E44D42'}; font-weight: bold;">${formatCurrencyBRL(netProfit)}</td>
+                    <td style="color: ${profitMargin >= 0 ? '#024B59' : '#E44D42'}; font-weight: bold;">${profitMargin.toFixed(2)}%</td>
                 </tr>`;
             }).join('')}
         </tbody>`;
@@ -384,7 +388,13 @@ function setupTimeFilters() {
     };
     
     const filterButtonsContainer = document.querySelector('#total-expenditures-wrapper .filter-buttons');
-    filterButtonsContainer.innerHTML = '<button class="filter-btn active" data-department="all">Todos</button>';
+    filterButtonsContainer.innerHTML = '';
+    const allBtn = document.createElement('button');
+    allBtn.className = 'filter-btn active';
+    allBtn.dataset.department = 'all';
+    allBtn.textContent = 'Todos';
+    filterButtonsContainer.appendChild(allBtn);
+
     data.departments.forEach(dept => {
         const button = document.createElement('button');
         button.className = 'filter-btn';
@@ -393,44 +403,44 @@ function setupTimeFilters() {
         filterButtonsContainer.appendChild(button);
     });
 
-    document.querySelectorAll('#total-expenditures-wrapper .time-btn').forEach(button => {
-        button.addEventListener('click', () => {
-            document.querySelectorAll('#total-expenditures-wrapper .time-btn').forEach(btn => btn.classList.remove('active'));
-            button.classList.add('active');
-            const activeDepartment = document.querySelector('#total-expenditures-wrapper .filter-buttons .filter-btn.active').dataset.department;
-            charts.totalExpenditures.update(data.data, data.months.slice(-button.dataset.months), activeDepartment);
-        });
-    });
+    document.querySelectorAll('#total-expenditures-wrapper .time-btn, #total-expenditures-wrapper .filter-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const parent = this.parentElement;
+            parent.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
 
-    document.querySelectorAll('#total-expenditures-wrapper .filter-buttons .filter-btn').forEach(button => {
-        button.addEventListener('click', () => {
-            document.querySelectorAll('#total-expenditures-wrapper .filter-buttons .filter-btn').forEach(btn => btn.classList.remove('active'));
-            button.classList.add('active');
-            const selectedDepartment = button.dataset.department;
-            const activeMonths = document.querySelector('#total-expenditures-wrapper .time-btn.active').dataset.months;
-            charts.totalExpenditures.update(data.data, data.months.slice(-activeMonths), selectedDepartment);
+            if(parent.classList.contains('time-filters')) {
+                 const activeDept = filterButtonsContainer.querySelector('.filter-btn.active').dataset.department;
+                 charts.totalExpenditures.update(data.data, data.months.slice(-this.dataset.months), activeDept);
+            } else {
+                const activeMonths = document.querySelector('#total-expenditures-wrapper .time-btn.active').dataset.months;
+                charts.totalExpenditures.update(data.data, data.months.slice(-activeMonths), this.dataset.department);
+            }
         });
     });
 
     if (trendsWrapper) {
-        const updateChart = () => {
-            if (!charts.departmentTrends?.update) return;
-            const monthsRange = trendsWrapper.querySelector('.time-btn.active')?.dataset?.months || 'all';
-            const monthsToShow = monthsRange === 'all' ? data.months : data.months.slice(-monthsRange);
-            const selectedDepartments = tryParseJSON(trendsWrapper.querySelector('.filter-buttons .filter-btn.active')?.dataset?.departments || 'all');
-            charts.departmentTrends.update(monthsToShow, selectedDepartments);
-        };
         trendsWrapper.querySelectorAll('.time-btn, .filter-buttons .filter-btn').forEach(button => {
             button.addEventListener('click', function() {
-                this.parentElement.querySelectorAll('.filter-btn, .time-btn').forEach(btn => btn.classList.remove('active'));
+                this.parentElement.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
                 this.classList.add('active');
-                updateChart();
+                const monthsRange = trendsWrapper.querySelector('.time-btn.active')?.dataset?.months || 'all';
+                const monthsToShow = monthsRange === 'all' ? data.months : data.months.slice(-monthsRange);
+                const selectedDepartments = tryParseJSON(trendsWrapper.querySelector('.filter-buttons .filter-btn.active')?.dataset?.departments || 'all');
+                charts.departmentTrends.update(monthsToShow, selectedDepartments);
             });
         });
     }
 }
 
 // --- Chart Creation Functions ---
+const globalChartOptions = {
+    responsive: true, maintainAspectRatio: false,
+    animation: {
+        y: { from: 500 }
+    }
+};
+
 function createTotalExpendituresChart(chartData, months, departments) {
     const canvas = document.getElementById('total-expenditures-chart');
     if (!canvas) return null;
@@ -445,7 +455,7 @@ function createTotalExpendituresChart(chartData, months, departments) {
                 borderWidth: 2, fill: true, tension: 0.4
             }]
         },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
+        options: { ...globalChartOptions, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
     });
     return {
         update: function(newData, monthsToShow, selectedDepartment = 'all') {
@@ -480,7 +490,7 @@ function createDepartmentTrendsChart(chartData, months, departments) {
                 borderColor: colorsByDepartment[dept] || "#ccc", borderWidth: 2, fill: false, tension: 0.3
             }))
         },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
+        options: { ...globalChartOptions, plugins: { legend: { position: 'bottom' } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
     });
     return {
         update: function(monthsToShow = months, filteredDepartments = departments) {
@@ -508,7 +518,7 @@ function createAvgExpenditureChart(chartData, months) {
                 borderColor: '#024B59', backgroundColor: hexToRGBA('#024B59', 0.1), borderWidth: 2, fill: true, tension: 0.4
             }]
         },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
+        options: { ...globalChartOptions, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
     });
     return { update: (newMonths) => {
         if (!newMonths) return;
@@ -530,7 +540,7 @@ function createEmployeesChart(chartData, months) {
                 borderColor: '#024B59', backgroundColor: hexToRGBA('#024B59', 0.1), borderWidth: 2, fill: true, tension: 0.4
             }]
         },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+        options: { ...globalChartOptions, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
     });
     return { update: (newMonths) => {
         if (!newMonths) return;
@@ -556,7 +566,7 @@ function createPercentageStackedChart(chartData, months, departments) {
                 backgroundColor: colorsByDepartment[dept] || "#ccc"
             }))
         },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } }, scales: { x: { stacked: true }, y: { stacked: true, max: 100, ticks: { callback: (value) => value + "%" } } } }
+        options: { ...globalChartOptions, plugins: { legend: { position: 'right' } }, scales: { x: { stacked: true }, y: { stacked: true, max: 100, ticks: { callback: (value) => value + "%" } } } }
     });
     return { update: (newMonths) => {
         if (!newMonths) return;
@@ -584,7 +594,7 @@ function createEarningsVsCostsChart(chartData, months) {
                 { label: 'Gastos com Pessoal', data: months.map(m => chartData[m]?.total || 0), borderColor: '#E44D42', tension: 0.4 }
             ]
         },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
+        options: { ...globalChartOptions, plugins: { legend: { position: 'top' } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
     });
      return { update: (newMonths) => {
         if (!newMonths) return;
@@ -608,11 +618,10 @@ function createNetProfitLossChart(chartData, months) {
                 backgroundColor: months.map(m => ((chartData[m]?.earnings || 0) - (chartData[m]?.total || 0)) >= 0 ? '#024B59' : '#E44D42')
             }]
         },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
+        options: { ...globalChartOptions, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
     });
     return { update: (newMonths) => {
         if (!newMonths) return;
-        chart.data.labels = newMonths.map(formatMonthShort);
         const newData = newMonths.map(m => (data.data[m]?.earnings || 0) - (data.data[m]?.total || 0));
         chart.data.datasets[0].data = newData;
         chart.data.datasets[0].backgroundColor = newData.map(val => val >= 0 ? '#024B59' : '#E44D42');
@@ -687,22 +696,16 @@ function createProfitMarginChart(chartData, months) {
         },
         plugins: [percentageChangeBubbles],
         options: {
-            responsive: true, maintainAspectRatio: false,
+            ...globalChartOptions,
+            layout: { padding: { top: 30, bottom: 30 } },
             plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `Margem: ${context.parsed.y.toFixed(2)}%` } } },
-            scales: { y: { ticks: { callback: (value) => value.toFixed(0) + "%" } } }
+            scales: { y: { ticks: { callback: (value) => value.toFixed(0) + "%" }, grace: '10%' } }
         }
     });
 }
 
-/**
- * FIXED FUNCTION
- * This function is updated to work with the new DOM structure created by prepareDOMForDashboard.
- * It now correctly finds the radio buttons and the chart title to add event listeners and update the chart.
- */
 function createEarningsPerEmployeeChart(chartData, months) {
-    const card = document.getElementById('earnings-per-employee-chart').closest('.card');
-    if (!card) return null; // Defensive check if the card element isn't found
-
+    const container = document.getElementById('earnings-per-employee-chart').parentElement.parentElement;
     const getChartData = (month, mode) => {
         const monthInfo = chartData[month];
         if (!monthInfo) return 0;
@@ -714,76 +717,36 @@ function createEarningsPerEmployeeChart(chartData, months) {
         const totalEmployees = monthInfo.totalEmployees || 0;
         return totalEmployees > 0 ? earnings / totalEmployees : 0;
     };
-
     const chart = new Chart(document.getElementById('earnings-per-employee-chart').getContext('2d'), {
         type: 'line',
         data: {
             labels: months.map(formatMonthShort),
             datasets: [{
-                label: 'Faturamento por Funcionário',
-                data: months.map(m => getChartData(m, 'company')), // Default to 'company'
-                borderColor: '#024B59',
-                backgroundColor: 'rgba(2, 75, 89, 0.1)',
-                tension: 0.4,
-                fill: true
+                label: 'Faturamento por Funcionário', data: months.map(m => getChartData(m, 'company')),
+                borderColor: '#024B59', backgroundColor: 'rgba(2, 75, 89, 0.1)',
+                tension: 0.4, fill: true
             }]
         },
         options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                tooltip: { callbacks: { label: (context) => `Valor: ${formatCurrencyBRL(context.parsed.y)}` } }
-            },
+            ...globalChartOptions,
+            plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `Valor: ${formatCurrencyBRL(context.parsed.y)}` } } },
             scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } }
         }
     });
-
-    // Selectors for the new radio buttons and labels
-    const geralRadio = card.querySelector('#employee-toggle-geral');
-    const operacaoRadio = card.querySelector('#employee-toggle-operacao');
-    const chartTitle = card.querySelector('#chart-title');
-    const geralLabel = card.querySelector('label[for="employee-toggle-geral"]');
-    const operacaoLabel = card.querySelector('label[for="employee-toggle-operacao"]');
-
-    // Helper function to update the chart and UI
-    const updateChart = (mode) => {
-        chart.data.datasets[0].data = months.map(m => getChartData(m, mode));
-        if (chartTitle) {
+    const toggleButtons = container.querySelectorAll('.toggle-switch-group .filter-btn');
+    const chartTitle = container.querySelector('h2');
+    
+    toggleButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            toggleButtons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            const mode = button.dataset.mode;
+            chart.data.datasets[0].data = months.map(m => getChartData(m, mode));
             chartTitle.textContent = `Faturamento por Funcionário (${mode === 'operation' ? 'Operação' : 'Geral'})`;
-        }
-        chart.update();
-
-        // Update active class on labels for visual feedback
-        if (geralLabel && operacaoLabel) {
-            if (mode === 'operation') {
-                geralLabel.classList.remove('active');
-                operacaoLabel.classList.add('active');
-            } else {
-                geralLabel.classList.add('active');
-                operacaoLabel.classList.remove('active');
-            }
-        }
-    };
-
-    // Add event listeners to the radio buttons
-    if (geralRadio) {
-        geralRadio.addEventListener('change', () => {
-            if (geralRadio.checked) {
-                updateChart('company');
-            }
+            chart.update();
         });
-    }
-
-    if (operacaoRadio) {
-        operacaoRadio.addEventListener('change', () => {
-            if (operacaoRadio.checked) {
-                updateChart('operation');
-            }
-        });
-    }
+    });
 }
-
 
 // --- Pie Chart Section Functions ---
 
@@ -976,7 +939,6 @@ function renderCustomLegend(container, chartData) {
 // --- DOM Preparation Function ---
 function prepareDOMForDashboard() {
     return new Promise((resolve) => {
-        // Reorder charts
         const chartsView = document.getElementById('charts-view');
         const breakdownWrapper = document.getElementById('department-breakdown-wrapper')?.closest('.chart-row');
         const stackedWrapper = document.getElementById('percentage-stacked-chart')?.closest('.chart-row');
@@ -984,20 +946,18 @@ function prepareDOMForDashboard() {
             chartsView.insertBefore(breakdownWrapper, stackedWrapper);
         }
 
-        // Remove last earnings chart
         document.getElementById('contribution-efficiency-chart')?.closest('.chart-row').remove();
 
-        // Inject new CSS
         const css = `
-            .toggle-switch-group { display: flex; align-items: center; background-color: #e9ecef; border-radius: 8px; padding: 4px; }
-            .toggle-switch-group .filter-btn { background-color: transparent; color: #495057; border: none; flex-grow: 1; padding: 6px 12px; font-size: 14px; }
-            .toggle-switch-group .filter-btn.active { background-color: #fff; color: #024B59; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+            .toggle-switch-group { display: flex; align-items: center; background-color: #e9ecef; border-radius: 8px; padding: 4px; max-width: max-content; margin-left: auto; margin-right: auto; }
+            .toggle-switch-group .filter-btn { background-color: transparent; color: #495057; border: none; flex-grow: 1; padding: 6px 12px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; border-radius: 6px; }
+            .toggle-switch-group .filter-btn.active { background-color: #fff; color: #024B59; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
             #department-breakdown-wrapper .card { display: flex; flex-direction: column; }
             .pie-chart-controls { display: flex; justify-content: center; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
             .pie-chart-main-content { display: flex; gap: 25px; flex-grow: 1; align-items: center; }
             #department-breakdown-charts { flex-grow: 1; display: grid; gap: 20px; }
             .pie-item { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s ease-in-out; }
-            .pie-item.single-view { flex-direction: row-reverse; align-items: center; justify-content: center; gap: 30px; max-width: 100%; margin: 0 auto; }
+            .pie-item.single-view { flex-direction: row; align-items: center; justify-content: center; gap: 30px; max-width: 100%; margin: 0 auto; }
             .pie-item.single-view .custom-legend-container { flex-basis: 40%; }
             .pie-item.single-view canvas { max-height: 400px; }
             .pie-label { margin-top: 10px; font-weight: 600; color: #333; text-align: center; font-size: 1rem; }
@@ -1008,32 +968,33 @@ function prepareDOMForDashboard() {
             #pie-department-filters .department-legend-item.inactive { opacity: 0.5; }
             #pie-department-filters .department-legend-swatch { width: 16px; height: 16px; margin-right: 8px; border-radius: 3px; }
             .pie-chart-nav { display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 20px; }
-            .pie-chart-nav button { background-color: #024B59; color: white; border: none; padding: 8px 14px; border-radius: 50%; cursor: pointer; font-size: 1.2rem; line-height: 1; width: 40px; height: 40px; }
+            .pie-chart-nav .filter-btn { width: 40px; height: 40px; padding: 0; font-size: 1.2rem; }
             .custom-legend-container { display: flex; justify-content: center; gap: 30px; font-size: 13px; }
             .legend-column { display: flex; flex-direction: column; gap: 10px; }
             .legend-item { display: flex; align-items: center; }
             .legend-swatch { width: 12px; height: 12px; border-radius: 3px; margin-right: 8px; flex-shrink: 0; }
             .legend-name { font-weight: 600; margin-right: auto; padding-right: 10px; }
             .legend-percent { font-weight: 500; color: #555; }
+            .full-width-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+            .full-width-table th:nth-child(1), .full-width-table td:nth-child(1) { width: 25%; }
+            .full-width-table th:nth-child(2), .full-width-table td:nth-child(2) { width: 10%; }
+            .full-width-table th:nth-child(3), .full-width-table td:nth-child(3) { width: 17.5%; }
+            .full-width-table th:nth-child(4), .full-width-table td:nth-child(4) { width: 17.5%; }
+            .full-width-table th:nth-child(5), .full-width-table td:nth-child(5) { width: 17.5%; }
+            .full-width-table th:nth-child(6), .full-width-table td:nth-child(6) { width: 12.5%; }
         `;
         const style = document.createElement('style');
         style.textContent = css;
         document.head.appendChild(style);
 
-        // Inject HTML for toggles and buttons
-        document.querySelectorAll('.time-filters').forEach(el => el.classList.add('toggle-switch-group'));
-        document.querySelectorAll('.filter-buttons').forEach(el => el.classList.add('toggle-switch-group'));
+        document.querySelectorAll('.time-filters, .filter-buttons, .view-toggle, .table-toggle-container').forEach(el => el.classList.add('toggle-switch-group'));
         
         const earningsPerEmpCard = document.getElementById('earnings-per-employee-chart').parentElement.parentElement;
         earningsPerEmpCard.innerHTML = `
-            <div class="chart-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2 id="chart-title">Faturamento por Funcionário (Geral)</h2>
-                <label class="toggle-switch-group" style="width: 180px;">
-                    <input type="radio" name="employee-toggle-radio" id="employee-toggle-geral" checked style="display:none;">
-                    <label for="employee-toggle-geral" class="filter-btn active">Geral</label>
-                    <input type="radio" name="employee-toggle-radio" id="employee-toggle-operacao" style="display:none;">
-                    <label for="employee-toggle-operacao" class="filter-btn">Operação</label>
-                </label>
+            <h2 style="text-align: center;">Faturamento por Funcionário</h2>
+            <div class="toggle-switch-group" style="width: 180px; margin-bottom: 20px;">
+                <button class="filter-btn active" data-mode="company">Geral</button>
+                <button class="filter-btn" data-mode="operation">Operação</button>
             </div>
             <div class="chart-container" style="height: 400px;"><canvas id="earnings-per-employee-chart"></canvas></div>
         `;
@@ -1057,13 +1018,12 @@ function prepareDOMForDashboard() {
                         <div id="pie-department-filters"></div>
                     </div>
                 </div>
-                <div class="pie-chart-nav">
-                    <button id="pie-nav-prev">&lt;</button>
-                    <button id="pie-nav-next">&gt;</button>
+                <div class="pie-chart-nav toggle-switch-group">
+                    <button id="pie-nav-prev" class="filter-btn">&lt;</button>
+                    <button id="pie-nav-next" class="filter-btn">&gt;</button>
                 </div>
             `;
         }
-        // Rename other time filters
         document.querySelector('#total-expenditures-wrapper .time-btn[data-months="12"]').textContent = 'Anual';
         document.querySelector('#total-expenditures-wrapper .time-btn[data-months="6"]').textContent = 'Semestral';
         document.querySelector('#total-expenditures-wrapper .time-btn[data-months="3"]').textContent = 'Trimestral';
