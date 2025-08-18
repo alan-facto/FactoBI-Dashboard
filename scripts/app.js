@@ -428,7 +428,23 @@ function setupTimeFilters() {
 // --- Chart Creation Functions ---
 const globalChartOptions = {
     responsive: true, maintainAspectRatio: false,
-    animation: { duration: 800 }
+    animation: { 
+        duration: 800,
+        // Fix for first-column animation issue by delaying the animation slightly
+        // on initial load, ensuring the canvas is ready.
+        onComplete: () => {
+            if (Chart.instances[0] && !Chart.instances[0].isInitialRender) {
+                Chart.instances[0].isInitialRender = true;
+            }
+        },
+        delay: (context) => {
+            let delay = 0;
+            if (context.type === 'data' && context.mode === 'default' && !context.chart.isInitialRender) {
+                delay = context.dataIndex * 50 + context.datasetIndex * 100;
+            }
+            return delay;
+        },
+    }
 };
 
 function createTotalExpendituresChart(chartData, months) {
@@ -450,6 +466,7 @@ function createTotalExpendituresChart(chartData, months) {
     return {
         update: function(newData, monthsToShow, selectedDepartment = 'all') {
             if (!monthsToShow) return;
+            chart.isInitialRender = false; // Reset for animation
             chart.data.labels = monthsToShow.map(formatMonthShort);
             const dataset = { borderColor: '#024B59', backgroundColor: hexToRGBA('#024B59', 0.1), borderWidth: 2, fill: true, tension: 0.4 };
             if (selectedDepartment === 'all') {
@@ -485,6 +502,7 @@ function createDepartmentTrendsChart(chartData, months, departments) {
     return {
         update: function(monthsToShow = months, filteredDepartments = departments) {
             if (!monthsToShow) return;
+            chart.isInitialRender = false; // Reset for animation
             chart.data.labels = monthsToShow.map(formatMonthShort);
             chart.data.datasets = filteredDepartments.map(dept => ({
                 label: dept, data: monthsToShow.map(month => data.data[month]?.departments[dept]?.geral || 0),
@@ -644,13 +662,13 @@ function createProfitMarginChart(chartData, months) {
                 label: 'Margem', data: profitMargins,
                 borderColor: '#024B59', backgroundColor: 'rgba(2, 75, 89, 0.1)',
                 tension: 0.4, fill: true, pointRadius: 5, pointBackgroundColor: '#024B59', pointHoverRadius: 7,
-                clip: false // Allow bubbles to render outside chart area
+                clip: false
             }]
         },
         plugins: [percentageChangeBubbles],
         options: {
             ...globalChartOptions,
-            layout: { padding: { top: 30, bottom: 30, right: 30, left: 10 } }, // Added padding
+            layout: { padding: { top: 30, bottom: 30, right: 40, left: 10 } }, // Increased right padding
             plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `Margem: ${context.parsed.y.toFixed(2)}%` } } },
             scales: { y: { ticks: { callback: (value) => value.toFixed(0) + "%" }, grace: '10%' } }
         }
@@ -842,13 +860,7 @@ function updateDepartmentBreakdownCharts() {
         return;
     }
 
-    // Adjust grid for different views
-    let minSize = "160px";
-    if (pieChartState.range === 3) minSize = "200px";
-    if (pieChartState.range === 6) minSize = "180px";
-    container.style.gridTemplateColumns = (pieChartState.range > 1) 
-        ? `repeat(auto-fit, minmax(${minSize}, 1fr))`
-        : '1fr';
+    container.dataset.range = pieChartState.range; // For CSS styling
 
     monthsToShow.forEach((month) => {
         const monthData = data.data[month];
@@ -897,6 +909,7 @@ function updateDepartmentBreakdownCharts() {
                 }]
             },
             options: {
+                ...globalChartOptions, // Use global animation options
                 responsive: true, maintainAspectRatio: true,
                 cutout: '50%',
                 plugins: {
