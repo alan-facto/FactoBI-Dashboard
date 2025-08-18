@@ -21,12 +21,12 @@ const db = getFirestore(app);
 let data = { months: [], departments: [], data: {} };
 let sortedMonths = [];
 let charts = {};
-// [NEW] State for the dynamic pie chart section
 let pieChartState = {
     range: 6,
     offset: 0,
     selectedDepartments: [],
-    chartInstances: []
+    chartInstances: [],
+    previousState: null
 };
 
 
@@ -266,119 +266,77 @@ function generateSummaryByDepartment() {
     });
 }
 
+// [UPDATED] Fixed table width issue
 function generateDetailedByMonth() {
     const container = document.getElementById('table-detailed-month');
     if (!container) return;
     data.months.forEach(month => {
         const monthData = data.data[month];
         if (!monthData) return;
-
-        // Calculate totals for the footer
         const totalSimples = Object.values(monthData.departments).reduce((sum, dept) => sum + dept.total, 0);
         const totalVA = Object.values(monthData.departments).reduce((sum, dept) => sum + dept.valeAlimentacao, 0);
         const totalBonificacao = Object.values(monthData.departments).reduce((sum, dept) => sum + dept.bonificacao, 0);
         const totalGeral = Object.values(monthData.departments).reduce((sum, dept) => sum + dept.geral, 0);
-
         const section = document.createElement('div');
         section.innerHTML = `<h3>${formatMonthLabel(month)}</h3>`;
         const table = document.createElement('table');
-        // [MODIFIED] Ensure table fills container width and columns auto-size
-        table.style.width = '100%';
+        table.style.width = '100%'; 
         table.style.tableLayout = 'auto';
-
         table.innerHTML = `
             <thead><tr><th>Departamento</th><th>Funcionários</th><th>Total Simples</th><th>Vale Alimentação</th><th>Bonificação (Dia 20)</th><th>Total Geral</th></tr></thead>
             <tbody>
                 ${data.departments.map(dept => {
                     const d = monthData.departments[dept];
                     return d ? `<tr>
-                        <td>${dept}</td>
-                        <td>${d.count || 0}</td>
-                        <td>${formatCurrencyBRL(d.total)}</td>
-                        <td>${formatVA(d.valeAlimentacao, month)}</td>
-                        <td>${formatCurrencyBRL(d.bonificacao)}</td>
-                        <td>${formatCurrencyBRL(d.geral)}</td>
+                        <td>${dept}</td><td>${d.count || 0}</td><td>${formatCurrencyBRL(d.total)}</td>
+                        <td>${formatVA(d.valeAlimentacao, month)}</td><td>${formatCurrencyBRL(d.bonificacao)}</td><td>${formatCurrencyBRL(d.geral)}</td>
                     </tr>` : '';
                 }).join('')}
             </tbody>
-            <tfoot>
-                <tr style="font-weight: bold; background-color: #f0f0f0;">
-                    <td>Total Mensal</td>
-                    <td>${monthData.totalEmployees}</td>
-                    <td>${formatCurrencyBRL(totalSimples)}</td>
-                    <td>${formatVA(totalVA, month)}</td>
-                    <td>${formatCurrencyBRL(totalBonificacao)}</td>
-                    <td>${formatCurrencyBRL(totalGeral)}</td>
-                </tr>
-            </tfoot>
-        `;
+            <tfoot><tr style="font-weight: bold; background-color: #f0f0f0;">
+                <td>Total Mensal</td><td>${monthData.totalEmployees}</td><td>${formatCurrencyBRL(totalSimples)}</td>
+                <td>${formatVA(totalVA, month)}</td><td>${formatCurrencyBRL(totalBonificacao)}</td><td>${formatCurrencyBRL(totalGeral)}</td>
+            </tr></tfoot>`;
         section.appendChild(table);
         container.appendChild(section);
     });
 }
 
+// [UPDATED] Fixed table width issue
 function generateDetailedByDepartment() {
     const container = document.getElementById('table-detailed-department');
     if (!container) return;
     data.departments.forEach(dept => {
-        // Calculate totals and averages for the footer
-        let totalSimples = 0;
-        let totalVA = 0;
-        let totalBonificacao = 0;
-        let totalGeral = 0;
-        let employeeSum = 0;
-        let monthCount = 0;
-        let lastMonthWithVA = '0000-00';
-
+        let totalSimples = 0, totalVA = 0, totalBonificacao = 0, totalGeral = 0, employeeSum = 0, monthCount = 0, lastMonthWithVA = '0000-00';
         data.months.forEach(month => {
             const d = data.data[month]?.departments[dept];
             if (d) {
-                totalSimples += d.total;
-                totalVA += d.valeAlimentacao;
-                totalBonificacao += d.bonificacao;
-                totalGeral += d.geral;
-                employeeSum += d.count;
-                monthCount++;
-                if (d.valeAlimentacao > 0 || month >= '2025-07') {
-                    lastMonthWithVA = month;
-                }
+                totalSimples += d.total; totalVA += d.valeAlimentacao; totalBonificacao += d.bonificacao;
+                totalGeral += d.geral; employeeSum += d.count; monthCount++;
+                if (d.valeAlimentacao > 0 || month >= '2025-07') lastMonthWithVA = month;
             }
         });
         const avgEmployees = monthCount > 0 ? (employeeSum / monthCount).toFixed(1) : 0;
-
         const section = document.createElement('div');
         section.innerHTML = `<h3>${dept}</h3>`;
         const table = document.createElement('table');
-        // [MODIFIED] Ensure table fills container width and columns auto-size
         table.style.width = '100%';
         table.style.tableLayout = 'auto';
-
         table.innerHTML = `
             <thead><tr><th>Mês</th><th>Funcionários</th><th>Total Simples</th><th>Vale Alimentação</th><th>Bonificação (Dia 20)</th><th>Total Geral</th></tr></thead>
             <tbody>
                 ${data.months.map(month => {
                     const d = data.data[month]?.departments[dept];
                     return d ? `<tr>
-                        <td>${formatMonthLabel(month)}</td>
-                        <td>${d.count || 0}</td>
-                        <td>${formatCurrencyBRL(d.total)}</td>
-                        <td>${formatVA(d.valeAlimentacao, month)}</td>
-                        <td>${formatCurrencyBRL(d.bonificacao)}</td>
-                        <td>${formatCurrencyBRL(d.geral)}</td>
+                        <td>${formatMonthLabel(month)}</td><td>${d.count || 0}</td><td>${formatCurrencyBRL(d.total)}</td>
+                        <td>${formatVA(d.valeAlimentacao, month)}</td><td>${formatCurrencyBRL(d.bonificacao)}</td><td>${formatCurrencyBRL(d.geral)}</td>
                     </tr>` : '';
                 }).join('')}
             </tbody>
-            <tfoot>
-                 <tr style="font-weight: bold; background-color: #f0f0f0;">
-                    <td>Total / Média</td>
-                    <td>${avgEmployees} (Média)</td>
-                    <td>${formatCurrencyBRL(totalSimples)}</td>
-                    <td>${formatVA(totalVA, lastMonthWithVA)}</td>
-                    <td>${formatCurrencyBRL(totalBonificacao)}</td>
-                    <td>${formatCurrencyBRL(totalGeral)}</td>
-                </tr>
-            </tfoot>
-        `;
+            <tfoot><tr style="font-weight: bold; background-color: #f0f0f0;">
+                <td>Total / Média</td><td>${avgEmployees} (Média)</td><td>${formatCurrencyBRL(totalSimples)}</td>
+                <td>${formatVA(totalVA, lastMonthWithVA)}</td><td>${formatCurrencyBRL(totalBonificacao)}</td><td>${formatCurrencyBRL(totalGeral)}</td>
+            </tr></tfoot>`;
         section.appendChild(table);
         container.appendChild(section);
     });
@@ -598,9 +556,6 @@ function createPercentageStackedChart(chartData, months, departments) {
     }};
 }
 
-// [REWRITTEN] This function is now just a placeholder; the new setup and update functions handle everything.
-function createDepartmentBreakdownCharts() { /* Handled by setupDepartmentBreakdown and updateDepartmentBreakdownCharts */ }
-
 function createEarningsVsCostsChart(chartData, months) {
     const ctx = document.getElementById('earnings-vs-costs-chart');
     if (!ctx) return null;
@@ -753,75 +708,53 @@ function createContributionEfficiencyChart(chartData, months, departments) {
     }};
 }
 
-// --- [NEW] Pie Chart Section Functions ---
+// --- [REWRITTEN] Pie Chart Section Functions ---
 
 function setupDepartmentBreakdown() {
-    // Initialize selected departments to all
     pieChartState.selectedDepartments = data.departments.slice();
-
-    // --- Setup Event Listeners ---
     document.querySelectorAll('.pie-time-btn').forEach(button => {
         button.addEventListener('click', () => {
             document.querySelectorAll('.pie-time-btn').forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
             pieChartState.range = parseInt(button.dataset.months);
-            pieChartState.offset = 0; // Reset offset when range changes
+            pieChartState.offset = 0;
+            pieChartState.previousState = null;
             updateDepartmentBreakdownCharts();
         });
     });
-
     document.getElementById('pie-nav-prev').addEventListener('click', () => {
-        const maxOffset = data.months.length - pieChartState.range;
-        if (pieChartState.offset < maxOffset) {
-            pieChartState.offset += pieChartState.range;
-            updateDepartmentBreakdownCharts();
-        }
+        pieChartState.offset += pieChartState.range;
+        updateDepartmentBreakdownCharts();
     });
-
     document.getElementById('pie-nav-next').addEventListener('click', () => {
-        if (pieChartState.offset > 0) {
-            pieChartState.offset -= pieChartState.range;
-            updateDepartmentBreakdownCharts();
-        }
+        pieChartState.offset -= pieChartState.range;
+        updateDepartmentBreakdownCharts();
     });
-
-    // Initial render
     updateDepartmentBreakdownCharts();
 }
 
 function updateDepartmentBreakdownCharts() {
     const container = document.getElementById('department-breakdown-charts');
     const filterContainer = document.getElementById('pie-department-filters');
-    const navRangeEl = document.getElementById('pie-nav-range');
+    const navButtons = document.querySelector('.pie-chart-nav');
     const prevBtn = document.getElementById('pie-nav-prev');
     const nextBtn = document.getElementById('pie-nav-next');
     if (!container || !filterContainer) return;
 
-    // --- Clean up previous state ---
     pieChartState.chartInstances.forEach(chart => chart.destroy());
     pieChartState.chartInstances = [];
     container.innerHTML = '';
-    filterContainer.innerHTML = ''; 
+    filterContainer.innerHTML = '';
 
-    // --- Calculate months to display ---
     const totalMonths = data.months.length;
     const startIndex = Math.max(0, totalMonths - pieChartState.range - pieChartState.offset);
     const endIndex = totalMonths - pieChartState.offset;
     const monthsToShow = data.months.slice(startIndex, endIndex);
 
-    // --- Update Navigation UI ---
-    const isNavVisible = pieChartState.range < 12;
-    [prevBtn, nextBtn, navRangeEl].forEach(el => el.style.visibility = isNavVisible ? 'visible' : 'hidden');
+    navButtons.style.visibility = (pieChartState.range < 12 && !pieChartState.previousState) ? 'visible' : 'hidden';
+    nextBtn.disabled = pieChartState.offset <= 0;
+    prevBtn.disabled = startIndex <= 0;
 
-    if (monthsToShow.length > 0) {
-        navRangeEl.textContent = `${formatMonthLabel(monthsToShow[0])} - ${formatMonthLabel(monthsToShow[monthsToShow.length - 1])}`;
-    } else {
-        navRangeEl.textContent = "Sem dados";
-    }
-    nextBtn.disabled = pieChartState.offset === 0;
-    prevBtn.disabled = (startIndex === 0);
-
-    // --- Generate Department Filters/Legend ---
     const allButton = document.createElement('button');
     allButton.className = 'filter-btn' + (pieChartState.selectedDepartments.length === data.departments.length ? ' active' : '');
     allButton.textContent = 'Todos';
@@ -835,7 +768,6 @@ function updateDepartmentBreakdownCharts() {
         const item = document.createElement('div');
         const isActive = pieChartState.selectedDepartments.includes(dept);
         item.className = 'department-legend-item' + (isActive ? '' : ' inactive');
-        item.style.cursor = 'pointer';
         item.innerHTML = `<div class="department-legend-swatch" style="background-color: ${colorsByDepartment[dept] || '#ccc'};"></div><span>${dept}</span>`;
         item.onclick = () => {
             const index = pieChartState.selectedDepartments.indexOf(dept);
@@ -846,36 +778,48 @@ function updateDepartmentBreakdownCharts() {
         filterContainer.appendChild(item);
     });
 
-    // --- Generate Pie Charts ---
     if (monthsToShow.length === 0) {
         container.innerHTML = '<p class="text-center p-8">Não há dados para o período selecionado.</p>';
         return;
     }
 
-    let gridCols = 'repeat(6, 1fr)';
-    if (monthsToShow.length <= 4) gridCols = `repeat(${monthsToShow.length}, 1fr)`;
-    container.style.gridTemplateColumns = gridCols;
+    let gridTemplate = 'repeat(3, 1fr)';
+    if (pieChartState.range === 12) gridTemplate = 'repeat(4, 1fr)';
+    if (pieChartState.range === 3) gridTemplate = 'repeat(3, 1fr)';
+    if (pieChartState.range === 1) gridTemplate = '1fr';
+    container.style.gridTemplateColumns = gridTemplate;
 
-    monthsToShow.forEach(month => {
+    monthsToShow.forEach((month) => {
         const monthData = data.data[month];
         if (!monthData) return;
 
         const pieItem = document.createElement('div');
         pieItem.className = 'pie-item';
+        if (pieChartState.range === 1) pieItem.classList.add('single-view');
+        
         const canvas = document.createElement('canvas');
         pieItem.appendChild(canvas);
+
         const label = document.createElement('div');
         label.className = 'pie-label';
         label.textContent = formatMonthLabel(month);
         pieItem.appendChild(label);
+        
+        if (pieChartState.range === 1) {
+            const customLegend = document.createElement('div');
+            customLegend.className = 'custom-legend-container';
+            pieItem.insertBefore(customLegend, canvas); // Place legend before canvas
+        }
+
         container.appendChild(pieItem);
+        pieItem.onclick = () => handlePieClick(month);
 
         const filteredDeptData = pieChartState.selectedDepartments
             .map(dept => ({ name: dept, value: monthData.departments[dept]?.geral || 0 }))
-            .filter(d => d.value > 0);
-        const totalForMonth = filteredDeptData.reduce((sum, d) => sum + d.value, 0);
+            .filter(d => d.value > 0)
+            .sort((a, b) => b.value - a.value);
 
-        const chart = new Chart(canvas.getContext('2d'), {
+        const chart = new Chart(canvas, {
             type: 'pie',
             data: {
                 labels: filteredDeptData.map(d => d.name),
@@ -885,28 +829,80 @@ function updateDepartmentBreakdownCharts() {
                 }]
             },
             options: {
-                responsive: true, maintainAspectRatio: true,
+                responsive: true,
+                maintainAspectRatio: true,
                 plugins: {
                     legend: { display: false },
-                    datalabels: {
-                        formatter: (value, ctx) => {
-                            if (totalForMonth === 0) return '0%';
-                            const percentage = (value / totalForMonth) * 100;
-                            return percentage > 5 ? `${percentage.toFixed(0)}%` : '';
-                        },
-                        color: '#fff', font: { weight: 'bold' }
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed;
+                                const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                const percentage = total > 0 ? (value / total * 100).toFixed(1) : 0;
+                                return `${label}: ${percentage}%`;
+                            }
+                        }
                     }
                 }
             }
         });
+        
+        if (pieChartState.range === 1) {
+            renderCustomLegend(pieItem.querySelector('.custom-legend-container'), filteredDeptData);
+        }
+
         pieChartState.chartInstances.push(chart);
     });
 }
 
-// --- [NEW] DOM Preparation Function ---
+function handlePieClick(month) {
+    if (pieChartState.previousState) {
+        pieChartState.range = pieChartState.previousState.range;
+        pieChartState.offset = pieChartState.previousState.offset;
+        pieChartState.previousState = null;
+    } 
+    else if (pieChartState.range > 1) {
+        pieChartState.previousState = { range: pieChartState.range, offset: pieChartState.offset };
+        const monthIndex = data.months.indexOf(month);
+        pieChartState.range = 1;
+        pieChartState.offset = data.months.length - 1 - monthIndex;
+    }
+    updateDepartmentBreakdownCharts();
+}
+
+function renderCustomLegend(container, chartData) {
+    if (!container) return;
+    const total = chartData.reduce((sum, item) => sum + item.value, 0);
+    
+    const leftColumn = document.createElement('div');
+    leftColumn.className = 'legend-column';
+    const rightColumn = document.createElement('div');
+    rightColumn.className = 'legend-column';
+
+    chartData.forEach((item, index) => {
+        const legendItem = document.createElement('div');
+        legendItem.className = 'legend-item';
+        legendItem.innerHTML = `
+            <div class="legend-swatch" style="background-color: ${colorsByDepartment[item.name] || '#ccc'}"></div>
+            <div class="legend-name">${item.name}</div>
+            <div class="legend-percent">${Math.round((item.value / total) * 100)}%</div>
+        `;
+        // Simple split for now, can be enhanced with angle logic if needed
+        if (index < (chartData.length + 1) / 2) {
+            leftColumn.appendChild(legendItem);
+        } else {
+            rightColumn.appendChild(legendItem);
+        }
+    });
+
+    container.appendChild(leftColumn);
+    container.appendChild(rightColumn);
+}
+
+// --- DOM Preparation Function ---
 function prepareDOMForPieCharts() {
     return new Promise((resolve) => {
-        // 1. Reorder elements
         const chartsView = document.getElementById('charts-view');
         const breakdownWrapper = document.getElementById('department-breakdown-wrapper')?.closest('.chart-row');
         const stackedWrapper = document.getElementById('percentage-stacked-chart')?.closest('.chart-row');
@@ -914,31 +910,36 @@ function prepareDOMForPieCharts() {
             chartsView.insertBefore(breakdownWrapper, stackedWrapper);
         }
 
-        // 2. Inject CSS
         const css = `
             #department-breakdown-wrapper .card { display: flex; flex-direction: column; }
-            .pie-chart-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
-            .pie-chart-nav { display: flex; align-items: center; gap: 15px; }
-            .pie-chart-nav button { background-color: #024B59; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; transition: background-color 0.2s; }
-            .pie-chart-nav button:hover:not(:disabled) { background-color: #036881; }
-            .pie-chart-nav button:disabled { background-color: #ccc; cursor: not-allowed; }
-            #pie-nav-range { font-weight: 600; color: #333; }
-            .pie-chart-main-content { display: flex; gap: 25px; flex-grow: 1; }
+            .pie-chart-controls { display: flex; justify-content: center; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
+            .pie-chart-main-content { display: flex; gap: 25px; flex-grow: 1; align-items: center; }
             #department-breakdown-charts { flex-grow: 1; display: grid; gap: 20px; align-items: center; }
+            .pie-item { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s ease-in-out; }
+            .pie-item.single-view { flex-direction: row; align-items: center; justify-content: center; gap: 20px; max-width: 90%; margin: 0 auto; }
+            .pie-item.single-view .custom-legend-container { flex: 1; }
+            .pie-item.single-view canvas { max-width: 350px; }
+            .pie-label { margin-top: 10px; font-weight: 600; color: #333; text-align: center; font-size: 1rem; }
             .department-legend-sidebar { flex-basis: 220px; flex-shrink: 0; border-left: 1px solid #e0e0e0; padding-left: 20px; }
-            .department-legend-sidebar h4 { margin-top: 0; margin-bottom: 15px; color: #024B59; }
             #pie-department-filters { display: flex; flex-direction: column; gap: 8px; }
-            #pie-department-filters .filter-btn { width: 100%; margin-bottom: 5px; }
-            #pie-department-filters .department-legend-item { padding: 8px; border-radius: 6px; transition: background-color 0.2s; display: flex; align-items: center; }
+            #pie-department-filters .filter-btn { width: 100%; margin-bottom: 5px; text-align: center; }
+            #pie-department-filters .department-legend-item { padding: 8px; border-radius: 6px; transition: background-color 0.2s; display: flex; align-items: center; cursor: pointer; }
             #pie-department-filters .department-legend-item:hover { background-color: #e9e9e9; }
             #pie-department-filters .department-legend-item.inactive { opacity: 0.5; }
             #pie-department-filters .department-legend-swatch { width: 16px; height: 16px; margin-right: 8px; border-radius: 3px; }
+            .pie-chart-nav { display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 20px; }
+            .pie-chart-nav button { background-color: #024B59; color: white; border: none; padding: 8px 14px; border-radius: 50%; cursor: pointer; font-size: 1.2rem; line-height: 1; width: 40px; height: 40px; }
+            .custom-legend-container { display: flex; justify-content: center; gap: 30px; font-size: 13px; }
+            .legend-column { display: flex; flex-direction: column; gap: 10px; }
+            .legend-item { display: flex; align-items: center; }
+            .legend-swatch { width: 12px; height: 12px; border-radius: 3px; margin-right: 8px; flex-shrink: 0; }
+            .legend-name { font-weight: 600; margin-right: auto; padding-right: 10px; }
+            .legend-percent { font-weight: 500; color: #555; }
         `;
         const style = document.createElement('style');
         style.textContent = css;
         document.head.appendChild(style);
 
-        // 3. Inject HTML Structure
         const card = document.getElementById('department-breakdown-wrapper');
         if(card) {
             card.innerHTML = `
@@ -950,11 +951,6 @@ function prepareDOMForPieCharts() {
                         <button class="filter-btn pie-time-btn active" data-months="6">6 Meses</button>
                         <button class="filter-btn pie-time-btn" data-months="12">12 Meses</button>
                     </div>
-                    <div class="pie-chart-nav">
-                        <button id="pie-nav-prev">&lt; Anterior</button>
-                        <span id="pie-nav-range"></span>
-                        <button id="pie-nav-next">Próximo &gt;</button>
-                    </div>
                 </div>
                 <div class="pie-chart-main-content">
                     <div id="department-breakdown-charts"></div>
@@ -963,21 +959,13 @@ function prepareDOMForPieCharts() {
                         <div id="pie-department-filters"></div>
                     </div>
                 </div>
+                <div class="pie-chart-nav">
+                    <button id="pie-nav-prev">&lt;</button>
+                    <button id="pie-nav-next">&gt;</button>
+                </div>
             `;
         }
-
-        // 4. Inject Chart.js Plugin and resolve promise on load
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0';
-        script.onload = () => {
-            Chart.register(ChartDataLabels); // Register the plugin
-            resolve();
-        };
-        script.onerror = () => {
-            console.error("Failed to load Chart.js Datalabels plugin.");
-            resolve(); // Resolve anyway so the rest of the app doesn't break
-        }
-        document.head.appendChild(script);
+        resolve();
     });
 }
 
@@ -988,8 +976,8 @@ async function initDashboard() {
         if (!data || !data.months.length) {
             throw new Error('Invalid or incomplete data. Cannot initialize dashboard.');
         }
-
-        // [MODIFIED] Prepare the DOM and wait for the plugin script to load
+        
+        // [MODIFIED] No longer need to load the datalabels plugin
         await prepareDOMForPieCharts();
 
         setupViewToggle();
@@ -1008,9 +996,7 @@ async function initDashboard() {
             contributionEfficiency: createContributionEfficiencyChart(data.data, data.months, data.departments)
         };
         
-        // [NEW] Setup the interactive pie charts
         setupDepartmentBreakdown();
-        
         setupTimeFilters();
 
         setTimeout(() => {
@@ -1026,5 +1012,5 @@ async function initDashboard() {
 
 function showError(message) {
     const container = document.querySelector('.container') || document.body;
-    container.innerHTML = `<div class="error-message"><h2>Erro</h2><p>${message}</p><button onclick="window.location.reload()">Recarregar Página</button></div>`
+    container.innerHTML = `<div class="error-message"><h2>Erro</h2><p>${message}</p><button onclick="window.location.reload()">Recarregar Página</button></div>`;
 }
