@@ -22,12 +22,16 @@ body {
   justify-content: flex-start; /* Aligned to the left */
   gap: 10px;
   margin-bottom: 30px;
+  background-color: rgba(0, 0, 0, 0.1);
+  padding: 8px;
+  border-radius: 10px;
+  width: max-content;
 }
 
 .view-toggle button {
   background-color: transparent;
-  color: #cce2e6;
-  border: 1px solid #3eec90;
+  color: #fff;
+  border: none;
   padding: 10px 20px;
   border-radius: 8px;
   font-weight: 600;
@@ -36,9 +40,9 @@ body {
 }
 
 .view-toggle button.active {
-  background-color: #3eec90;
+  background-color: #fff;
   color: #024B59;
-  font-weight: 700;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
 /* ====== CARD STYLES ====== */
@@ -89,6 +93,11 @@ body {
 
 .chart-row.single .card {
   width: 100%;
+}
+
+.chart-row.double {
+    display: flex;
+    gap: 20px;
 }
 
 .chart-row.double .card {
@@ -144,15 +153,18 @@ body {
   display: flex;
   gap: 25px;
   flex-grow: 1;
-  align-items: flex-start; /* Align items to the top */
+  align-items: flex-start;
 }
 
 #department-breakdown-charts {
   flex-grow: 1;
   display: grid;
   gap: 20px;
-  /* Responsive grid that prevents overflow */
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+#department-breakdown-charts[data-range="3"] {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 }
 
 .pie-item {
@@ -182,7 +194,7 @@ body {
 
 /* Styles for single month view */
 .pie-item.single-view {
-    flex-direction: row-reverse; /* Legend on the left */
+    flex-direction: row-reverse;
     align-items: center;
     justify-content: center;
     gap: 30px;
@@ -191,7 +203,7 @@ body {
 
 .pie-item.single-view .pie-chart-wrapper {
     flex-basis: 60%;
-    max-width: 450px;
+    max-width: 500px; /* A bit bigger */
 }
 
 .custom-legend-container {
