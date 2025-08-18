@@ -33,7 +33,7 @@ let pieChartState = {
 // --- Mappings and Helpers ---
 const deptMap = {
     "Administrativo Financeiro": "Administrativo", "Apoio": "Apoio", "Comercial": "Comercial",
-    "Diretoria": "Diretoria", "Direção": "Diretoria", // [NEW] Unify "Direção"
+    "Diretoria": "Diretoria", "Direção": "Diretoria", // Unify "Direção"
     "Jurídico Externo": "Jurídico", "Marketing": "Marketing",
     "NEC": "NEC", "Operação Geral": "Operação", "RH / Departamento Pessoal": "RH",
     "Planejamento Estratégico": "Planejamento Estratégico"
@@ -108,7 +108,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (!structuredData[monthKey].departments[dept]) {
                     structuredData[monthKey].departments[dept] = { total: 0, bonificacao: 0, valeAlimentacao: 0, count: 0, geral: 0 };
                 }
-                // Use += to aggregate data if a department appears multiple times (like "Diretoria" and "Direção")
                 structuredData[monthKey].departments[dept].total += total;
                 structuredData[monthKey].departments[dept].bonificacao += bonificacao;
                 structuredData[monthKey].departments[dept].valeAlimentacao += valeAlimentacao;
@@ -149,7 +148,7 @@ const colorsByDepartment = {
     "Administrativo": "#6B5B95", "Apoio": "#FF6F61", "Comercial": "#E44D42",
     "Diretoria": "#0072B5", "Jurídico": "#2E8B57", "Marketing": "#FFA500",
     "NEC": "#9370DB", "Operação": "#00A86B", "RH": "#FF69B4",
-    "Planejamento Estratégico": "#D95F02" // [NEW] Color for new department
+    "Planejamento Estratégico": "#D95F02"
 };
 
 // --- Utility Functions ---
@@ -293,7 +292,7 @@ function generateDetailedByMonth() {
         table.innerHTML = `
             <thead><tr><th>Departamento</th><th>Funcionários</th><th>Total Simples</th><th>Vale Alimentação</th><th>Bonificação (Dia 20)</th><th>Total Geral</th></tr></thead>
             <tbody>
-                ${Object.keys(colorsByDepartment).map(dept => { // Iterate to maintain order
+                ${Object.keys(colorsByDepartment).map(dept => {
                     const d = monthData.departments[dept];
                     return d ? `<tr>
                         <td>${dept}</td><td>${d.count || 0}</td><td>${formatCurrencyBRL(d.total)}</td>
@@ -357,7 +356,7 @@ function generateEarningsTable() {
     const table = document.createElement('table');
     table.className = 'summary';
     table.innerHTML = `
-        <thead><tr><th>Mês</th><th>Faturamento</th><th>Gastos Totais</th><th>Lucro / Prejuízo Líquido</th><th>Margem de Lucro (%)</th></tr></thead>
+        <thead><tr><th>Mês</th><th>Faturamento</th><th>Gastos Totais</th><th>Diferença</th><th>Margem (%)</th></tr></thead>
         <tbody>
             ${data.months.map(month => {
                 const monthData = data.data[month];
@@ -384,9 +383,8 @@ function setupTimeFilters() {
         try { return JSON.parse(jsonString); } catch (e) { return []; }
     };
     
-    // [NEW] Dynamically create filter buttons
     const filterButtonsContainer = document.querySelector('#total-expenditures-wrapper .filter-buttons');
-    filterButtonsContainer.innerHTML = '<button class="filter-btn active" data-department="all">Todos</button>'; // Start with 'All'
+    filterButtonsContainer.innerHTML = '<button class="filter-btn active" data-department="all">Todos</button>';
     data.departments.forEach(dept => {
         const button = document.createElement('button');
         button.className = 'filter-btn';
@@ -482,7 +480,7 @@ function createDepartmentTrendsChart(chartData, months, departments) {
                 borderColor: colorsByDepartment[dept] || "#ccc", borderWidth: 2, fill: false, tension: 0.3
             }))
         },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
     });
     return {
         update: function(monthsToShow = months, filteredDepartments = departments) {
@@ -582,8 +580,8 @@ function createEarningsVsCostsChart(chartData, months) {
         data: {
             labels: months.map(formatMonthShort),
             datasets: [
-                { label: 'Faturamento', data: months.map(m => chartData[m]?.earnings || 0), borderColor: '#00A86B', tension: 0.4 },
-                { label: 'Gastos Totais', data: months.map(m => chartData[m]?.total || 0), borderColor: '#E44D42', tension: 0.4 }
+                { label: 'Faturamento', data: months.map(m => chartData[m]?.earnings || 0), borderColor: '#024B59', tension: 0.4 },
+                { label: 'Gastos com Pessoal', data: months.map(m => chartData[m]?.total || 0), borderColor: '#E44D42', tension: 0.4 }
             ]
         },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
@@ -605,9 +603,9 @@ function createNetProfitLossChart(chartData, months) {
         data: {
             labels: months.map(formatMonthShort),
             datasets: [{
-                label: 'Lucro / Prejuízo Líquido',
+                label: 'Diferença',
                 data: months.map(m => (chartData[m]?.earnings || 0) - (chartData[m]?.total || 0)),
-                backgroundColor: months.map(m => ((chartData[m]?.earnings || 0) - (chartData[m]?.total || 0)) >= 0 ? '#00A86B' : '#E44D42')
+                backgroundColor: months.map(m => ((chartData[m]?.earnings || 0) - (chartData[m]?.total || 0)) >= 0 ? '#024B59' : '#E44D42')
             }]
         },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
@@ -617,7 +615,7 @@ function createNetProfitLossChart(chartData, months) {
         chart.data.labels = newMonths.map(formatMonthShort);
         const newData = newMonths.map(m => (data.data[m]?.earnings || 0) - (data.data[m]?.total || 0));
         chart.data.datasets[0].data = newData;
-        chart.data.datasets[0].backgroundColor = newData.map(val => val >= 0 ? '#00A86B' : '#E44D42');
+        chart.data.datasets[0].backgroundColor = newData.map(val => val >= 0 ? '#024B59' : '#E44D42');
         chart.update();
     }};
 }
@@ -625,108 +623,117 @@ function createNetProfitLossChart(chartData, months) {
 function createProfitMarginChart(chartData, months) {
     const ctx = document.getElementById('profit-margin-chart');
     if (!ctx) return null;
+    const percentageChangeBubbles = {
+        id: 'percentageChangeBubbles',
+        afterDatasetsDraw(chart) {
+            const { ctx, data, _metasets } = chart;
+            const meta = _metasets[0];
+            const points = meta.data;
+            ctx.save();
+            for (let i = 1; i < points.length; i++) {
+                const currentPoint = data.datasets[0].data[i];
+                const prevPoint = data.datasets[0].data[i - 1];
+                const change = currentPoint - prevPoint;
+                if (isNaN(change)) continue;
+                const text = `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`;
+                const isPositive = change >= 0;
+                const x = points[i].x;
+                const yOffset = (points[i].y < points[i-1].y) ? -25 : 25;
+                const y = points[i].y + yOffset;
+                ctx.fillStyle = isPositive ? 'rgba(25, 135, 84, 0.85)' : 'rgba(220, 53, 69, 0.85)';
+                ctx.strokeStyle = isPositive ? '#198754' : '#dc3545';
+                ctx.lineWidth = 1;
+                ctx.font = 'bold 12px "Plus Jakarta Sans"';
+                const textMetrics = ctx.measureText(text);
+                const bubbleWidth = textMetrics.width + 16;
+                const bubbleHeight = 24;
+                const borderRadius = 12;
+                ctx.beginPath();
+                ctx.moveTo(x - bubbleWidth / 2 + borderRadius, y - bubbleHeight / 2);
+                ctx.lineTo(x + bubbleWidth / 2 - borderRadius, y - bubbleHeight / 2);
+                ctx.quadraticCurveTo(x + bubbleWidth / 2, y - bubbleHeight / 2, x + bubbleWidth / 2, y - bubbleHeight / 2 + borderRadius);
+                ctx.lineTo(x + bubbleWidth / 2, y + bubbleHeight / 2 - borderRadius);
+                ctx.quadraticCurveTo(x + bubbleWidth / 2, y + bubbleHeight / 2, x + bubbleWidth / 2 - borderRadius, y + bubbleHeight / 2);
+                ctx.lineTo(x - bubbleWidth / 2 + borderRadius, y + bubbleHeight / 2);
+                ctx.quadraticCurveTo(x - bubbleWidth / 2, y + bubbleHeight / 2, x - bubbleWidth / 2, y + bubbleHeight / 2 - borderRadius);
+                ctx.lineTo(x - bubbleWidth / 2, y - bubbleHeight / 2 + borderRadius);
+                ctx.quadraticCurveTo(x - bubbleWidth / 2, y - bubbleHeight / 2, x - bubbleWidth / 2 + borderRadius, y - bubbleHeight / 2);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+                ctx.fillStyle = '#fff';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(text, x, y);
+            }
+            ctx.restore();
+        }
+    };
+    const profitMargins = months.map(m => {
+        const monthInfo = chartData[m];
+        if (!monthInfo) return 0;
+        const earnings = monthInfo.earnings || 0;
+        return earnings > 0 ? ((earnings - (monthInfo.total || 0)) / earnings) * 100 : 0;
+    });
     const chart = new Chart(ctx.getContext('2d'), {
         type: 'line',
         data: {
             labels: months.map(formatMonthShort),
             datasets: [{
-                label: 'Margem de Lucro',
-                data: months.map(m => {
-                    const earnings = chartData[m]?.earnings || 0;
-                    return earnings > 0 ? ((earnings - (chartData[m]?.total || 0)) / earnings) * 100 : 0;
-                }),
-                borderColor: '#0072B5',
-                tension: 0.4,
-                fill: true
+                label: 'Margem', data: profitMargins,
+                borderColor: '#024B59', backgroundColor: 'rgba(2, 75, 89, 0.1)',
+                tension: 0.4, fill: true, pointRadius: 5, pointBackgroundColor: '#024B59', pointHoverRadius: 7
             }]
         },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: (value) => value.toFixed(0) + "%" } } } }
+        plugins: [percentageChangeBubbles],
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `Margem: ${context.parsed.y.toFixed(2)}%` } } },
+            scales: { y: { ticks: { callback: (value) => value.toFixed(0) + "%" } } }
+        }
     });
-    return { update: (newMonths) => {
-        if (!newMonths) return;
-        chart.data.labels = newMonths.map(formatMonthShort);
-        chart.data.datasets[0].data = newMonths.map(m => {
-            const earnings = data.data[m]?.earnings || 0;
-            return earnings > 0 ? ((earnings - (data.data[m]?.total || 0)) / earnings) * 100 : 0;
-        });
-        chart.update();
-    }};
 }
 
 function createEarningsPerEmployeeChart(chartData, months) {
-    const ctx = document.getElementById('earnings-per-employee-chart');
-    if (!ctx) return null;
-    let mode = 'company';
-    const getChartData = (m, currentMode) => {
-        const earnings = chartData[m]?.earnings || 0;
-        if (currentMode === 'operation') {
-            const opEmployees = chartData[m]?.departments?.Operação?.count || 0;
+    const container = document.getElementById('earnings-per-employee-chart').parentElement;
+    const getChartData = (month, mode) => {
+        const monthInfo = chartData[month];
+        if (!monthInfo) return 0;
+        const earnings = monthInfo.earnings || 0;
+        if (mode === 'operation') {
+            const opEmployees = monthInfo.departments?.Operação?.count || 0;
             return opEmployees > 0 ? earnings / opEmployees : 0;
         }
-        const totalEmployees = chartData[m]?.totalEmployees || 0;
+        const totalEmployees = monthInfo.totalEmployees || 0;
         return totalEmployees > 0 ? earnings / totalEmployees : 0;
     };
-    const chart = new Chart(ctx.getContext('2d'), {
+    const chart = new Chart(document.getElementById('earnings-per-employee-chart').getContext('2d'), {
         type: 'line',
         data: {
             labels: months.map(formatMonthShort),
             datasets: [{
-                label: 'Faturamento por Funcionário (Geral)',
-                data: months.map(m => getChartData(m, mode)),
-                borderColor: '#F28E2B',
-                tension: 0.4,
-                fill: true
+                label: 'Faturamento por Funcionário', data: months.map(m => getChartData(m, 'company')),
+                borderColor: '#024B59', backgroundColor: 'rgba(2, 75, 89, 0.1)',
+                tension: 0.4, fill: true
             }]
         },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `Valor: ${formatCurrencyBRL(context.parsed.y)}` } } },
+            scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } }
+        }
     });
-    document.getElementById('toggle-earnings-per-employee').addEventListener('click', (e) => {
-        mode = mode === 'company' ? 'operation' : 'company';
-        e.target.textContent = `Ver Faturamento por Funcionário (${mode === 'company' ? 'Operação' : 'Geral'})`;
-        chart.data.datasets[0].data = data.months.map(m => getChartData(m, mode));
+    const toggle = container.querySelector('#employee-toggle');
+    const chartTitle = container.querySelector('h2');
+    toggle.addEventListener('change', () => {
+        const mode = toggle.checked ? 'operation' : 'company';
+        chart.data.datasets[0].data = months.map(m => getChartData(m, mode));
+        chartTitle.textContent = `Faturamento por Funcionário (${mode === 'operation' ? 'Operação' : 'Geral'})`;
         chart.update();
     });
-    return { update: (newMonths) => {
-        if (!newMonths) return;
-        chart.data.labels = newMonths.map(formatMonthShort);
-        chart.data.datasets[0].data = newMonths.map(m => getChartData(m, mode));
-        chart.update();
-    }};
 }
 
-function createContributionEfficiencyChart(chartData, months, departments) {
-    const ctx = document.getElementById('contribution-efficiency-chart');
-    if (!ctx) return null;
-    const chart = new Chart(ctx.getContext('2d'), {
-        type: 'bar',
-        data: {
-            labels: months.map(formatMonthShort),
-            datasets: departments.map(dept => ({
-                label: dept,
-                data: months.map(m => {
-                    const earnings = chartData[m]?.earnings || 1;
-                    return (earnings > 0) ? ((chartData[m]?.departments[dept]?.geral || 0) / earnings) * 100 : 0;
-                }),
-                backgroundColor: colorsByDepartment[dept] || "#ccc"
-            }))
-        },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } }, scales: { x: { stacked: true }, y: { stacked: true, ticks: { callback: (value) => value.toFixed(0) + "%" } } } }
-    });
-    return { update: (newMonths) => {
-        if (!newMonths) return;
-        chart.data.labels = newMonths.map(formatMonthShort);
-        chart.data.datasets.forEach((dataset, idx) => {
-            const dept = departments[idx];
-            dataset.data = newMonths.map(m => {
-                const earnings = data.data[m]?.earnings || 1;
-                return (earnings > 0) ? ((data.data[m]?.departments[dept]?.geral || 0) / earnings) * 100 : 0;
-            });
-        });
-        chart.update();
-    }};
-}
-
-// --- [REWRITTEN] Pie Chart Section Functions ---
+// --- Pie Chart Section Functions ---
 
 function setupDepartmentBreakdown() {
     pieChartState.selectedDepartments = data.departments.slice();
@@ -802,7 +809,7 @@ function updateDepartmentBreakdownCharts() {
     }
 
     let gridTemplate = 'repeat(3, 1fr)';
-    if (pieChartState.range === 12) gridTemplate = 'repeat(6, 1fr)'; // 2x6 layout
+    if (pieChartState.range === 12) gridTemplate = 'repeat(6, 1fr)';
     if (pieChartState.range === 3) gridTemplate = 'repeat(3, 1fr)';
     if (pieChartState.range === 1) gridTemplate = '1fr';
     container.style.gridTemplateColumns = gridTemplate;
@@ -816,7 +823,6 @@ function updateDepartmentBreakdownCharts() {
         if (pieChartState.range === 1) pieItem.classList.add('single-view');
         
         const canvas = document.createElement('canvas');
-        
         const label = document.createElement('div');
         label.className = 'pie-label';
         label.textContent = formatMonthLabel(month);
@@ -853,8 +859,7 @@ function updateDepartmentBreakdownCharts() {
                 }]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: true,
+                responsive: true, maintainAspectRatio: true,
                 plugins: {
                     legend: { display: false },
                     tooltip: {
@@ -897,14 +902,13 @@ function handlePieClick(month) {
 
 function renderCustomLegend(container, chartData) {
     if (!container) return;
+    container.innerHTML = '';
     const total = chartData.reduce((sum, item) => sum + item.value, 0);
     
-    const leftColumn = document.createElement('div');
-    leftColumn.className = 'legend-column';
-    const rightColumn = document.createElement('div');
-    rightColumn.className = 'legend-column';
+    const column = document.createElement('div');
+    column.className = 'legend-column';
 
-    chartData.forEach((item, index) => {
+    chartData.forEach((item) => {
         const legendItem = document.createElement('div');
         legendItem.className = 'legend-item';
         legendItem.innerHTML = `
@@ -912,20 +916,15 @@ function renderCustomLegend(container, chartData) {
             <div class="legend-name">${item.name}</div>
             <div class="legend-percent">${Math.round((item.value / total) * 100)}%</div>
         `;
-        if (index < (chartData.length + 1) / 2) {
-            leftColumn.appendChild(legendItem);
-        } else {
-            rightColumn.appendChild(legendItem);
-        }
+        column.appendChild(legendItem);
     });
-
-    container.appendChild(leftColumn);
-    container.appendChild(rightColumn);
+    container.appendChild(column);
 }
 
 // --- DOM Preparation Function ---
-function prepareDOMForPieCharts() {
+function prepareDOMForDashboard() {
     return new Promise((resolve) => {
+        // Reorder charts
         const chartsView = document.getElementById('charts-view');
         const breakdownWrapper = document.getElementById('department-breakdown-wrapper')?.closest('.chart-row');
         const stackedWrapper = document.getElementById('percentage-stacked-chart')?.closest('.chart-row');
@@ -933,20 +932,26 @@ function prepareDOMForPieCharts() {
             chartsView.insertBefore(breakdownWrapper, stackedWrapper);
         }
 
+        // Remove last earnings chart
+        document.getElementById('contribution-efficiency-chart')?.closest('.chart-row').remove();
+
+        // Inject new CSS
         const css = `
+            .toggle-switch-group { display: flex; align-items: center; background-color: #e9ecef; border-radius: 8px; padding: 4px; }
+            .toggle-switch-group .filter-btn { background-color: transparent; color: #495057; border: none; flex-grow: 1; padding: 6px 12px; font-size: 14px; }
+            .toggle-switch-group .filter-btn.active { background-color: #fff; color: #024B59; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
             #department-breakdown-wrapper .card { display: flex; flex-direction: column; }
             .pie-chart-controls { display: flex; justify-content: center; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
             .pie-chart-main-content { display: flex; gap: 25px; flex-grow: 1; align-items: center; }
-            #department-breakdown-charts { flex-grow: 1; display: grid; gap: 15px; }
+            #department-breakdown-charts { flex-grow: 1; display: grid; gap: 20px; }
             .pie-item { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s ease-in-out; }
             .pie-item.single-view { flex-direction: row-reverse; align-items: center; justify-content: center; gap: 30px; max-width: 100%; margin: 0 auto; }
             .pie-item.single-view .custom-legend-container { flex-basis: 40%; }
-            .pie-item.single-view canvas { max-height: 380px; }
+            .pie-item.single-view canvas { max-height: 400px; }
             .pie-label { margin-top: 10px; font-weight: 600; color: #333; text-align: center; font-size: 1rem; }
             .department-legend-sidebar { flex-basis: 220px; flex-shrink: 0; border-left: 1px solid #e0e0e0; padding-left: 20px; }
             #pie-department-filters { display: flex; flex-direction: column; gap: 8px; }
-            #pie-department-filters .filter-btn { width: 100%; margin-bottom: 5px; text-align: center; }
-            #pie-department-filters .department-legend-item { padding: 8px; border-radius: 6px; transition: background-color 0.2s; display: flex; align-items: center; cursor: pointer; }
+            #pie-department-filters .department-legend-item { padding: 8px; border-radius: 6px; display: flex; align-items: center; cursor: pointer; }
             #pie-department-filters .department-legend-item:hover { background-color: #e9e9e9; }
             #pie-department-filters .department-legend-item.inactive { opacity: 0.5; }
             #pie-department-filters .department-legend-swatch { width: 16px; height: 16px; margin-right: 8px; border-radius: 3px; }
@@ -963,16 +968,34 @@ function prepareDOMForPieCharts() {
         style.textContent = css;
         document.head.appendChild(style);
 
+        // Inject HTML for toggles and buttons
+        document.querySelectorAll('.time-filters').forEach(el => el.classList.add('toggle-switch-group'));
+        document.querySelectorAll('.filter-buttons').forEach(el => el.classList.add('toggle-switch-group'));
+        
+        const earningsPerEmpCard = document.getElementById('earnings-per-employee-chart').parentElement.parentElement;
+        earningsPerEmpCard.innerHTML = `
+            <div class="chart-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 id="chart-title">Faturamento por Funcionário (Geral)</h2>
+                <label class="toggle-switch-group" style="width: 180px;">
+                    <input type="radio" name="employee-toggle-radio" id="employee-toggle-geral" checked style="display:none;">
+                    <label for="employee-toggle-geral" class="filter-btn active">Geral</label>
+                    <input type="radio" name="employee-toggle-radio" id="employee-toggle-operacao" style="display:none;">
+                    <label for="employee-toggle-operacao" class="filter-btn">Operação</label>
+                </label>
+            </div>
+            <div class="chart-container" style="height: 400px;"><canvas id="earnings-per-employee-chart"></canvas></div>
+        `;
+
         const card = document.getElementById('department-breakdown-wrapper');
         if(card) {
             card.innerHTML = `
                 <h2>Distribuição de Gastos por Departamento</h2>
                 <div class="pie-chart-controls">
-                    <div class="time-filters">
-                        <button class="filter-btn pie-time-btn" data-months="1">1 Mês</button>
-                        <button class="filter-btn pie-time-btn" data-months="3">3 Meses</button>
-                        <button class="filter-btn pie-time-btn active" data-months="6">6 Meses</button>
-                        <button class="filter-btn pie-time-btn" data-months="12">12 Meses</button>
+                    <div class="time-filters toggle-switch-group">
+                        <button class="filter-btn pie-time-btn" data-months="1">Mensal</button>
+                        <button class="filter-btn pie-time-btn" data-months="3">Trimestral</button>
+                        <button class="filter-btn pie-time-btn active" data-months="6">Semestral</button>
+                        <button class="filter-btn pie-time-btn" data-months="12">Anual</button>
                     </div>
                 </div>
                 <div class="pie-chart-main-content">
@@ -988,6 +1011,14 @@ function prepareDOMForPieCharts() {
                 </div>
             `;
         }
+        // Rename other time filters
+        document.querySelector('#total-expenditures-wrapper .time-btn[data-months="12"]').textContent = 'Anual';
+        document.querySelector('#total-expenditures-wrapper .time-btn[data-months="6"]').textContent = 'Semestral';
+        document.querySelector('#total-expenditures-wrapper .time-btn[data-months="3"]').textContent = 'Trimestral';
+        document.querySelector('#department-trends-wrapper .time-btn[data-months="12"]').textContent = 'Anual';
+        document.querySelector('#department-trends-wrapper .time-btn[data-months="6"]').textContent = 'Semestral';
+        document.querySelector('#department-trends-wrapper .time-btn[data-months="3"]').textContent = 'Trimestral';
+
         resolve();
     });
 }
@@ -1000,7 +1031,7 @@ async function initDashboard() {
             throw new Error('Invalid or incomplete data. Cannot initialize dashboard.');
         }
         
-        await prepareDOMForPieCharts();
+        await prepareDOMForDashboard();
 
         setupViewToggle();
         setupTableToggle();
@@ -1014,8 +1045,7 @@ async function initDashboard() {
             earningsVsCosts: createEarningsVsCostsChart(data.data, data.months),
             netProfitLoss: createNetProfitLossChart(data.data, data.months),
             profitMargin: createProfitMarginChart(data.data, data.months),
-            earningsPerEmployee: createEarningsPerEmployeeChart(data.data, data.months),
-            contributionEfficiency: createContributionEfficiencyChart(data.data, data.months, data.departments)
+            earningsPerEmployee: createEarningsPerEmployeeChart(data.data, data.months)
         };
         
         setupDepartmentBreakdown();
