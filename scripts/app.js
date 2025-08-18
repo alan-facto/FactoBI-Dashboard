@@ -23,6 +23,10 @@ const deptMap = {
 
 // Helper function to convert month abbreviations (e.g., "set.-24" to "2024-09")
 function convertMonthToYYYYMM(monthShortStr) {
+    if (!monthShortStr || !monthShortStr.includes('-')) {
+        console.warn('Invalid month string passed to convertMonthToYYYYMM:', monthShortStr);
+        return null;
+    }
     const [monthAbbr, yearShort] = monthShortStr.split('-');
     const yearFull = parseInt(yearShort, 10) < 50 ? `20${yearShort}` : `19${yearShort}`; // Assumes 2000s
     const monthMap = {
@@ -82,12 +86,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 ...earningsRows.map(row => convertMonthToYYYYMM(row.month))
             ]);
             Array.from(allPossibleMonths).sort().forEach(month => {
-                structuredData[month] = {
-                    departments: {},
-                    total: 0,
-                    totalEmployees: 0,
-                    earnings: 0
-                };
+                if(month) { // Ensure we don't create keys for null/undefined months
+                    structuredData[month] = {
+                        departments: {},
+                        total: 0,
+                        totalEmployees: 0,
+                        earnings: 0
+                    };
+                }
             });
 
 
@@ -95,6 +101,15 @@ document.addEventListener('DOMContentLoaded', () => {
             fetchedRows.forEach(row => {
                 try {
                     const month = row["Month"];
+                    
+                    // =================== FIX STARTS HERE ===================
+                    // If the month is missing, skip this row to prevent errors
+                    if (!month) {
+                        console.warn("Skipping row with missing month data:", row);
+                        return; // Exits the current iteration and continues with the next row
+                    }
+                    // =================== FIX ENDS HERE =====================
+
                     const rawDept = row["Department"];
                     const dept = deptMap[rawDept] || rawDept; // Map department names
                     const total = parseFloat(row["Total"]) || 0;
@@ -130,7 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (structuredData[monthKey]) { // Only add if the month exists from sheet1 or was pre-initialized
                     structuredData[monthKey].earnings = row.faturamento;
                 }
-                monthsSet.add(monthKey); // Ensure all months from earnings are included
+                if(monthKey) monthsSet.add(monthKey); // Ensure all months from earnings are included
             });
 
             // Final data assignment
@@ -217,6 +232,7 @@ function normalizeDepartmentName(name) {
 
 // Format month labels for display (e.g., "09/2024" to "Setembro/2024")
 function formatMonthLabel(monthStr) {
+    if (!monthStr || !monthStr.includes('-')) return "Invalid Date";
     const [year, month] = monthStr.split("-");
     const monthsPt = [
         "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
@@ -227,6 +243,7 @@ function formatMonthLabel(monthStr) {
 
 // Format month labels for short display (e.g., "2024-09" to "09/24")
 function formatMonthShort(monthStr) {
+    if (!monthStr || !monthStr.includes('-')) return ""; // Defensive check
     const [year, month] = monthStr.split("-");
     return `${month}/${year.slice(2)}`;
 }
@@ -397,6 +414,7 @@ function generateSummaryByMonth() {
 
     data.months.forEach(month => {
         const monthData = data.data[month];
+        if (!monthData) return; // Skip if month data doesn't exist
         const section = document.createElement('div');
         section.innerHTML = `<h3>${formatMonthLabel(month)}</h3>`;
 
@@ -452,7 +470,7 @@ function generateSummaryByDepartment() {
             </thead>
             <tbody>
                 ${data.months.map(month => {
-            const d = data.data[month].departments[dept];
+            const d = data.data[month]?.departments[dept];
             return d ? `
                         <tr>
                             <td>${formatMonthLabel(month)}</td>
@@ -492,7 +510,7 @@ function generateDetailedByMonth() {
         `;
 
         data.departments.forEach(dept => {
-            const d = data.data[month].departments[dept];
+            const d = data.data[month]?.departments[dept];
             if (d) {
                 const row = document.createElement('tr');
                 row.innerHTML = `
@@ -537,7 +555,7 @@ function generateDetailedByDepartment() {
         `;
 
         data.months.forEach(month => {
-            const d = data.data[month].departments[dept];
+            const d = data.data[month]?.departments[dept];
             if (d) {
                 const row = document.createElement('tr');
                 row.innerHTML = `
@@ -582,6 +600,7 @@ function generateEarningsTable() {
         <tbody>
             ${data.months.map(month => {
                 const monthData = data.data[month];
+                if (!monthData) return '';
                 const earnings = monthData.earnings || 0;
                 const totalCosts = monthData.total || 0;
                 const netProfit = earnings - totalCosts;
