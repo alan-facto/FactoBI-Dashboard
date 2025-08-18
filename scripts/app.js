@@ -97,9 +97,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (!monthKey || !structuredData[monthKey]) return;
             const rawDept = row["Department"];
             const dept = deptMap[rawDept] || rawDept;
-            const total = parseFloat(row["Total"]) || 0;
-            const bonificacao = parseFloat(row["Bonificacao 20"]) || 0;
-            const valeAlimentacao = parseFloat(row["Vale Alimentação"]) || 0;
+            const total = parseFloat(String(row["Total"]).replace(',', '.')) || 0;
+            const bonificacao = parseFloat(String(row["Bonificacao 20"]).replace(',', '.')) || 0;
+            const valeAlimentacao = parseFloat(String(row["Vale Alimentação"]).replace(',', '.')) || 0;
             const count = parseInt(row["Employee Count"]) || 0;
             const geral = total + bonificacao;
 
@@ -358,7 +358,7 @@ function generateEarningsTable() {
     const section = document.createElement('div');
     section.innerHTML = `<h3>Faturamento Mensal</h3>`;
     const table = document.createElement('table');
-    table.className = 'summary';
+    table.className = 'summary full-width-table';
     table.innerHTML = `
         <thead><tr><th>Mês</th><th>Faturamento</th><th>Gastos com Pessoal</th><th>Diferença</th><th>Margem (%)</th></tr></thead>
         <tbody>
@@ -403,7 +403,7 @@ function setupTimeFilters() {
         filterButtonsContainer.appendChild(button);
     });
 
-    document.querySelectorAll('#total-expenditures-wrapper .time-btn, #total-expenditures-wrapper .filter-btn').forEach(button => {
+    document.querySelectorAll('#total-expenditures-wrapper .time-filters .filter-btn, #total-expenditures-wrapper .filter-buttons .filter-btn').forEach(button => {
         button.addEventListener('click', function() {
             const parent = this.parentElement;
             parent.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
@@ -413,18 +413,18 @@ function setupTimeFilters() {
                  const activeDept = filterButtonsContainer.querySelector('.filter-btn.active').dataset.department;
                  charts.totalExpenditures.update(data.data, data.months.slice(-this.dataset.months), activeDept);
             } else {
-                const activeMonths = document.querySelector('#total-expenditures-wrapper .time-btn.active').dataset.months;
+                const activeMonths = document.querySelector('#total-expenditures-wrapper .time-filters .filter-btn.active').dataset.months;
                 charts.totalExpenditures.update(data.data, data.months.slice(-activeMonths), this.dataset.department);
             }
         });
     });
 
     if (trendsWrapper) {
-        trendsWrapper.querySelectorAll('.time-btn, .filter-buttons .filter-btn').forEach(button => {
+        trendsWrapper.querySelectorAll('.time-filters .filter-btn, .filter-buttons .filter-btn').forEach(button => {
             button.addEventListener('click', function() {
                 this.parentElement.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
                 this.classList.add('active');
-                const monthsRange = trendsWrapper.querySelector('.time-btn.active')?.dataset?.months || 'all';
+                const monthsRange = trendsWrapper.querySelector('.time-filters .filter-btn.active')?.dataset?.months || 'all';
                 const monthsToShow = monthsRange === 'all' ? data.months : data.months.slice(-monthsRange);
                 const selectedDepartments = tryParseJSON(trendsWrapper.querySelector('.filter-buttons .filter-btn.active')?.dataset?.departments || 'all');
                 charts.departmentTrends.update(monthsToShow, selectedDepartments);
@@ -697,7 +697,7 @@ function createProfitMarginChart(chartData, months) {
         plugins: [percentageChangeBubbles],
         options: {
             ...globalChartOptions,
-            layout: { padding: { top: 30, bottom: 30 } },
+            layout: { padding: { top: 30, bottom: 30, right: 20 } },
             plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `Margem: ${context.parsed.y.toFixed(2)}%` } } },
             scales: { y: { ticks: { callback: (value) => value.toFixed(0) + "%" }, grace: '10%' } }
         }
