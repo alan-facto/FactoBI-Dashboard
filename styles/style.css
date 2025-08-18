@@ -153,18 +153,23 @@ body {
   display: flex;
   gap: 25px;
   flex-grow: 1;
-  align-items: flex-start;
+  align-items: center; /* Vertically center align */
 }
 
 #department-breakdown-charts {
   flex-grow: 1;
   display: grid;
   gap: 20px;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
 }
 
+#department-breakdown-charts[data-range="12"] {
+  grid-template-columns: repeat(6, 1fr);
+}
+#department-breakdown-charts[data-range="6"] {
+  grid-template-columns: repeat(3, 1fr);
+}
 #department-breakdown-charts[data-range="3"] {
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
 }
 
 .pie-item {
@@ -203,7 +208,7 @@ body {
 
 .pie-item.single-view .pie-chart-wrapper {
     flex-basis: 60%;
-    max-width: 500px; /* A bit bigger */
+    max-width: 500px;
 }
 
 .custom-legend-container {
