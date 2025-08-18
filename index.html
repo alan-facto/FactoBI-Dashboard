@@ -13,10 +13,11 @@
 </head>
 <body>
   <div class="container">
+    <img src="assets/logo.png" alt="Facto Logo" class="facto-logo">
     <div class="view-toggle">
-      <button id="btn-expenses-main" class="active">Gastos</button> <!-- Renamed button -->
-      <button id="btn-earnings-main">Faturamento</button> <!-- New Faturamento button -->
-      <button id="btn-tables-main">Tabelas</button> <!-- Renamed button -->
+      <button id="btn-expenses-main" class="active">Gastos</button>
+      <button id="btn-earnings-main">Faturamento</button>
+      <button id="btn-tables-main">Tabelas</button>
     </div>
 
     <!-- Charts View (now "Gastos" view) -->
@@ -24,7 +25,6 @@
       <!-- Row 1: Total Expenditures -->
       <div class="chart-row single" id="total-expenditures-wrapper">
         <div class="card">
-          <img src="assets/logo.png" alt="Facto Logo" class="facto-logo">
           <h2>Gastos Totais ao Longo do Tempo</h2>
           <div class="time-filters">
             <button class="filter-btn time-btn" data-months="3">3 Meses</button>
@@ -106,22 +106,21 @@
     </div>
 
     <!-- Tables View -->
-    <div id="tables-view" style="display: none;"> <!-- Corrected: outer div has ID -->
+    <div id="tables-view" style="display: none;">
       <div class="card">
-        <!-- Removed duplicate <div id="tables-view"> here -->
         <div class="table-toggle-container">
           <button id="btn-summary-month" class="table-toggle-btn active">Resumo por Mês</button>
           <button id="btn-summary-department" class="table-toggle-btn">Resumo por Departamento</button>
           <button id="btn-detailed-month" class="table-toggle-btn">Detalhado por Mês</button>
           <button id="btn-detailed-department" class="table-toggle-btn">Detalhado por Departamento</button>
-          <button id="btn-earnings-table" class="table-toggle-btn">Faturamento</button> <!-- New button -->
+          <button id="btn-earnings-table" class="table-toggle-btn">Faturamento</button>
         </div>
 
         <div id="table-summary-month" style="display: block;"></div>
         <div id="table-summary-department" style="display: none;"></div>
         <div id="table-detailed-month" style="display: none;"></div>
         <div id="table-detailed-department" style="display: none;"></div>
-        <div id="table-earnings" style="display: none;"></div> <!-- New table container -->
+        <div id="table-earnings" style="display: none;"></div>
       </div>
     </div>
 
@@ -185,11 +184,7 @@
   
   <!-- Firebase SDKs -->
   <script type="module">
-    // Import the functions you need from the SDKs you need
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-    // TODO: Add SDKs for Firebase products that you want to use
-    // https://firebase.google.com/docs/web/setup#available-libraries
+    // This empty module script is here to ensure app.js is treated as a module.
   </script>
   
   <script type="module" src="scripts/app.js"></script>
