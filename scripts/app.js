@@ -3,13 +3,12 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // --- Firebase Configuration ---
-// IMPORTANT: Replace the placeholder values below with your actual
-// Firebase project's configuration.
+// This has been pre-filled with the configuration you provided.
 const firebaseConfig = {
   apiKey: "AIzaSyDuXzhFCIUICOV4xrf7uYl3hYPAQp6qhbs",
   authDomain: "financialdashboard-a60a6.firebaseapp.com",
   projectId: "financialdashboard-a60a6",
-  storageBucket: "financialdashboard-a60a6.firebasestorage.app",
+  storageBucket: "financialdashboard-a60a6.appspot.com",
   messagingSenderId: "876071686917",
   appId: "1:876071686917:web:4c1fc89d1fc21fdec49d6c",
   measurementId: "G-C8GQJJR945"
@@ -825,6 +824,4 @@ function initDashboard() {
 
 function showError(message) {
     const container = document.querySelector('.container') || document.body;
-    container.innerHTML = `<div class="error-message"><h2>Erro</h2><p>${message}</p><button onclick="window.location.reload()">Recarregar Página</button></div>`;
-}
-
+    container.innerHTML = `<div class="error-message"><h2>Erro</h2><p>${message}</p><button onclick="window.location.reload()">Recarregar Página</button></div>`
