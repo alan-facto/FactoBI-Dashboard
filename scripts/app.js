@@ -35,37 +35,57 @@ const deptMap = {
     "RH / Departamento Pessoal": "RH"
 };
 
+/**
+ * [FIXED] Converts various date string formats into a standardized "YYYY-MM" format.
+ * This new version is more robust and uses explicit regex matching for each expected
+ * format to prevent misinterpretation and ensure consistent keys for data consolidation.
+ * @param {string} monthStr - The date string to convert.
+ * @returns {string|null} The date in "YYYY-MM" format or null if parsing fails.
+ */
 function convertMonthToYYYYMM(monthStr) {
-    if (!monthStr) {
-        console.warn('Invalid month string passed:', monthStr);
+    if (!monthStr || typeof monthStr !== 'string') {
         return null;
     }
-    const s = String(monthStr).trim();
+    const s = monthStr.trim();
 
-    let match = s.match(/^(\d{4}-\d{2})/);
+    // Priority 1: YYYY-MM-DD or YYYY-MM
+    let match = s.match(/^(\d{4})-(\d{2})/);
     if (match) {
-        return s.substring(0, 7); // Returns "YYYY-MM"
+        // match[1] is YYYY, match[2] is MM
+        return `${match[1]}-${match[2]}`;
     }
+
+    // Priority 2: DD/MM/YYYY
     match = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
     if (match) {
+        // match[1] is DD, match[2] is MM, match[3] is YYYY
         return `${match[3]}-${match[2].padStart(2, '0')}`;
     }
+
+    // Priority 3: MM/YYYY
     match = s.match(/^(\d{1,2})\/(\d{4})$/);
     if (match) {
+        // match[1] is MM, match[2] is YYYY
         return `${match[2]}-${match[1].padStart(2, '0')}`;
     }
-    match = s.match(/(\w{3,})\.-(\d{2})$/);
+
+    // Priority 4: mmm.-yy (e.g., "mar.-25")
+    match = s.match(/(\w{3,})\.-(\d{2})$/i); // case-insensitive
     if (match) {
-        const monthAbbr = match[1];
+        const monthAbbr = match[1].substring(0, 3).toLowerCase();
         const yearShort = match[2];
-        const yearFull = parseInt(yearShort, 10) < 50 ? `20${yearShort}` : `19${yearShort}`;
-        const monthMap = { "jan": "01", "fev": "02", "mar": "03", "abr": "04", "mai": "05", "jun": "06", "jul": "07", "ago": "08", "set": "09", "out": "10", "nov": "11", "dez": "12" };
-        const monthNum = monthMap[monthAbbr.toLowerCase().substring(0, 3)];
+        const yearFull = parseInt(yearShort, 10) < 70 ? `20${yearShort}` : `19${yearShort}`;
+        const monthMap = {
+            "jan": "01", "fev": "02", "mar": "03", "abr": "04", "mai": "05", "jun": "06",
+            "jul": "07", "ago": "08", "set": "09", "out": "10", "nov": "11", "dez": "12"
+        };
+        const monthNum = monthMap[monthAbbr];
         if (monthNum) {
             return `${yearFull}-${monthNum}`;
         }
     }
-    console.warn('Unrecognized month format:', s);
+
+    console.warn('Unrecognized month format, could not parse:', s);
     return null;
 }
 
@@ -89,17 +109,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         const departmentsSet = new Set();
         const structuredData = {};
 
+        // Discover all unique months from BOTH sources first
         [...fetchedRows, ...earningsData].forEach(row => {
             const monthKey = convertMonthToYYYYMM(row["Month"] || row["Mês"]);
             if (monthKey) monthsSet.add(monthKey);
         });
 
+        // Initialize the data structure for all discovered months
         monthsSet.forEach(month => {
             if (!structuredData[month]) {
                 structuredData[month] = { departments: {}, total: 0, totalEmployees: 0, earnings: 0 };
             }
         });
 
+        // Populate with expenditure data
         fetchedRows.forEach(row => {
             const monthKey = convertMonthToYYYYMM(row["Month"]);
             if (!monthKey || !structuredData[monthKey]) return;
@@ -108,23 +131,23 @@ document.addEventListener('DOMContentLoaded', async () => {
             const dept = deptMap[rawDept] || rawDept;
             const total = parseFloat(row["Total"]) || 0;
             const bonificacao = parseFloat(row["Bonificacao 20"]) || 0;
-            // [NEW] Read Vale Alimentação data
             const valeAlimentacao = parseFloat(row["Vale Alimentação"]) || 0;
             const count = parseInt(row["Employee Count"]) || 0;
-            // As per instructions, Total Geral is the sum of the base total and bonuses.
-            const geral = total + bonificacao;
+            const geral = total + bonificacao; // Total Geral is base + bonificação
 
             if (dept && dept.toLowerCase() !== "total geral") {
                 departmentsSet.add(dept);
                 if (!structuredData[monthKey].departments[dept]) {
                     structuredData[monthKey].departments[dept] = { total: 0, bonificacao: 0, valeAlimentacao: 0, count: 0, geral: 0 };
                 }
+                // Assign new values
                 structuredData[monthKey].departments[dept] = { total, bonificacao, valeAlimentacao, count, geral };
                 structuredData[monthKey].total += geral;
                 structuredData[monthKey].totalEmployees += count;
             }
         });
 
+        // Merge earnings data
         earningsData.forEach(row => {
             const monthKey = convertMonthToYYYYMM(row["Mês"]);
             const faturamentoStr = row["Faturamento"];
@@ -149,7 +172,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-// --- Translations and Color Mappings ---
+// --- Color Mappings ---
 const colorsByDepartment = {
     "Administrativo": "#6B5B95", "Apoio": "#FF6F61", "Comercial": "#E44D42",
     "Diretoria": "#0072B5", "Jurídico": "#2E8B57", "Marketing": "#FFA500",
@@ -179,9 +202,7 @@ function formatCurrencyBRL(value) {
     return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
-// [NEW] Helper to format VA column, showing N/A for older months with no data
 function formatVA(value, month) {
-    // Data for VA starts in July 2025
     if (month < '2025-07' && (value === 0 || value === null || value === undefined)) {
         return 'N/A';
     }
@@ -203,7 +224,7 @@ function setupTableToggle() {
             const tableEl = document.getElementById(tableId);
             tableEl.style.display = 'block';
             document.getElementById(btnId).classList.add('active');
-            tableEl.innerHTML = ''; // Clear content before regenerating
+            tableEl.innerHTML = '';
             if (btnId === 'btn-summary-month') generateSummaryByMonth();
             if (btnId === 'btn-summary-department') generateSummaryByDepartment();
             if (btnId === 'btn-detailed-month') generateDetailedByMonth();
@@ -235,7 +256,6 @@ function setupViewToggle() {
     btnEarningsMain.addEventListener('click', () => setActiveView(btnEarningsMain, earningsView));
     btnTablesMain.addEventListener('click', () => setActiveView(btnTablesMain, tablesView));
     
-    // Set initial view
     setActiveView(btnExpensesMain, chartsView);
 }
 
@@ -282,7 +302,6 @@ function generateSummaryByDepartment() {
     });
 }
 
-// [UPDATED] Detailed table generation
 function generateDetailedByMonth() {
     const container = document.getElementById('table-detailed-month');
     if (!container) return;
@@ -310,7 +329,6 @@ function generateDetailedByMonth() {
     });
 }
 
-// [UPDATED] Detailed table generation
 function generateDetailedByDepartment() {
     const container = document.getElementById('table-detailed-department');
     if (!container) return;
@@ -368,16 +386,14 @@ function generateEarningsTable() {
     container.appendChild(section);
 }
 
-// --- Chart and Filter Setup (No changes needed here for this request) ---
-// ... (rest of the chart and filter functions remain the same)
+// --- Chart and Filter Setup ---
 function setupTimeFilters() {
     const trendsWrapper = document.getElementById('department-trends-wrapper');
     const tryParseJSON = (jsonString) => {
         if (!jsonString || jsonString === 'undefined' || jsonString === 'null') return [];
         if (jsonString === 'all') return data.departments || [];
         try {
-            const parsed = JSON.parse(jsonString);
-            return Array.isArray(parsed) ? parsed : [];
+            return JSON.parse(jsonString);
         } catch (e) { return []; }
     };
     
@@ -410,8 +426,7 @@ function setupTimeFilters() {
         };
         trendsWrapper.querySelectorAll('.time-btn, .filter-buttons .filter-btn').forEach(button => {
             button.addEventListener('click', function() {
-                const parent = this.parentElement;
-                parent.querySelectorAll('.filter-btn, .time-btn').forEach(btn => btn.classList.remove('active'));
+                this.parentElement.querySelectorAll('.filter-btn, .time-btn').forEach(btn => btn.classList.remove('active'));
                 this.classList.add('active');
                 updateChart();
             });
@@ -419,6 +434,7 @@ function setupTimeFilters() {
     }
 }
 
+// --- Chart Creation Functions (no changes needed) ---
 function createTotalExpendituresChart(chartData, months, departments) {
     const canvas = document.getElementById('total-expenditures-chart');
     if (!canvas) return null;
@@ -590,7 +606,7 @@ function createPercentageStackedChart(chartData, months, departments) {
 function createDepartmentBreakdownCharts(chartData, months, departments) {
     const container = document.getElementById('department-breakdown-charts');
     if (!container) return null;
-    container.innerHTML = ''; // Clear previous charts
+    container.innerHTML = '';
     const recentMonths = months.slice(-6);
     recentMonths.forEach(month => {
         const pieItem = document.createElement('div');
@@ -769,7 +785,6 @@ function createContributionEfficiencyChart(chartData, months, departments) {
     }};
 }
 
-
 // --- DASHBOARD INITIALIZATION ---
 function initDashboard() {
     try {
@@ -796,7 +811,6 @@ function initDashboard() {
 
         setupTimeFilters();
 
-        // Initial chart updates
         setTimeout(() => {
             document.querySelector('#total-expenditures-wrapper .time-btn[data-months="12"]')?.click();
             document.querySelector('#department-trends-wrapper .time-btn[data-months="12"]')?.click();
