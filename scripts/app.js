@@ -694,8 +694,15 @@ function createProfitMarginChart(chartData, months) {
     });
 }
 
+/**
+ * FIXED FUNCTION
+ * This function is updated to work with the new DOM structure created by prepareDOMForDashboard.
+ * It now correctly finds the radio buttons and the chart title to add event listeners and update the chart.
+ */
 function createEarningsPerEmployeeChart(chartData, months) {
-    const container = document.getElementById('earnings-per-employee-chart').parentElement;
+    const card = document.getElementById('earnings-per-employee-chart').closest('.card');
+    if (!card) return null; // Defensive check if the card element isn't found
+
     const getChartData = (month, mode) => {
         const monthInfo = chartData[month];
         if (!monthInfo) return 0;
@@ -707,31 +714,76 @@ function createEarningsPerEmployeeChart(chartData, months) {
         const totalEmployees = monthInfo.totalEmployees || 0;
         return totalEmployees > 0 ? earnings / totalEmployees : 0;
     };
+
     const chart = new Chart(document.getElementById('earnings-per-employee-chart').getContext('2d'), {
         type: 'line',
         data: {
             labels: months.map(formatMonthShort),
             datasets: [{
-                label: 'Faturamento por Funcionário', data: months.map(m => getChartData(m, 'company')),
-                borderColor: '#024B59', backgroundColor: 'rgba(2, 75, 89, 0.1)',
-                tension: 0.4, fill: true
+                label: 'Faturamento por Funcionário',
+                data: months.map(m => getChartData(m, 'company')), // Default to 'company'
+                borderColor: '#024B59',
+                backgroundColor: 'rgba(2, 75, 89, 0.1)',
+                tension: 0.4,
+                fill: true
             }]
         },
         options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `Valor: ${formatCurrencyBRL(context.parsed.y)}` } } },
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: { callbacks: { label: (context) => `Valor: ${formatCurrencyBRL(context.parsed.y)}` } }
+            },
             scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } }
         }
     });
-    const toggle = container.querySelector('#employee-toggle');
-    const chartTitle = container.querySelector('h2');
-    toggle.addEventListener('change', () => {
-        const mode = toggle.checked ? 'operation' : 'company';
+
+    // Selectors for the new radio buttons and labels
+    const geralRadio = card.querySelector('#employee-toggle-geral');
+    const operacaoRadio = card.querySelector('#employee-toggle-operacao');
+    const chartTitle = card.querySelector('#chart-title');
+    const geralLabel = card.querySelector('label[for="employee-toggle-geral"]');
+    const operacaoLabel = card.querySelector('label[for="employee-toggle-operacao"]');
+
+    // Helper function to update the chart and UI
+    const updateChart = (mode) => {
         chart.data.datasets[0].data = months.map(m => getChartData(m, mode));
-        chartTitle.textContent = `Faturamento por Funcionário (${mode === 'operation' ? 'Operação' : 'Geral'})`;
+        if (chartTitle) {
+            chartTitle.textContent = `Faturamento por Funcionário (${mode === 'operation' ? 'Operação' : 'Geral'})`;
+        }
         chart.update();
-    });
+
+        // Update active class on labels for visual feedback
+        if (geralLabel && operacaoLabel) {
+            if (mode === 'operation') {
+                geralLabel.classList.remove('active');
+                operacaoLabel.classList.add('active');
+            } else {
+                geralLabel.classList.add('active');
+                operacaoLabel.classList.remove('active');
+            }
+        }
+    };
+
+    // Add event listeners to the radio buttons
+    if (geralRadio) {
+        geralRadio.addEventListener('change', () => {
+            if (geralRadio.checked) {
+                updateChart('company');
+            }
+        });
+    }
+
+    if (operacaoRadio) {
+        operacaoRadio.addEventListener('change', () => {
+            if (operacaoRadio.checked) {
+                updateChart('operation');
+            }
+        });
+    }
 }
+
 
 // --- Pie Chart Section Functions ---
 
