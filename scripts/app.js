@@ -430,12 +430,6 @@ const globalChartOptions = {
     responsive: true, maintainAspectRatio: false,
     animation: { 
         duration: 800,
-        onProgress: function(animation) {
-            // This can be used for more complex animations if needed
-        },
-        onComplete: function() {
-            // This can be used for actions after animation completes
-        }
     }
 };
 
