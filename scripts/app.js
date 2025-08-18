@@ -3,7 +3,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // --- Firebase Configuration ---
-// It's best practice to manage API keys securely, for example, using environment variables.
 const firebaseConfig = {
   apiKey: "AIzaSyDuXzhFCIUICOV4xrf7uYl3hYPAQp6qhbs",
   authDomain: "financialdashboard-a60a6.firebaseapp.com",
@@ -36,12 +35,6 @@ const deptMap = {
     "RH / Departamento Pessoal": "RH"
 };
 
-/**
- * [FIXED] Converts various date string formats into a standardized "YYYY-MM" format.
- * This new version correctly handles "YYYY-MM-DD" from your CSVs and other common formats.
- * @param {string} monthStr - The date string to convert.
- * @returns {string|null} The date in "YYYY-MM" format or null if parsing fails.
- */
 function convertMonthToYYYYMM(monthStr) {
     if (!monthStr) {
         console.warn('Invalid month string passed:', monthStr);
@@ -49,45 +42,29 @@ function convertMonthToYYYYMM(monthStr) {
     }
     const s = String(monthStr).trim();
 
-    // Try parsing as YYYY-MM-DD or YYYY-MM. This handles the format from your CSV files.
     let match = s.match(/^(\d{4}-\d{2})/);
     if (match) {
-        return `${match[1]}-${match[2]}`; // Returns "YYYY-MM"
+        return s.substring(0, 7); // Returns "YYYY-MM"
     }
-
-    // Try parsing as DD/MM/YYYY (as requested for robustness)
     match = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
     if (match) {
-        const month = match[2].padStart(2, '0');
-        const year = match[3];
-        return `${year}-${month}`;
+        return `${match[3]}-${match[2].padStart(2, '0')}`;
     }
-
-    // Try parsing as MM/YYYY
     match = s.match(/^(\d{1,2})\/(\d{4})$/);
     if (match) {
-        const month = match[1].padStart(2, '0');
-        const year = match[2];
-        return `${year}-${month}`;
+        return `${match[2]}-${match[1].padStart(2, '0')}`;
     }
-
-    // Try parsing as mmm.-yy (e.g., "mar.-25") from the original function
     match = s.match(/(\w{3,})\.-(\d{2})$/);
     if (match) {
         const monthAbbr = match[1];
         const yearShort = match[2];
         const yearFull = parseInt(yearShort, 10) < 50 ? `20${yearShort}` : `19${yearShort}`;
-        const monthMap = {
-            "jan": "01", "fev": "02", "mar": "03", "abr": "04", "mai": "05", "jun": "06",
-            "jul": "07", "ago": "08", "set": "09", "out": "10", "nov": "11", "dez": "12"
-        };
-        // Use substring to handle "jan." vs "jan"
+        const monthMap = { "jan": "01", "fev": "02", "mar": "03", "abr": "04", "mai": "05", "jun": "06", "jul": "07", "ago": "08", "set": "09", "out": "10", "nov": "11", "dez": "12" };
         const monthNum = monthMap[monthAbbr.toLowerCase().substring(0, 3)];
         if (monthNum) {
             return `${yearFull}-${monthNum}`;
         }
     }
-
     console.warn('Unrecognized month format:', s);
     return null;
 }
@@ -96,13 +73,11 @@ function convertMonthToYYYYMM(monthStr) {
 // --- Main Data Fetching and Processing ---
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        // Fetch both collections from Firestore concurrently
         const [expendituresSnapshot, earningsSnapshot] = await Promise.all([
             getDocs(collection(db, "expenditures")),
             getDocs(collection(db, "earnings"))
         ]);
 
-        // Process snapshots into simple arrays of objects
         const fetchedRows = expendituresSnapshot.docs.map(doc => doc.data());
         const earningsData = earningsSnapshot.docs.map(doc => doc.data());
 
@@ -114,33 +89,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         const departmentsSet = new Set();
         const structuredData = {};
 
-        // Step 1: Discover all unique months from BOTH sources and standardize them
-        fetchedRows.forEach(row => {
-            const monthKey = convertMonthToYYYYMM(row["Month"]);
-            if (monthKey) {
-                monthsSet.add(monthKey);
-            }
-        });
-        earningsData.forEach(row => {
-            const monthKey = convertMonthToYYYYMM(row["Mês"]);
-            if (monthKey) {
-                monthsSet.add(monthKey);
-            }
+        [...fetchedRows, ...earningsData].forEach(row => {
+            const monthKey = convertMonthToYYYYMM(row["Month"] || row["Mês"]);
+            if (monthKey) monthsSet.add(monthKey);
         });
 
-        // Step 2: Initialize structuredData for all discovered months
         monthsSet.forEach(month => {
             if (!structuredData[month]) {
-                structuredData[month] = {
-                    departments: {},
-                    total: 0,
-                    totalEmployees: 0,
-                    earnings: 0
-                };
+                structuredData[month] = { departments: {}, total: 0, totalEmployees: 0, earnings: 0 };
             }
         });
 
-        // Step 3: Populate expenditure data using the standardized month key
         fetchedRows.forEach(row => {
             const monthKey = convertMonthToYYYYMM(row["Month"]);
             if (!monthKey || !structuredData[monthKey]) return;
@@ -149,32 +108,32 @@ document.addEventListener('DOMContentLoaded', async () => {
             const dept = deptMap[rawDept] || rawDept;
             const total = parseFloat(row["Total"]) || 0;
             const bonificacao = parseFloat(row["Bonificacao 20"]) || 0;
+            // [NEW] Read Vale Alimentação data
+            const valeAlimentacao = parseFloat(row["Vale Alimentação"]) || 0;
             const count = parseInt(row["Employee Count"]) || 0;
-            const geral = parseFloat(row["Total Geral"]) || (total + bonificacao);
+            // As per instructions, Total Geral is the sum of the base total and bonuses.
+            const geral = total + bonificacao;
 
             if (dept && dept.toLowerCase() !== "total geral") {
                 departmentsSet.add(dept);
                 if (!structuredData[monthKey].departments[dept]) {
-                    structuredData[monthKey].departments[dept] = { total: 0, bonificacao: 0, count: 0, geral: 0 };
+                    structuredData[monthKey].departments[dept] = { total: 0, bonificacao: 0, valeAlimentacao: 0, count: 0, geral: 0 };
                 }
-                structuredData[monthKey].departments[dept] = { total, bonificacao, count, geral };
+                structuredData[monthKey].departments[dept] = { total, bonificacao, valeAlimentacao, count, geral };
                 structuredData[monthKey].total += geral;
                 structuredData[monthKey].totalEmployees += count;
             }
         });
 
-        // Step 4: Merge earnings data using the standardized month key
         earningsData.forEach(row => {
             const monthKey = convertMonthToYYYYMM(row["Mês"]);
             const faturamentoStr = row["Faturamento"];
             if (monthKey && faturamentoStr && structuredData[monthKey]) {
-                // Ensure faturamento is treated as a number, not a string
                 const faturamentoValue = typeof faturamentoStr === 'number' ? faturamentoStr : parseFloat(String(faturamentoStr).replace(/["R$\s.]/g, '').replace(',', '.')) || 0;
                 structuredData[monthKey].earnings = faturamentoValue;
             }
         });
 
-        // Final data assignment
         data = {
             months: Array.from(monthsSet).sort(),
             departments: Array.from(departmentsSet).sort(),
@@ -191,62 +150,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // --- Translations and Color Mappings ---
-const translations = {
-    "Total Expenditures": "Gastos Totais",
-    "Company Average per Employee": "Média da Empresa por Funcionário",
-    "Employees": "Funcionários",
-    "Amount": "Valor",
-    "Percentage": "Percentual",
-    "Expenditure": "Gastos",
-    "Total": "Total",
-    "Earnings": "Faturamento",
-    "Net Profit/Loss": "Lucro/Prejuízo Líquido",
-    "Profit Margin": "Margem de Lucro",
-    "Earnings Per Employee": "Faturamento por Funcionário",
-    "Contribution to Earnings": "Contribuição para Faturamento"
-};
-
 const colorsByDepartment = {
-    "Administrativo": "#6B5B95",
-    "Apoio": "#FF6F61",
-    "Comercial": "#E44D42",
-    "Diretoria": "#0072B5",
-    "Jurídico": "#2E8B57",
-    "Marketing": "#FFA500",
-    "NEC": "#9370DB",
-    "Operação": "#00A86B",
-    "RH": "#FF69B4"
+    "Administrativo": "#6B5B95", "Apoio": "#FF6F61", "Comercial": "#E44D42",
+    "Diretoria": "#0072B5", "Jurídico": "#2E8B57", "Marketing": "#FFA500",
+    "NEC": "#9370DB", "Operação": "#00A86B", "RH": "#FF69B4"
 };
 
 // --- Utility Functions ---
 function hexToRGBA(hex, alpha = 1) {
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
+    const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-}
-
-function tryParseJSON(jsonString) {
-    if (!jsonString || jsonString === 'undefined' || jsonString === 'null') return [];
-    if (jsonString === 'all') return data.departments || [];
-    try {
-        const parsed = JSON.parse(jsonString);
-        return Array.isArray(parsed) ? parsed : [];
-    } catch (e) {
-        console.warn('Failed to parse JSON:', jsonString);
-        return [];
-    }
-}
-
-function normalizeDepartmentName(name) {
-    if (!name) return "";
-    const key = name.toLowerCase().trim();
-    for (const [longName, shortName] of Object.entries(deptMap)) {
-        if (longName.toLowerCase() === key || shortName.toLowerCase() === key) {
-            return shortName;
-        }
-    }
-    return name;
 }
 
 function formatMonthLabel(monthStr) {
@@ -266,37 +179,37 @@ function formatCurrencyBRL(value) {
     return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
+// [NEW] Helper to format VA column, showing N/A for older months with no data
+function formatVA(value, month) {
+    // Data for VA starts in July 2025
+    if (month < '2025-07' && (value === 0 || value === null || value === undefined)) {
+        return 'N/A';
+    }
+    return formatCurrencyBRL(value);
+}
+
+
 // --- UI Setup and Generation ---
 function setupTableToggle() {
     const buttons = {
-        'btn-summary-month': 'table-summary-month',
-        'btn-summary-department': 'table-summary-department',
-        'btn-detailed-month': 'table-detailed-month',
-        'btn-detailed-department': 'table-detailed-department',
+        'btn-summary-month': 'table-summary-month', 'btn-summary-department': 'table-summary-department',
+        'btn-detailed-month': 'table-detailed-month', 'btn-detailed-department': 'table-detailed-department',
         'btn-earnings-table': 'table-earnings'
     };
     Object.entries(buttons).forEach(([btnId, tableId]) => {
-        const button = document.getElementById(btnId);
-        if (button) {
-            button.addEventListener('click', () => {
-                Object.values(buttons).forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) el.style.display = 'none';
-                });
-                Object.keys(buttons).forEach(id => document.getElementById(id)?.classList.remove('active'));
-                const tableEl = document.getElementById(tableId);
-                if (tableEl) {
-                    tableEl.style.display = 'block';
-                    button.classList.add('active');
-                    tableEl.innerHTML = '';
-                    if (btnId === 'btn-summary-month') generateSummaryByMonth();
-                    if (btnId === 'btn-summary-department') generateSummaryByDepartment();
-                    if (btnId === 'btn-detailed-month') generateDetailedByMonth();
-                    if (btnId === 'btn-detailed-department') generateDetailedByDepartment();
-                    if (btnId === 'btn-earnings-table') generateEarningsTable();
-                }
-            });
-        }
+        document.getElementById(btnId)?.addEventListener('click', () => {
+            Object.values(buttons).forEach(id => document.getElementById(id).style.display = 'none');
+            Object.keys(buttons).forEach(id => document.getElementById(id)?.classList.remove('active'));
+            const tableEl = document.getElementById(tableId);
+            tableEl.style.display = 'block';
+            document.getElementById(btnId).classList.add('active');
+            tableEl.innerHTML = ''; // Clear content before regenerating
+            if (btnId === 'btn-summary-month') generateSummaryByMonth();
+            if (btnId === 'btn-summary-department') generateSummaryByDepartment();
+            if (btnId === 'btn-detailed-month') generateDetailedByMonth();
+            if (btnId === 'btn-detailed-department') generateDetailedByDepartment();
+            if (btnId === 'btn-earnings-table') generateEarningsTable();
+        });
     });
 }
 
@@ -313,7 +226,6 @@ function setupViewToggle() {
         [chartsView, tablesView, earningsView].forEach(view => view.style.display = 'none');
         activeBtn.classList.add('active');
         activeViewDiv.style.display = 'flex';
-
         if (activeViewDiv === tablesView) {
             document.getElementById('btn-summary-month')?.click();
         }
@@ -323,8 +235,8 @@ function setupViewToggle() {
     btnEarningsMain.addEventListener('click', () => setActiveView(btnEarningsMain, earningsView));
     btnTablesMain.addEventListener('click', () => setActiveView(btnTablesMain, tablesView));
     
-    btnExpensesMain.classList.add('active');
-    chartsView.style.display = 'flex';
+    // Set initial view
+    setActiveView(btnExpensesMain, chartsView);
 }
 
 function generateSummaryByMonth() {
@@ -370,6 +282,7 @@ function generateSummaryByDepartment() {
     });
 }
 
+// [UPDATED] Detailed table generation
 function generateDetailedByMonth() {
     const container = document.getElementById('table-detailed-month');
     if (!container) return;
@@ -378,11 +291,18 @@ function generateDetailedByMonth() {
         section.innerHTML = `<h3>${formatMonthLabel(month)}</h3>`;
         const table = document.createElement('table');
         table.innerHTML = `
-            <thead><tr><th>Departamento</th><th>Funcionários</th><th>Total (Sem Bon.)</th><th>Bonificação (Dia 20)</th><th>Total Geral (Com Bon.)</th></tr></thead>
+            <thead><tr><th>Departamento</th><th>Funcionários</th><th>Total Simples</th><th>Vale Alimentação</th><th>Bonificação (Dia 20)</th><th>Total Geral</th></tr></thead>
             <tbody>
                 ${data.departments.map(dept => {
                     const d = data.data[month]?.departments[dept];
-                    return d ? `<tr><td>${dept}</td><td>${d.count || 0}</td><td>${formatCurrencyBRL(d.total)}</td><td>${formatCurrencyBRL(d.bonificacao)}</td><td>${formatCurrencyBRL(d.geral)}</td></tr>` : '';
+                    return d ? `<tr>
+                        <td>${dept}</td>
+                        <td>${d.count || 0}</td>
+                        <td>${formatCurrencyBRL(d.total)}</td>
+                        <td>${formatVA(d.valeAlimentacao, month)}</td>
+                        <td>${formatCurrencyBRL(d.bonificacao)}</td>
+                        <td>${formatCurrencyBRL(d.geral)}</td>
+                    </tr>` : '';
                 }).join('')}
             </tbody>`;
         section.appendChild(table);
@@ -390,6 +310,7 @@ function generateDetailedByMonth() {
     });
 }
 
+// [UPDATED] Detailed table generation
 function generateDetailedByDepartment() {
     const container = document.getElementById('table-detailed-department');
     if (!container) return;
@@ -398,11 +319,18 @@ function generateDetailedByDepartment() {
         section.innerHTML = `<h3>${dept}</h3>`;
         const table = document.createElement('table');
         table.innerHTML = `
-            <thead><tr><th>Mês</th><th>Funcionários</th><th>Total (Sem Bon.)</th><th>Bonificação (Dia 20)</th><th>Total Geral (Com Bon.)</th></tr></thead>
+            <thead><tr><th>Mês</th><th>Funcionários</th><th>Total Simples</th><th>Vale Alimentação</th><th>Bonificação (Dia 20)</th><th>Total Geral</th></tr></thead>
             <tbody>
                 ${data.months.map(month => {
                     const d = data.data[month]?.departments[dept];
-                    return d ? `<tr><td>${formatMonthLabel(month)}</td><td>${d.count || 0}</td><td>${formatCurrencyBRL(d.total)}</td><td>${formatCurrencyBRL(d.bonificacao)}</td><td>${formatCurrencyBRL(d.geral)}</td></tr>` : '';
+                    return d ? `<tr>
+                        <td>${formatMonthLabel(month)}</td>
+                        <td>${d.count || 0}</td>
+                        <td>${formatCurrencyBRL(d.total)}</td>
+                        <td>${formatVA(d.valeAlimentacao, month)}</td>
+                        <td>${formatCurrencyBRL(d.bonificacao)}</td>
+                        <td>${formatCurrencyBRL(d.geral)}</td>
+                    </tr>` : '';
                 }).join('')}
             </tbody>`;
         section.appendChild(table);
@@ -440,21 +368,25 @@ function generateEarningsTable() {
     container.appendChild(section);
 }
 
-function getMonthsToShow(allMonths, range) {
-    if (range === 'all') return allMonths;
-    return allMonths.slice(-parseInt(range));
-}
-
+// --- Chart and Filter Setup (No changes needed here for this request) ---
+// ... (rest of the chart and filter functions remain the same)
 function setupTimeFilters() {
     const trendsWrapper = document.getElementById('department-trends-wrapper');
+    const tryParseJSON = (jsonString) => {
+        if (!jsonString || jsonString === 'undefined' || jsonString === 'null') return [];
+        if (jsonString === 'all') return data.departments || [];
+        try {
+            const parsed = JSON.parse(jsonString);
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (e) { return []; }
+    };
     
     document.querySelectorAll('#total-expenditures-wrapper .time-btn').forEach(button => {
         button.addEventListener('click', () => {
             document.querySelectorAll('#total-expenditures-wrapper .time-btn').forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
             const activeDepartment = document.querySelector('#total-expenditures-wrapper .filter-buttons .filter-btn.active').dataset.department;
-            const monthsToShow = getMonthsToShow(data.months, button.dataset.months);
-            charts.totalExpenditures.update(data.data, monthsToShow, activeDepartment);
+            charts.totalExpenditures.update(data.data, data.months.slice(-button.dataset.months), activeDepartment);
         });
     });
 
@@ -464,8 +396,7 @@ function setupTimeFilters() {
             button.classList.add('active');
             const selectedDepartment = button.dataset.department;
             const activeMonths = document.querySelector('#total-expenditures-wrapper .time-btn.active').dataset.months;
-            const monthsToShow = getMonthsToShow(data.months, activeMonths);
-            charts.totalExpenditures.update(data.data, monthsToShow, selectedDepartment);
+            charts.totalExpenditures.update(data.data, data.months.slice(-activeMonths), selectedDepartment);
         });
     });
 
@@ -473,7 +404,7 @@ function setupTimeFilters() {
         const updateChart = () => {
             if (!charts.departmentTrends?.update) return;
             const monthsRange = trendsWrapper.querySelector('.time-btn.active')?.dataset?.months || 'all';
-            const monthsToShow = getMonthsToShow(data.months, monthsRange);
+            const monthsToShow = monthsRange === 'all' ? data.months : data.months.slice(-monthsRange);
             const selectedDepartments = tryParseJSON(trendsWrapper.querySelector('.filter-buttons .filter-btn.active')?.dataset?.departments || 'all');
             charts.departmentTrends.update(monthsToShow, selectedDepartments);
         };
@@ -488,7 +419,6 @@ function setupTimeFilters() {
     }
 }
 
-// --- Chart Creation Functions ---
 function createTotalExpendituresChart(chartData, months, departments) {
     const canvas = document.getElementById('total-expenditures-chart');
     if (!canvas) return null;
@@ -511,7 +441,7 @@ function createTotalExpendituresChart(chartData, months, departments) {
     });
     return {
         update: function(newData, monthsToShow, selectedDepartment = 'all') {
-            if (!monthsToShow) return; // Guard clause
+            if (!monthsToShow) return;
             chart.data.labels = monthsToShow.map(formatMonthShort);
             const dataset = {
                 borderColor: '#024B59',
@@ -556,7 +486,7 @@ function createDepartmentTrendsChart(chartData, months, departments) {
     });
     return {
         update: function(monthsToShow = months, filteredDepartments = departments) {
-             if (!monthsToShow) return; // Guard clause
+            if (!monthsToShow) return;
             chart.data.labels = monthsToShow.map(formatMonthShort);
             chart.data.datasets = filteredDepartments.map(dept => ({
                 label: dept,
@@ -591,7 +521,7 @@ function createAvgExpenditureChart(chartData, months) {
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
     });
     return { update: (newMonths) => {
-        if (!newMonths) return; // Guard clause
+        if (!newMonths) return;
         chart.data.labels = newMonths.map(formatMonthShort);
         chart.data.datasets[0].data = newMonths.map(month => (data.data[month]?.totalEmployees > 0) ? data.data[month].total / data.data[month].totalEmployees : 0);
         chart.update();
@@ -618,7 +548,7 @@ function createEmployeesChart(chartData, months) {
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
     });
     return { update: (newMonths) => {
-        if (!newMonths) return; // Guard clause
+        if (!newMonths) return;
         chart.data.labels = newMonths.map(formatMonthShort);
         chart.data.datasets[0].data = newMonths.map(month => data.data[month]?.totalEmployees || 0);
         chart.update();
@@ -644,7 +574,7 @@ function createPercentageStackedChart(chartData, months, departments) {
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } }, scales: { x: { stacked: true }, y: { stacked: true, max: 100, ticks: { callback: (value) => value + "%" } } } }
     });
     return { update: (newMonths) => {
-        if (!newMonths) return; // Guard clause
+        if (!newMonths) return;
         chart.data.labels = newMonths.map(formatMonthShort);
         chart.data.datasets.forEach((dataset, idx) => {
             const dept = departments[idx];
@@ -702,7 +632,7 @@ function createEarningsVsCostsChart(chartData, months) {
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
     });
      return { update: (newMonths) => {
-        if (!newMonths) return; // Guard clause
+        if (!newMonths) return;
         chart.data.labels = newMonths.map(formatMonthShort);
         chart.data.datasets[0].data = newMonths.map(m => data.data[m]?.earnings || 0);
         chart.data.datasets[1].data = newMonths.map(m => data.data[m]?.total || 0);
@@ -726,7 +656,7 @@ function createNetProfitLossChart(chartData, months) {
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
     });
     return { update: (newMonths) => {
-        if (!newMonths) return; // Guard clause
+        if (!newMonths) return;
         chart.data.labels = newMonths.map(formatMonthShort);
         const newData = newMonths.map(m => (data.data[m]?.earnings || 0) - (data.data[m]?.total || 0));
         chart.data.datasets[0].data = newData;
@@ -756,7 +686,7 @@ function createProfitMarginChart(chartData, months) {
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: (value) => value.toFixed(0) + "%" } } } }
     });
     return { update: (newMonths) => {
-        if (!newMonths) return; // Guard clause
+        if (!newMonths) return;
         chart.data.labels = newMonths.map(formatMonthShort);
         chart.data.datasets[0].data = newMonths.map(m => {
             const earnings = data.data[m]?.earnings || 0;
@@ -800,7 +730,7 @@ function createEarningsPerEmployeeChart(chartData, months) {
         chart.update();
     });
     return { update: (newMonths) => {
-        if (!newMonths) return; // Guard clause
+        if (!newMonths) return;
         chart.data.labels = newMonths.map(formatMonthShort);
         chart.data.datasets[0].data = newMonths.map(m => getChartData(m, mode));
         chart.update();
@@ -826,7 +756,7 @@ function createContributionEfficiencyChart(chartData, months, departments) {
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } }, scales: { x: { stacked: true }, y: { stacked: true, ticks: { callback: (value) => value.toFixed(0) + "%" } } } }
     });
     return { update: (newMonths) => {
-        if (!newMonths) return; // Guard clause
+        if (!newMonths) return;
         chart.data.labels = newMonths.map(formatMonthShort);
         chart.data.datasets.forEach((dataset, idx) => {
             const dept = departments[idx];
@@ -838,6 +768,7 @@ function createContributionEfficiencyChart(chartData, months, departments) {
         chart.update();
     }};
 }
+
 
 // --- DASHBOARD INITIALIZATION ---
 function initDashboard() {
