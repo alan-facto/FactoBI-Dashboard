@@ -80,19 +80,32 @@ document.addEventListener('DOMContentLoaded', async () => {
         const fetchedRows = expendituresSnapshot.docs.map(doc => doc.data());
         const earningsData = earningsSnapshot.docs.map(doc => doc.data());
 
-        if (!fetchedRows.length) {
-            throw new Error("No expenditure data found in Firestore.");
+        if (!fetchedRows.length && !earningsData.length) {
+            throw new Error("No expenditure or earnings data found in Firestore.");
         }
 
         const monthsSet = new Set();
         const departmentsSet = new Set();
         const structuredData = {};
 
-        // Establish months from expenditure data
+        // Step 1: Discover all unique months from BOTH sources
         fetchedRows.forEach(row => {
-            const month = row["Month"];
-            if (month && !structuredData[month]) {
-                monthsSet.add(month);
+            if (row["Month"]) {
+                monthsSet.add(row["Month"]);
+            }
+        });
+        earningsData.forEach(row => {
+            if (row["Mês"]) {
+                const monthKey = convertMonthToYYYYMM(String(row["Mês"]).trim());
+                if (monthKey) {
+                    monthsSet.add(monthKey);
+                }
+            }
+        });
+
+        // Step 2: Initialize structuredData for all discovered months
+        monthsSet.forEach(month => {
+            if (!structuredData[month]) {
                 structuredData[month] = {
                     departments: {},
                     total: 0,
@@ -102,10 +115,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-        // Populate expenditure data
+        // Step 3: Populate expenditure data
         fetchedRows.forEach(row => {
             const month = row["Month"];
-            if (!month) return;
+            if (!month || !structuredData[month]) return; // Check if month is valid
 
             const rawDept = row["Department"];
             const dept = deptMap[rawDept] || rawDept;
@@ -125,7 +138,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-        // Merge earnings data
+        // Step 4: Merge earnings data
         earningsData.forEach(row => {
             const monthShortStr = row["Mês"];
             const faturamentoStr = row["Faturamento"];
@@ -843,5 +856,5 @@ function initDashboard() {
 
 function showError(message) {
     const container = document.querySelector('.container') || document.body;
-    container.innerHTML = `<div class="error-message"><h2>Erro</h2><p>${message}</p><button onclick="window.location.reload()">Recarregar Página</button></div>`;
+    container.innerHTML = `<div class="error-message"><h2>Erro</h2><p>${message}</p><button onclick="window.location.reload()">Recarregar Página</button></div>`
 }
