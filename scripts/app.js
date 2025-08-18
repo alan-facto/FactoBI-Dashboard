@@ -3,9 +3,8 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // --- Firebase Configuration ---
-// This has been pre-filled with the configuration you provided.
 const firebaseConfig = {
-  apiKey: "AIzaSyDuXzhFCIUICOV4xrf7uYl3hYPAQp6qhbs",
+  apiKey: "YOUR_API_KEY", // ⚠️ Important: Replace with your actual API Key
   authDomain: "financialdashboard-a60a6.firebaseapp.com",
   projectId: "financialdashboard-a60a6",
   storageBucket: "financialdashboard-a60a6.appspot.com",
@@ -824,7 +823,5 @@ function initDashboard() {
 
 function showError(message) {
     const container = document.querySelector('.container') || document.body;
-    container.innerHTML = `<div class="error-message"><h2>Erro</h2><p>${message}</p><button onclick="window.location.reload()">Recarregar Página</button></div>`
-
-}
+    container.innerHTML = `<div class="error-message"><h2>Erro</h2><p>${message}</p><button onclick="window.location.reload()">Recarregar Página</button></div>`;
 }
