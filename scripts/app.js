@@ -272,29 +272,46 @@ function generateDetailedByMonth() {
     data.months.forEach(month => {
         const monthData = data.data[month];
         if (!monthData) return;
+
+        // Calculate totals for the footer
         const totalSimples = Object.values(monthData.departments).reduce((sum, dept) => sum + dept.total, 0);
         const totalVA = Object.values(monthData.departments).reduce((sum, dept) => sum + dept.valeAlimentacao, 0);
         const totalBonificacao = Object.values(monthData.departments).reduce((sum, dept) => sum + dept.bonificacao, 0);
         const totalGeral = Object.values(monthData.departments).reduce((sum, dept) => sum + dept.geral, 0);
+
         const section = document.createElement('div');
         section.innerHTML = `<h3>${formatMonthLabel(month)}</h3>`;
         const table = document.createElement('table');
+        // [MODIFIED] Ensure table fills container width and columns auto-size
+        table.style.width = '100%';
         table.style.tableLayout = 'auto';
+
         table.innerHTML = `
             <thead><tr><th>Departamento</th><th>Funcionários</th><th>Total Simples</th><th>Vale Alimentação</th><th>Bonificação (Dia 20)</th><th>Total Geral</th></tr></thead>
             <tbody>
                 ${data.departments.map(dept => {
                     const d = monthData.departments[dept];
                     return d ? `<tr>
-                        <td>${dept}</td><td>${d.count || 0}</td><td>${formatCurrencyBRL(d.total)}</td>
-                        <td>${formatVA(d.valeAlimentacao, month)}</td><td>${formatCurrencyBRL(d.bonificacao)}</td><td>${formatCurrencyBRL(d.geral)}</td>
+                        <td>${dept}</td>
+                        <td>${d.count || 0}</td>
+                        <td>${formatCurrencyBRL(d.total)}</td>
+                        <td>${formatVA(d.valeAlimentacao, month)}</td>
+                        <td>${formatCurrencyBRL(d.bonificacao)}</td>
+                        <td>${formatCurrencyBRL(d.geral)}</td>
                     </tr>` : '';
                 }).join('')}
             </tbody>
-            <tfoot><tr style="font-weight: bold; background-color: #f0f0f0;">
-                <td>Total Mensal</td><td>${monthData.totalEmployees}</td><td>${formatCurrencyBRL(totalSimples)}</td>
-                <td>${formatVA(totalVA, month)}</td><td>${formatCurrencyBRL(totalBonificacao)}</td><td>${formatCurrencyBRL(totalGeral)}</td>
-            </tr></tfoot>`;
+            <tfoot>
+                <tr style="font-weight: bold; background-color: #f0f0f0;">
+                    <td>Total Mensal</td>
+                    <td>${monthData.totalEmployees}</td>
+                    <td>${formatCurrencyBRL(totalSimples)}</td>
+                    <td>${formatVA(totalVA, month)}</td>
+                    <td>${formatCurrencyBRL(totalBonificacao)}</td>
+                    <td>${formatCurrencyBRL(totalGeral)}</td>
+                </tr>
+            </tfoot>
+        `;
         section.appendChild(table);
         container.appendChild(section);
     });
@@ -304,35 +321,64 @@ function generateDetailedByDepartment() {
     const container = document.getElementById('table-detailed-department');
     if (!container) return;
     data.departments.forEach(dept => {
-        let totalSimples = 0, totalVA = 0, totalBonificacao = 0, totalGeral = 0, employeeSum = 0, monthCount = 0, lastMonthWithVA = '0000-00';
+        // Calculate totals and averages for the footer
+        let totalSimples = 0;
+        let totalVA = 0;
+        let totalBonificacao = 0;
+        let totalGeral = 0;
+        let employeeSum = 0;
+        let monthCount = 0;
+        let lastMonthWithVA = '0000-00';
+
         data.months.forEach(month => {
             const d = data.data[month]?.departments[dept];
             if (d) {
-                totalSimples += d.total; totalVA += d.valeAlimentacao; totalBonificacao += d.bonificacao;
-                totalGeral += d.geral; employeeSum += d.count; monthCount++;
-                if (d.valeAlimentacao > 0 || month >= '2025-07') lastMonthWithVA = month;
+                totalSimples += d.total;
+                totalVA += d.valeAlimentacao;
+                totalBonificacao += d.bonificacao;
+                totalGeral += d.geral;
+                employeeSum += d.count;
+                monthCount++;
+                if (d.valeAlimentacao > 0 || month >= '2025-07') {
+                    lastMonthWithVA = month;
+                }
             }
         });
         const avgEmployees = monthCount > 0 ? (employeeSum / monthCount).toFixed(1) : 0;
+
         const section = document.createElement('div');
         section.innerHTML = `<h3>${dept}</h3>`;
         const table = document.createElement('table');
+        // [MODIFIED] Ensure table fills container width and columns auto-size
+        table.style.width = '100%';
         table.style.tableLayout = 'auto';
+
         table.innerHTML = `
             <thead><tr><th>Mês</th><th>Funcionários</th><th>Total Simples</th><th>Vale Alimentação</th><th>Bonificação (Dia 20)</th><th>Total Geral</th></tr></thead>
             <tbody>
                 ${data.months.map(month => {
                     const d = data.data[month]?.departments[dept];
                     return d ? `<tr>
-                        <td>${formatMonthLabel(month)}</td><td>${d.count || 0}</td><td>${formatCurrencyBRL(d.total)}</td>
-                        <td>${formatVA(d.valeAlimentacao, month)}</td><td>${formatCurrencyBRL(d.bonificacao)}</td><td>${formatCurrencyBRL(d.geral)}</td>
+                        <td>${formatMonthLabel(month)}</td>
+                        <td>${d.count || 0}</td>
+                        <td>${formatCurrencyBRL(d.total)}</td>
+                        <td>${formatVA(d.valeAlimentacao, month)}</td>
+                        <td>${formatCurrencyBRL(d.bonificacao)}</td>
+                        <td>${formatCurrencyBRL(d.geral)}</td>
                     </tr>` : '';
                 }).join('')}
             </tbody>
-            <tfoot><tr style="font-weight: bold; background-color: #f0f0f0;">
-                <td>Total / Média</td><td>${avgEmployees} (Média)</td><td>${formatCurrencyBRL(totalSimples)}</td>
-                <td>${formatVA(totalVA, lastMonthWithVA)}</td><td>${formatCurrencyBRL(totalBonificacao)}</td><td>${formatCurrencyBRL(totalGeral)}</td>
-            </tr></tfoot>`;
+            <tfoot>
+                 <tr style="font-weight: bold; background-color: #f0f0f0;">
+                    <td>Total / Média</td>
+                    <td>${avgEmployees} (Média)</td>
+                    <td>${formatCurrencyBRL(totalSimples)}</td>
+                    <td>${formatVA(totalVA, lastMonthWithVA)}</td>
+                    <td>${formatCurrencyBRL(totalBonificacao)}</td>
+                    <td>${formatCurrencyBRL(totalGeral)}</td>
+                </tr>
+            </tfoot>
+        `;
         section.appendChild(table);
         container.appendChild(section);
     });
@@ -980,5 +1026,4 @@ async function initDashboard() {
 
 function showError(message) {
     const container = document.querySelector('.container') || document.body;
-    container.innerHTML = `<div class="error-message"><h2>Erro</h2><p>${message}</p><button onclick="window.location.reload()">Recarregar Página</button></div>`;
-}
+    container.innerHTML = `<div class="error-message"><h2>Erro</h2><p>${message}</p><button onclick="window.location.reload()">Recarregar Página</button></div>`
