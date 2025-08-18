@@ -6,12 +6,13 @@ import { getFirestore, collection, getDocs } from "https://www.gstatic.com/fireb
 // IMPORTANT: Replace the placeholder values below with your actual
 // Firebase project's configuration.
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyDuXzhFCIUICOV4xrf7uYl3hYPAQp6qhbs",
+  authDomain: "financialdashboard-a60a6.firebaseapp.com",
+  projectId: "financialdashboard-a60a6",
+  storageBucket: "financialdashboard-a60a6.firebasestorage.app",
+  messagingSenderId: "876071686917",
+  appId: "1:876071686917:web:4c1fc89d1fc21fdec49d6c",
+  measurementId: "G-C8GQJJR945"
 };
 
 // Initialize Firebase
@@ -826,3 +827,4 @@ function showError(message) {
     const container = document.querySelector('.container') || document.body;
     container.innerHTML = `<div class="error-message"><h2>Erro</h2><p>${message}</p><button onclick="window.location.reload()">Recarregar Página</button></div>`;
 }
+
