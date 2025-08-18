@@ -41,17 +41,22 @@ function convertMonthToYYYYMM(monthStr) {
         console.warn('Invalid month string passed to convertMonthToYYYYMM:', monthStr);
         return null;
     }
+    const s = String(monthStr).trim();
 
-    // Handle "MM/YYYY" format
-    if (monthStr.includes('/')) {
-        const [month, year] = monthStr.split('/');
+    // Handle "MM/YYYY" format (e.g., "03/2025")
+    if (s.includes('/')) {
+        const [month, year] = s.split('/');
         if (month && year && year.length === 4) {
             return `${year}-${month.padStart(2, '0')}`;
         }
     } 
-    // Handle "mmm.-yy" format
-    else if (monthStr.includes('-')) {
-        const [monthAbbr, yearShort] = monthStr.split('-');
+    // Handle "YYYY-MM" format (already correct)
+    else if (s.match(/^\d{4}-\d{2}$/)) {
+        return s;
+    }
+    // Handle "mmm.-yy" format (e.g., "mar.-25")
+    else if (s.includes('-')) {
+        const [monthAbbr, yearShort] = s.split('-');
         const yearFull = parseInt(yearShort, 10) < 50 ? `20${yearShort}` : `19${yearShort}`;
         const monthMap = {
             "jan.": "01", "fev.": "02", "mar.": "03", "abr.": "04", "mai.": "05", "jun.": "06",
@@ -88,18 +93,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         const departmentsSet = new Set();
         const structuredData = {};
 
-        // Step 1: Discover all unique months from BOTH sources
+        // Step 1: Discover all unique months from BOTH sources and standardize them
         fetchedRows.forEach(row => {
-            if (row["Month"]) {
-                monthsSet.add(row["Month"]);
+            const monthKey = convertMonthToYYYYMM(row["Month"]);
+            if (monthKey) {
+                monthsSet.add(monthKey);
             }
         });
         earningsData.forEach(row => {
-            if (row["Mês"]) {
-                const monthKey = convertMonthToYYYYMM(String(row["Mês"]).trim());
-                if (monthKey) {
-                    monthsSet.add(monthKey);
-                }
+            const monthKey = convertMonthToYYYYMM(row["Mês"]);
+            if (monthKey) {
+                monthsSet.add(monthKey);
             }
         });
 
@@ -115,10 +119,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-        // Step 3: Populate expenditure data
+        // Step 3: Populate expenditure data using the standardized month key
         fetchedRows.forEach(row => {
-            const month = row["Month"];
-            if (!month || !structuredData[month]) return; // Check if month is valid
+            const monthKey = convertMonthToYYYYMM(row["Month"]);
+            if (!monthKey || !structuredData[monthKey]) return;
 
             const rawDept = row["Department"];
             const dept = deptMap[rawDept] || rawDept;
@@ -129,25 +133,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (dept && dept.toLowerCase() !== "total geral") {
                 departmentsSet.add(dept);
-                if (!structuredData[month].departments[dept]) {
-                    structuredData[month].departments[dept] = { total: 0, bonificacao: 0, count: 0, geral: 0 };
+                if (!structuredData[monthKey].departments[dept]) {
+                    structuredData[monthKey].departments[dept] = { total: 0, bonificacao: 0, count: 0, geral: 0 };
                 }
-                structuredData[month].departments[dept] = { total, bonificacao, count, geral };
-                structuredData[month].total += geral;
-                structuredData[month].totalEmployees += count;
+                structuredData[monthKey].departments[dept] = { total, bonificacao, count, geral };
+                structuredData[monthKey].total += geral;
+                structuredData[monthKey].totalEmployees += count;
             }
         });
 
-        // Step 4: Merge earnings data
+        // Step 4: Merge earnings data using the standardized month key
         earningsData.forEach(row => {
-            const monthShortStr = row["Mês"];
+            const monthKey = convertMonthToYYYYMM(row["Mês"]);
             const faturamentoStr = row["Faturamento"];
-            if (monthShortStr && faturamentoStr) {
-                const monthKey = convertMonthToYYYYMM(String(monthShortStr).trim());
-                if (monthKey && structuredData[monthKey]) {
-                    const faturamentoValue = parseFloat(String(faturamentoStr).replace(/["R$\s.]/g, '').replace(',', '.')) || 0;
-                    structuredData[monthKey].earnings = faturamentoValue;
-                }
+            if (monthKey && faturamentoStr && structuredData[monthKey]) {
+                const faturamentoValue = parseFloat(String(faturamentoStr).replace(/["R$\s.]/g, '').replace(',', '.')) || 0;
+                structuredData[monthKey].earnings = faturamentoValue;
             }
         });
 
@@ -856,5 +857,5 @@ function initDashboard() {
 
 function showError(message) {
     const container = document.querySelector('.container') || document.body;
-    container.innerHTML = `<div class="error-message"><h2>Erro</h2><p>${message}</p><button onclick="window.location.reload()">Recarregar Página</button></div>`
+    container.innerHTML = `<div class="error-message"><h2>Erro</h2><p>${message}</p><button onclick="window.location.reload()">Recarregar Página</button></div>`;
 }
