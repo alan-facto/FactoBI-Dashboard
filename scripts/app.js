@@ -4,8 +4,7 @@ import { getFirestore, collection, getDocs } from "https://www.gstatic.com/fireb
 
 // --- Firebase Configuration ---
 // IMPORTANT: Replace the placeholder values below with your actual
-// Firebase project's configuration. You can find this in your
-// Firebase project settings under "Your apps" -> "SDK setup and configuration".
+// Firebase project's configuration.
 const firebaseConfig = {
   apiKey: "YOUR_API_KEY",
   authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
@@ -825,5 +824,5 @@ function initDashboard() {
 
 function showError(message) {
     const container = document.querySelector('.container') || document.body;
-    container.innerHTML = `<div class="error-message"><h2>Erro</h2><p>${message}</p><button onclick="window.location.reload()">Recarregar Página</button></div>
+    container.innerHTML = `<div class="error-message"><h2>Erro</h2><p>${message}</p><button onclick="window.location.reload()">Recarregar Página</button></div>`
 }
