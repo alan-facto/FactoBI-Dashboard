@@ -1,8 +1,6 @@
 // Import necessary functions from the Firebase SDK
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, getDocs, doc, getDoc, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
+import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // Import view-specific modules
 import { initExpensesView } from './expenses.js';
@@ -23,13 +21,10 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const auth = getAuth(app);
 
 // --- Global Variables & Shared State ---
 export let data = { months: [], departments: [], data: {} };
 export let charts = {};
-let dashboardInitialized = false; // Flag to prevent re-initialization
-
 export const colorsByDepartment = {
     "Administrativo": "#6B5B95", "Apoio": "#FF6F61", "Comercial": "#E44D42",
     "Diretoria": "#0072B5", "Jurídico": "#2E8B57", "Marketing": "#FFA500",
@@ -106,74 +101,8 @@ function convertMonthToYYYYMM(monthStr) {
     return null;
 }
 
-// --- Authentication Flow ---
-const loginView = document.getElementById('login-view');
-const dashboardContainer = document.querySelector('.container');
-const loginBtn = document.getElementById('login-btn');
-const authError = document.getElementById('auth-error');
-
-// When the login button is clicked, trigger the Google sign-in redirect
-loginBtn.addEventListener('click', () => {
-    const provider = new GoogleAuthProvider();
-    signInWithRedirect(auth, provider);
-});
-
-// onAuthStateChanged is the single source of truth for the user's sign-in state.
-// It will fire after the redirect has been processed.
-onAuthStateChanged(auth, async (user) => {
-    if (user) {
-        // A user is signed in.
-        await checkAuthorization(user);
-    } else {
-        // No user is signed in. Show the login page.
-        // This also runs after auth.signOut(), successfully logging the user out.
-        loginView.style.display = 'flex';
-        dashboardContainer.style.display = 'none';
-        dashboardInitialized = false;
-    }
-});
-
-// We still need to process the redirect result when the page loads.
-// This completes the sign-in flow and triggers onAuthStateChanged.
-getRedirectResult(auth).catch((error) => {
-    // Handle errors from the redirect flow here.
-    console.error("Error processing redirect result:", error);
-    authError.textContent = "Falha ao processar o login. Tente novamente.";
-    authError.style.display = 'block';
-});
-
-
-async function checkAuthorization(user) {
-    try {
-        // Query the 'authorizedUsers' collection for a document where the 'email' field matches the user's email.
-        const q = query(collection(db, "authorizedUsers"), where("email", "==", user.email));
-        const querySnapshot = await getDocs(q);
-
-        if (!querySnapshot.empty) {
-            // A matching document was found, so the user is authorized.
-            loginView.style.display = 'none';
-            dashboardContainer.style.display = 'block';
-            // Load data and initialize the dashboard if it hasn't been done yet
-            if (!dashboardInitialized) {
-                await loadDashboardData();
-            }
-        } else {
-            // User is not on the whitelist
-            authError.textContent = "Acesso negado. Você não tem permissão para ver este painel.";
-            authError.style.display = 'block';
-            auth.signOut(); // Sign out the unauthorized user
-        }
-    } catch (error) {
-        console.error("Authorization check error:", error);
-        authError.textContent = "Erro ao verificar permissão.";
-        authError.style.display = 'block';
-        auth.signOut();
-    }
-}
-
-
 // --- Main Data Fetching and Processing ---
-async function loadDashboardData() {
+document.addEventListener('DOMContentLoaded', async () => {
     try {
         const [expendituresSnapshot, earningsSnapshot] = await Promise.all([
             getDocs(collection(db, "expenditures")),
@@ -244,24 +173,23 @@ async function loadDashboardData() {
         data.data = structuredData;
 
         initDashboard();
-        dashboardInitialized = true; // Set flag to true after successful load
 
     } catch (error) {
         console.error("Error loading data from Firestore:", error);
         showError(`Falha ao carregar os dados: ${error.message}`);
     }
-}
+});
 
 // --- Dashboard Initialization & View Toggling ---
 function initDashboard() {
     setupViewToggle();
     
-    // Initialize all views
+    // Initialize the default view
     initExpensesView();
     initEarningsView();
     initTablesView();
 
-    // Trigger the default table view to render for the first time
+    // Trigger the default table view to render
     document.getElementById('btn-summary-month')?.click();
 }
 
@@ -284,6 +212,7 @@ function setupViewToggle() {
             const viewEl = document.getElementById(viewId);
             viewEl.style.display = 'flex';
 
+            // If tables view is selected, ensure a default table is shown
             if (viewId === 'tables-view' && !document.querySelector('.table-toggle-btn.active')) {
                  document.getElementById('btn-summary-month')?.click();
             }
