@@ -1011,7 +1011,7 @@ function updateDepartmentBreakdownCharts() {
             }
     
             pieChartState.chartInstances.push(chart);
-        }, index * 50); // Stagger animation start
+        }, index * 75); // Stagger animation start
     });
 }
 
