@@ -1,6 +1,6 @@
 // Import necessary functions from the Firebase SDK
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, getDocs, doc, getDoc, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 
@@ -145,12 +145,12 @@ getRedirectResult(auth).catch((error) => {
 
 async function checkAuthorization(user) {
     try {
-        // We use the user's email as the document ID in our whitelist collection
-        const userDocRef = doc(db, "authorizedUsers", user.email);
-        const userDoc = await getDoc(userDocRef);
+        // Query the 'authorizedUsers' collection for a document where the 'email' field matches the user's email.
+        const q = query(collection(db, "authorizedUsers"), where("email", "==", user.email));
+        const querySnapshot = await getDocs(q);
 
-        if (userDoc.exists()) {
-            // User is authorized, show the dashboard
+        if (!querySnapshot.empty) {
+            // A matching document was found, so the user is authorized.
             loginView.style.display = 'none';
             dashboardContainer.style.display = 'block';
             // Load data and initialize the dashboard if it hasn't been done yet
