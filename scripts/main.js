@@ -126,35 +126,41 @@ function showView(view) {
     dashboardContainer.style.display = view === 'dashboard' ? 'block' : 'none';
 }
 
-// onAuthStateChanged is the single, reliable listener for auth changes.
-let unsubscribe = onAuthStateChanged(auth, async (user) => {
-    // We only want this to run once on initial load to determine the state.
-    unsubscribe(); // Stop listening to future auth changes after this first check.
-
-    if (user) {
-        // A user is already logged in from a previous session.
-        console.log("Found existing user session:", user.email);
-        await checkAuthorization(user);
-    } else {
-        // No user is logged in. Now, check if we are returning from a redirect.
-        try {
-            const result = await getRedirectResult(auth);
-            if (result && result.user) {
-                // User has just signed in via redirect.
-                console.log("Redirect result received for user:", result.user.email);
-                await checkAuthorization(result.user);
-            } else {
-                // No user session and no redirect result. Show the login page.
-                console.log("No user session or redirect result. Showing login page.");
+// Main Authentication Logic
+async function initializeAuth() {
+    showView('loading');
+    try {
+        const result = await getRedirectResult(auth);
+        // If result is not null, a user has just signed in.
+        // onAuthStateChanged will handle the user object.
+        // If result is null, it means we are not returning from a redirect.
+        if (!result) {
+            // If no redirect, check if there's a user from a previous session
+            if (!auth.currentUser) {
                 showView('login');
             }
-        } catch (error) {
-            console.error("Error processing redirect result:", error);
-            authError.textContent = "Falha ao processar o login. Tente novamente.";
-            showView('login');
         }
+    } catch (error) {
+        console.error("Error processing redirect result:", error);
+        authError.textContent = "Falha ao processar o login. Tente novamente.";
+        showView('login');
+    }
+}
+
+// This is the primary listener for authentication state.
+onAuthStateChanged(auth, (user) => {
+    if (user) {
+        // A user is signed in (either from redirect or existing session).
+        checkAuthorization(user);
+    } else {
+        // No user is signed in.
+        // The initializeAuth function will handle showing the login page
+        // to avoid a flash of the login screen on page load.
     }
 });
+
+// Run the initialization logic when the page loads.
+initializeAuth();
 
 
 async function checkAuthorization(user) {
