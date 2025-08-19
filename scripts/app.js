@@ -778,6 +778,9 @@ function createEarningsAllocationChart(chartData, months, departments) {
         },
         options: {
             ...globalChartOptions,
+            animation: { // Override the global animation to remove the "wipe" effect
+                duration: 800
+            },
             plugins: {
                 legend: { position: 'bottom' },
                 tooltip: {
@@ -876,8 +879,8 @@ function setupDepartmentBreakdown() {
             <div class="time-filters toggle-switch-group">
                 <button class="filter-btn pie-time-btn" data-months="1">1 Mês</button>
                 <button class="filter-btn pie-time-btn" data-months="3">3 Meses</button>
-                <button class="filter-btn pie-time-btn" data-months="6">6 Meses</button>
-                <button class="filter-btn pie-time-btn active" data-months="12">12 Meses</button>
+                <button class="filter-btn pie-time-btn active" data-months="6">6 Meses</button>
+                <button class="filter-btn pie-time-btn" data-months="12">12 Meses</button>
             </div>
         </div>
         <div class="pie-chart-main-content">
