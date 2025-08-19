@@ -170,63 +170,74 @@ body {
 
 /* ====== PIE CHARTS SECTION ====== */
 .pie-chart-main-content {
-  display: flex;
-  gap: 25px;
-  flex-grow: 1;
-  align-items: center;
+    display: flex;
+    gap: 25px;
+    flex-grow: 1;
+    align-items: center;
+}
+
+.pie-chart-area {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Vertical centering */
 }
 
 #department-breakdown-charts {
-  flex-grow: 1;
-  display: grid;
-  gap: 20px;
+    width: 100%;
+    display: grid;
+    gap: 20px;
+    align-items: center;
 }
 
 #department-breakdown-charts[data-range="12"] {
-  grid-template-columns: repeat(6, 1fr);
+    grid-template-columns: repeat(6, 1fr);
 }
+
 #department-breakdown-charts[data-range="6"] {
-  grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, 1fr);
 }
+
 #department-breakdown-charts[data-range="3"] {
-  grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, 1fr);
 }
+
 #department-breakdown-charts[data-range="1"] {
-  grid-template-columns: 1fr;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+    grid-template-columns: 1fr;
+    display: flex;
+    justify-content: center; /* Horizontal centering */
 }
 
 
 .pie-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: transform 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.2s ease;
 }
+
 .pie-item:hover {
     transform: scale(1.05);
 }
 
 #department-breakdown-charts[data-range="6"] .pie-item,
 #department-breakdown-charts[data-range="3"] .pie-item {
-  transform: scale(0.8);
+    transform: scale(0.8);
 }
 
 .pie-item canvas {
-  max-width: 90%;
-  max-height: 90%;
+    max-width: 100%;
+    max-height: 100%;
 }
 
 .pie-label {
-  margin-top: 10px;
-  font-weight: 600;
-  color: #333;
-  text-align: center;
-  font-size: 0.9rem;
+    margin-top: 10px;
+    font-weight: 600;
+    color: #333;
+    text-align: center;
+    font-size: 0.9rem;
 }
 
 /* Styles for single month view */
@@ -234,31 +245,38 @@ body {
     flex-direction: row;
     align-items: center;
     justify-content: center;
-    gap: 20px;
-    width: 100%;
+    gap: 15px; /* Reduced gap */
+    width: auto;
+    max-width: 100%;
 }
 
 .pie-item.single-view .pie-chart-wrapper {
-    flex-basis: 85%;
-    max-width: 600px;
+    flex-shrink: 0;
+    width: 350px; /* Fixed width for consistency */
+    height: 350px; /* Fixed height for consistency */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
 
 .custom-legend-container {
-    flex-basis: 15%;
+    flex-shrink: 0;
 }
 
 /* ====== LEGEND STYLES ====== */
 .department-legend-sidebar {
-  flex-basis: 220px;
-  flex-shrink: 0;
-  border-left: 1px solid #e0e0e0;
-  padding-left: 20px;
+    flex-basis: 220px;
+    flex-shrink: 0;
+    align-self: stretch; /* Make sidebar take full height */
+    border-left: 1px solid #e0e0e0;
+    padding-left: 20px;
 }
 
 #pie-department-filters {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 #pie-department-filters .filter-btn {
@@ -267,43 +285,36 @@ body {
 }
 
 .department-legend-item {
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  padding: 8px;
-  border-radius: 6px;
-  transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
 }
+
 .department-legend-item:hover {
-  background-color: #e9e9e9;
+    background-color: #e9e9e9;
 }
+
 .department-legend-item.inactive {
-  opacity: 0.5;
+    opacity: 0.5;
 }
 
 .department-legend-swatch {
-  width: 16px;
-  height: 16px;
-  margin-right: 8px;
-  border-radius: 3px;
+    width: 16px;
+    height: 16px;
+    margin-right: 8px;
+    border-radius: 3px;
 }
 
 /* ====== PIE CHART NAVIGATION & CONTROLS ====== */
-.pie-chart-controls {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-    gap: 15px;
-}
-
 .pie-chart-nav {
     display: flex;
     justify-content: center;
     align-items: center;
     gap: 10px;
-    margin-top: 20px;
+    margin-top: 25px; /* Increased margin */
 }
 
 .pie-chart-nav button {
@@ -312,9 +323,11 @@ body {
     padding: 0;
     font-size: 1.5rem;
     line-height: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+}
+
+.pie-chart-nav button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .custom-legend-container {
