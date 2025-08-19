@@ -189,6 +189,12 @@ body {
     transform: scale(1.05);
 }
 
+/* NEW: Scale down pie charts for 3 and 6 month views */
+#department-breakdown-charts[data-range="6"] .pie-item,
+#department-breakdown-charts[data-range="3"] .pie-item {
+  transform: scale(0.8);
+}
+
 .pie-item canvas {
   max-width: 90%;
   max-height: 90%;
