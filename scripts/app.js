@@ -420,11 +420,11 @@ function setupTimeFilters() {
 
     document.querySelectorAll('#total-expenditures-wrapper .time-filters .filter-btn, #total-expenditures-wrapper .filter-buttons-wrapper .filter-btn').forEach(button => {
         button.addEventListener('click', function() {
-            const parent = this.closest('.toggle-switch-group, .filter-grid');
+            const parent = this.closest('.card');
             parent.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
             this.classList.add('active');
 
-            if(parent.classList.contains('time-filters')) {
+            if(this.closest('.time-filters')) {
                  const activeDept = document.querySelector('#total-expenditures-wrapper .filter-buttons-wrapper .filter-btn.active').dataset.department;
                  charts.totalExpenditures.update(data.data, data.months.slice(-this.dataset.months), activeDept);
             } else {
