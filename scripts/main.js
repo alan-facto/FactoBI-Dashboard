@@ -118,33 +118,36 @@ loginBtn.addEventListener('click', () => {
     signInWithRedirect(auth, provider);
 });
 
-// Handle the redirect result when the user comes back to the app
-getRedirectResult(auth)
-  .then((result) => {
-    if (result) {
-      // This is the signed-in user
-      const user = result.user;
-      checkAuthorization(user);
+// Main function to handle authentication state
+async function handleAuthState() {
+    try {
+        const result = await getRedirectResult(auth);
+        if (result && result.user) {
+            // User signed in via redirect.
+            await checkAuthorization(result.user);
+        } else {
+            // Check if a user is already signed in from a previous session
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    await checkAuthorization(user);
+                } else {
+                    // No user is signed in, show the login screen.
+                    loginView.style.display = 'flex';
+                    dashboardContainer.style.display = 'none';
+                    dashboardInitialized = false;
+                }
+            });
+        }
+    } catch (error) {
+        console.error("Authentication error:", error);
+        authError.textContent = "Falha no login. Tente novamente.";
+        authError.style.display = 'block';
     }
-  }).catch((error) => {
-    console.error("Authentication error on redirect:", error);
-    authError.textContent = "Falha no login. Tente novamente.";
-    authError.style.display = 'block';
-  });
+}
 
+// Run the authentication handler when the DOM is loaded
+document.addEventListener('DOMContentLoaded', handleAuthState);
 
-// Listen for changes in authentication state
-onAuthStateChanged(auth, user => {
-    if (user) {
-        // User is signed in, now check if they are on the whitelist
-        checkAuthorization(user);
-    } else {
-        // User is signed out, show the login screen
-        loginView.style.display = 'flex';
-        dashboardContainer.style.display = 'none';
-        dashboardInitialized = false; // Reset flag on sign out
-    }
-});
 
 async function checkAuthorization(user) {
     try {
