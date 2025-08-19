@@ -12,7 +12,16 @@
   <link rel="icon" href="data:,"> <!-- Prevents 404 for missing favicon -->
 </head>
 <body>
-  <div class="container">
+
+  <!-- Login View -->
+  <div id="login-view" style="display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column;">
+      <img src="assets/logo.png" alt="Facto Logo" style="height: 60px; margin-bottom: 20px;">
+      <button id="login-btn" style="padding: 12px 24px; font-size: 16px; cursor: pointer; background-color: #fff; color: #024B59; border: 1px solid #024B59; border-radius: 8px; font-weight: 600;">Entrar com Google</button>
+      <p id="auth-error" style="color: #E44D42; margin-top: 15px; display: none;"></p>
+  </div>
+
+  <!-- Main Dashboard Container (hidden by default) -->
+  <div class="container" style="display: none;">
     <img src="assets/logo.png" alt="Facto Logo" class="facto-logo">
     <div class="view-toggle">
       <button id="btn-expenses-main" class="active">Gastos</button>
@@ -189,7 +198,3 @@
   <script type="module" src="scripts/main.js"></script>
 </body>
 </html>
-
-
-
-
