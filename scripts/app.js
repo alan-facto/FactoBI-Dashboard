@@ -395,11 +395,13 @@ function setupTimeFilters() {
     row1.className = 'filter-row';
     row1.appendChild(allBtn);
     mainDepts.forEach(dept => {
-        const button = document.createElement('button');
-        button.className = 'filter-btn';
-        button.dataset.department = dept;
-        button.textContent = dept;
-        row1.appendChild(button);
+        if (data.departments.includes(dept)) {
+            const button = document.createElement('button');
+            button.className = 'filter-btn';
+            button.dataset.department = dept;
+            button.textContent = dept;
+            row1.appendChild(button);
+        }
     });
 
     const row2 = document.createElement('div');
@@ -448,10 +450,8 @@ function setupTimeFilters() {
 
 // --- Chart Creation Functions ---
 const globalChartOptions = {
-    responsive: true, maintainAspectRatio: false,
-    animation: { 
-        duration: 800,
-    }
+    responsive: true,
+    maintainAspectRatio: false,
 };
 
 function createTotalExpendituresChart(chartData, months) {
@@ -468,7 +468,7 @@ function createTotalExpendituresChart(chartData, months) {
                 borderWidth: 2, fill: true, tension: 0.4
             }]
         },
-        options: { ...globalChartOptions, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `${context.dataset.label}: ${formatCurrencyBRL(context.parsed.y)}` } } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
+        options: { ...globalChartOptions, animation: { duration: 800 }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `${context.dataset.label}: ${formatCurrencyBRL(context.parsed.y)}` } } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
     });
     return {
         update: function(newData, monthsToShow, selectedDepartment = 'all') {
@@ -503,7 +503,7 @@ function createDepartmentTrendsChart(chartData, months, departments) {
                 borderColor: colorsByDepartment[dept] || "#ccc", borderWidth: 2, fill: false, tension: 0.3
             }))
         },
-        options: { ...globalChartOptions, plugins: { legend: { position: 'bottom' }, tooltip: { callbacks: { label: (context) => `${context.dataset.label}: ${formatCurrencyBRL(context.parsed.y)}` } } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
+        options: { ...globalChartOptions, animation: { duration: 800 }, plugins: { legend: { position: 'bottom' }, tooltip: { callbacks: { label: (context) => `${context.dataset.label}: ${formatCurrencyBRL(context.parsed.y)}` } } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
     });
     return {
         update: function(monthsToShow = months, filteredDepartments = departments) {
@@ -531,7 +531,7 @@ function createAvgExpenditureChart(chartData, months) {
                 borderColor: '#024B59', backgroundColor: hexToRGBA('#024B59', 0.1), borderWidth: 2, fill: true, tension: 0.4
             }]
         },
-        options: { ...globalChartOptions, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `Média: ${formatCurrencyBRL(context.parsed.y)}` } } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
+        options: { ...globalChartOptions, animation: { duration: 800 }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `Média: ${formatCurrencyBRL(context.parsed.y)}` } } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
     });
 }
 
@@ -547,7 +547,7 @@ function createEmployeesChart(chartData, months) {
                 borderColor: '#024B59', backgroundColor: hexToRGBA('#024B59', 0.1), borderWidth: 2, fill: true, tension: 0.4
             }]
         },
-        options: { ...globalChartOptions, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `Total: ${context.parsed.y}` } } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+        options: { ...globalChartOptions, animation: { duration: 800 }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `Total: ${context.parsed.y}` } } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
     });
 }
 
@@ -567,7 +567,7 @@ function createPercentageStackedChart(chartData, months, departments) {
                 backgroundColor: colorsByDepartment[dept] || "#ccc"
             }))
         },
-        options: { ...globalChartOptions, plugins: { legend: { position: 'right' }, tooltip: { callbacks: { label: (context) => `${context.dataset.label}: ${context.parsed.y.toFixed(2)}%` } } }, scales: { x: { stacked: true }, y: { stacked: true, max: 100, ticks: { callback: (value) => value + "%" } } } }
+        options: { ...globalChartOptions, animation: { duration: 800 }, plugins: { legend: { position: 'right' }, tooltip: { callbacks: { label: (context) => `${context.dataset.label}: ${context.parsed.y.toFixed(2)}%` } } }, scales: { x: { stacked: true }, y: { stacked: true, max: 100, ticks: { callback: (value) => value + "%" } } } }
     });
 }
 
@@ -583,7 +583,7 @@ function createEarningsVsCostsChart(chartData, months) {
                 { label: 'Gastos com Pessoal', data: months.map(m => chartData[m]?.total || 0), borderColor: '#E44D42', tension: 0.4, borderWidth: 2, fill: true, backgroundColor: hexToRGBA('#E44D42', 0.1) }
             ]
         },
-        options: { ...globalChartOptions, plugins: { legend: { position: 'top' }, tooltip: { callbacks: { label: (context) => `${context.dataset.label}: ${formatCurrencyBRL(context.parsed.y)}` } } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
+        options: { ...globalChartOptions, animation: { duration: 800 }, plugins: { legend: { position: 'top' }, tooltip: { callbacks: { label: (context) => `${context.dataset.label}: ${formatCurrencyBRL(context.parsed.y)}` } } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
     });
 }
 
@@ -600,59 +600,13 @@ function createNetProfitLossChart(chartData, months) {
                 backgroundColor: months.map(m => ((chartData[m]?.earnings || 0) - (chartData[m]?.total || 0)) >= 0 ? '#024B59' : '#E44D42')
             }]
         },
-        options: { ...globalChartOptions, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `Diferença: ${formatCurrencyBRL(context.parsed.y)}` } } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
+        options: { ...globalChartOptions, animation: { duration: 800 }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `Diferença: ${formatCurrencyBRL(context.parsed.y)}` } } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
     });
 }
 
 function createProfitMarginChart(chartData, months) {
     const ctx = document.getElementById('profit-margin-chart');
     if (!ctx) return null;
-    const percentageChangeBubbles = {
-        id: 'percentageChangeBubbles',
-        afterDatasetsDraw(chart) {
-            const { ctx, data, _metasets } = chart;
-            const meta = _metasets[0];
-            const points = meta.data;
-            ctx.save();
-            for (let i = 1; i < points.length; i++) {
-                const currentPoint = data.datasets[0].data[i];
-                const prevPoint = data.datasets[0].data[i - 1];
-                const change = currentPoint - prevPoint;
-                if (isNaN(change)) continue;
-                const text = `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`;
-                const isPositive = change >= 0;
-                const x = points[i].x;
-                const yOffset = (points[i].y < points[i-1].y) ? -25 : 25;
-                const y = points[i].y + yOffset;
-                ctx.fillStyle = isPositive ? 'rgba(25, 135, 84, 0.85)' : 'rgba(220, 53, 69, 0.85)';
-                ctx.strokeStyle = isPositive ? '#198754' : '#dc3545';
-                ctx.lineWidth = 1;
-                ctx.font = 'bold 12px "Plus Jakarta Sans"';
-                const textMetrics = ctx.measureText(text);
-                const bubbleWidth = textMetrics.width + 16;
-                const bubbleHeight = 24;
-                const borderRadius = 12;
-                ctx.beginPath();
-                ctx.moveTo(x - bubbleWidth / 2 + borderRadius, y - bubbleHeight / 2);
-                ctx.lineTo(x + bubbleWidth / 2 - borderRadius, y - bubbleHeight / 2);
-                ctx.quadraticCurveTo(x + bubbleWidth / 2, y - bubbleHeight / 2, x + bubbleWidth / 2, y - bubbleHeight / 2 + borderRadius);
-                ctx.lineTo(x + bubbleWidth / 2, y + bubbleHeight / 2 - borderRadius);
-                ctx.quadraticCurveTo(x + bubbleWidth / 2, y + bubbleHeight / 2, x + bubbleWidth / 2 - borderRadius, y + bubbleHeight / 2);
-                ctx.lineTo(x - bubbleWidth / 2 + borderRadius, y + bubbleHeight / 2);
-                ctx.quadraticCurveTo(x - bubbleWidth / 2, y + bubbleHeight / 2, x - bubbleWidth / 2, y + bubbleHeight / 2 - borderRadius);
-                ctx.lineTo(x - bubbleWidth / 2, y - bubbleHeight / 2 + borderRadius);
-                ctx.quadraticCurveTo(x - bubbleWidth / 2, y - bubbleHeight / 2, x - bubbleWidth / 2 + borderRadius, y - bubbleHeight / 2);
-                ctx.closePath();
-                ctx.fill();
-                ctx.stroke();
-                ctx.fillStyle = '#fff';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(text, x, y);
-            }
-            ctx.restore();
-        }
-    };
     const profitMargins = months.map(m => {
         const monthInfo = chartData[m];
         if (!monthInfo) return 0;
@@ -670,15 +624,108 @@ function createProfitMarginChart(chartData, months) {
                 clip: false
             }]
         },
-        plugins: [percentageChangeBubbles],
         options: {
             ...globalChartOptions,
-            layout: { padding: { top: 30, bottom: 30, right: 40, left: 10 } },
+            animation: { duration: 800 },
+            layout: { padding: { top: 30, bottom: 30, right: 10, left: 10 } },
             plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `Margem: ${context.parsed.y.toFixed(2)}%` } } },
             scales: { y: { ticks: { callback: (value) => value.toFixed(0) + "%" }, grace: '10%' } }
         }
     });
 }
+
+// --- [NEW] Earnings Allocation Chart ---
+function createEarningsAllocationChart(chartData, months, departments) {
+    const ctx = document.getElementById('earnings-allocation-chart');
+    if (!ctx) return;
+
+    const calculateAllocation = (mode = 'headcount') => {
+        const allocatedData = {};
+        departments.forEach(dept => allocatedData[dept] = []);
+
+        months.forEach(month => {
+            const monthData = chartData[month];
+            if (!monthData || !monthData.earnings) {
+                departments.forEach(dept => allocatedData[dept].push(0));
+                return;
+            }
+
+            const totalValue = Object.values(monthData.departments).reduce((sum, dept) => {
+                return sum + (mode === 'headcount' ? (dept.count || 0) : (dept.geral || 0));
+            }, 0);
+
+            if (totalValue === 0) {
+                departments.forEach(dept => allocatedData[dept].push(0));
+                return;
+            }
+
+            departments.forEach(dept => {
+                const deptData = monthData.departments[dept];
+                if (deptData) {
+                    const proportion = (mode === 'headcount' ? (deptData.count || 0) : (deptData.geral || 0)) / totalValue;
+                    allocatedData[dept].push(monthData.earnings * proportion);
+                } else {
+                    allocatedData[dept].push(0);
+                }
+            });
+        });
+        return allocatedData;
+    };
+
+    const initialData = calculateAllocation('headcount');
+    
+    const chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: months.map(formatMonthShort),
+            datasets: departments.map(dept => ({
+                label: dept,
+                data: initialData[dept],
+                backgroundColor: colorsByDepartment[dept] || '#ccc'
+            }))
+        },
+        options: {
+            ...globalChartOptions,
+            animation: { duration: 800 },
+            plugins: {
+                legend: { position: 'bottom' },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const datasetLabel = context.dataset.label || '';
+                            const value = context.parsed.y;
+                            let total = 0;
+                            for (let i = 0; i < context.chart.data.datasets.length; i++) {
+                                total += context.chart.data.datasets[i].data[context.dataIndex];
+                            }
+                            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                            return `${datasetLabel}: ${formatCurrencyBRL(value)} (${percentage}%)`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: { stacked: true },
+                y: { stacked: true, ticks: { callback: (value) => formatCurrencyBRL(value) } }
+            }
+        }
+    });
+
+    const toggleButtons = document.querySelectorAll('#earnings-allocation-card .toggle-switch-group .filter-btn');
+    toggleButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            toggleButtons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            const mode = button.dataset.mode;
+            const newData = calculateAllocation(mode);
+            chart.data.datasets.forEach(dataset => {
+                dataset.data = newData[dataset.label];
+            });
+            chart.update();
+        });
+    });
+}
+
 
 function createEarningsPerEmployeeChart(chartData, months) {
     const container = document.getElementById('earnings-per-employee-card');
@@ -708,6 +755,7 @@ function createEarningsPerEmployeeChart(chartData, months) {
         },
         options: {
             ...globalChartOptions,
+            animation: { duration: 800 },
             plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `Valor: ${formatCurrencyBRL(context.parsed.y)}` } } },
             scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } }
         }
@@ -872,45 +920,48 @@ function updateDepartmentBreakdownCharts() {
             .filter(d => d.value > 0)
             .sort((a, b) => b.value - a.value);
 
-        const chart = new Chart(canvas, {
-            type: 'pie',
-            data: {
-                labels: filteredDeptData.map(d => d.name),
-                datasets: [{
-                    data: filteredDeptData.map(d => d.value),
-                    backgroundColor: filteredDeptData.map(d => colorsByDepartment[d.name] || "#ccc"),
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                animation: {
-                    duration: 800,
-                    easing: 'easeOutQuart'
+        // Use requestAnimationFrame to ensure the canvas is ready before initializing the chart
+        requestAnimationFrame(() => {
+            const chart = new Chart(canvas, {
+                type: 'pie',
+                data: {
+                    labels: filteredDeptData.map(d => d.name),
+                    datasets: [{
+                        data: filteredDeptData.map(d => d.value),
+                        backgroundColor: filteredDeptData.map(d => colorsByDepartment[d.name] || "#ccc"),
+                        borderWidth: 1
+                    }]
                 },
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const label = context.label || '';
-                                const value = context.parsed;
-                                const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
-                                const percentage = total > 0 ? (value / total * 100).toFixed(2) : 0;
-                                return `${label}: ${formatCurrencyBRL(value)} (${percentage}%)`;
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    animation: {
+                        duration: 800,
+                        easing: 'easeOutQuart'
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed;
+                                    const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                    const percentage = total > 0 ? (value / total * 100).toFixed(2) : 0;
+                                    return `${label}: ${formatCurrencyBRL(value)} (${percentage}%)`;
+                                }
                             }
                         }
                     }
                 }
+            });
+            
+            if (pieChartState.range === 1) {
+                renderCustomLegend(pieItem.querySelector('.custom-legend-container'), filteredDeptData);
             }
+    
+            pieChartState.chartInstances.push(chart);
         });
-        
-        if (pieChartState.range === 1) {
-            renderCustomLegend(pieItem.querySelector('.custom-legend-container'), filteredDeptData);
-        }
-
-        pieChartState.chartInstances.push(chart);
     });
 }
 
@@ -969,6 +1020,7 @@ async function initDashboard() {
             earningsVsCosts: createEarningsVsCostsChart(data.data, data.months),
             netProfitLoss: createNetProfitLossChart(data.data, data.months),
             profitMargin: createProfitMarginChart(data.data, data.months),
+            earningsAllocation: createEarningsAllocationChart(data.data, data.months, data.departments),
             earningsPerEmployee: createEarningsPerEmployeeChart(data.data, data.months)
         };
         
