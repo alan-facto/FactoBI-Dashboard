@@ -379,25 +379,47 @@ function setupTimeFilters() {
         try { return JSON.parse(jsonString); } catch (e) { return []; }
     };
     
-    const filterButtonsContainer = document.querySelector('#total-expenditures-wrapper .filter-buttons');
-    filterButtonsContainer.innerHTML = ''; // Clear existing buttons
+    // UPDATED: Rearrange filter buttons for Total Expenditures
+    const filterButtonsContainer = document.querySelector('#total-expenditures-wrapper .filter-buttons-wrapper');
+    filterButtonsContainer.innerHTML = '<div class="filter-grid"></div>'; // Use a grid container
+    const filterGrid = filterButtonsContainer.querySelector('.filter-grid');
+
+    const mainDepts = ["Operação", "Comercial", "Diretoria", "Marketing", "NEC"];
+    const otherDepts = data.departments.filter(d => !mainDepts.includes(d));
+
     const allBtn = document.createElement('button');
     allBtn.className = 'filter-btn active';
     allBtn.dataset.department = 'all';
     allBtn.textContent = 'Todos';
-    filterButtonsContainer.appendChild(allBtn);
 
-    data.departments.forEach(dept => {
+    const row1 = document.createElement('div');
+    row1.className = 'filter-row';
+    row1.appendChild(allBtn);
+    mainDepts.forEach(dept => {
         const button = document.createElement('button');
         button.className = 'filter-btn';
         button.dataset.department = dept;
         button.textContent = dept;
-        filterButtonsContainer.appendChild(button);
+        row1.appendChild(button);
     });
 
-    document.querySelectorAll('#total-expenditures-wrapper .time-filters .filter-btn, #total-expenditures-wrapper .filter-buttons .filter-btn').forEach(button => {
+    const row2 = document.createElement('div');
+    row2.className = 'filter-row';
+    otherDepts.forEach(dept => {
+        const button = document.createElement('button');
+        button.className = 'filter-btn';
+        button.dataset.department = dept;
+        button.textContent = dept;
+        row2.appendChild(button);
+    });
+
+    filterGrid.appendChild(row1);
+    filterGrid.appendChild(row2);
+
+
+    document.querySelectorAll('#total-expenditures-wrapper .time-filters .filter-btn, #total-expenditures-wrapper .filter-buttons-wrapper .filter-btn').forEach(button => {
         button.addEventListener('click', function() {
-            const parent = this.parentElement;
+            const parent = this.closest('.time-filters, .filter-buttons-wrapper');
             parent.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
             this.classList.add('active');
 
