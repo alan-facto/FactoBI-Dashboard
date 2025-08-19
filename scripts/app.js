@@ -169,7 +169,7 @@ function formatMonthShort(monthStr) {
 }
 
 function formatCurrencyBRL(value) {
-    return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function formatVA(value, month) {
@@ -379,9 +379,8 @@ function setupTimeFilters() {
         try { return JSON.parse(jsonString); } catch (e) { return []; }
     };
     
-    // UPDATED: Rearrange filter buttons for Total Expenditures
     const filterButtonsContainer = document.querySelector('#total-expenditures-wrapper .filter-buttons-wrapper');
-    filterButtonsContainer.innerHTML = '<div class="filter-grid"></div>'; // Use a grid container
+    filterButtonsContainer.innerHTML = '<div class="filter-grid"></div>';
     const filterGrid = filterButtonsContainer.querySelector('.filter-grid');
 
     const mainDepts = ["Operação", "Comercial", "Diretoria", "Marketing", "NEC"];
@@ -469,7 +468,7 @@ function createTotalExpendituresChart(chartData, months) {
                 borderWidth: 2, fill: true, tension: 0.4
             }]
         },
-        options: { ...globalChartOptions, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
+        options: { ...globalChartOptions, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `${context.dataset.label}: ${formatCurrencyBRL(context.parsed.y)}` } } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
     });
     return {
         update: function(newData, monthsToShow, selectedDepartment = 'all') {
@@ -504,7 +503,7 @@ function createDepartmentTrendsChart(chartData, months, departments) {
                 borderColor: colorsByDepartment[dept] || "#ccc", borderWidth: 2, fill: false, tension: 0.3
             }))
         },
-        options: { ...globalChartOptions, plugins: { legend: { position: 'bottom' } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
+        options: { ...globalChartOptions, plugins: { legend: { position: 'bottom' }, tooltip: { callbacks: { label: (context) => `${context.dataset.label}: ${formatCurrencyBRL(context.parsed.y)}` } } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
     });
     return {
         update: function(monthsToShow = months, filteredDepartments = departments) {
@@ -532,7 +531,7 @@ function createAvgExpenditureChart(chartData, months) {
                 borderColor: '#024B59', backgroundColor: hexToRGBA('#024B59', 0.1), borderWidth: 2, fill: true, tension: 0.4
             }]
         },
-        options: { ...globalChartOptions, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
+        options: { ...globalChartOptions, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `Média: ${formatCurrencyBRL(context.parsed.y)}` } } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
     });
 }
 
@@ -548,7 +547,7 @@ function createEmployeesChart(chartData, months) {
                 borderColor: '#024B59', backgroundColor: hexToRGBA('#024B59', 0.1), borderWidth: 2, fill: true, tension: 0.4
             }]
         },
-        options: { ...globalChartOptions, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+        options: { ...globalChartOptions, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `Total: ${context.parsed.y}` } } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
     });
 }
 
@@ -568,7 +567,7 @@ function createPercentageStackedChart(chartData, months, departments) {
                 backgroundColor: colorsByDepartment[dept] || "#ccc"
             }))
         },
-        options: { ...globalChartOptions, plugins: { legend: { position: 'right' } }, scales: { x: { stacked: true }, y: { stacked: true, max: 100, ticks: { callback: (value) => value + "%" } } } }
+        options: { ...globalChartOptions, plugins: { legend: { position: 'right' }, tooltip: { callbacks: { label: (context) => `${context.dataset.label}: ${context.parsed.y.toFixed(2)}%` } } }, scales: { x: { stacked: true }, y: { stacked: true, max: 100, ticks: { callback: (value) => value + "%" } } } }
     });
 }
 
@@ -584,7 +583,7 @@ function createEarningsVsCostsChart(chartData, months) {
                 { label: 'Gastos com Pessoal', data: months.map(m => chartData[m]?.total || 0), borderColor: '#E44D42', tension: 0.4, borderWidth: 2, fill: true, backgroundColor: hexToRGBA('#E44D42', 0.1) }
             ]
         },
-        options: { ...globalChartOptions, plugins: { legend: { position: 'top' } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
+        options: { ...globalChartOptions, plugins: { legend: { position: 'top' }, tooltip: { callbacks: { label: (context) => `${context.dataset.label}: ${formatCurrencyBRL(context.parsed.y)}` } } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
     });
 }
 
@@ -601,7 +600,7 @@ function createNetProfitLossChart(chartData, months) {
                 backgroundColor: months.map(m => ((chartData[m]?.earnings || 0) - (chartData[m]?.total || 0)) >= 0 ? '#024B59' : '#E44D42')
             }]
         },
-        options: { ...globalChartOptions, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
+        options: { ...globalChartOptions, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `Diferença: ${formatCurrencyBRL(context.parsed.y)}` } } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
     });
 }
 
@@ -674,7 +673,7 @@ function createProfitMarginChart(chartData, months) {
         plugins: [percentageChangeBubbles],
         options: {
             ...globalChartOptions,
-            layout: { padding: { top: 30, bottom: 30, right: 40, left: 10 } }, // Increased right padding
+            layout: { padding: { top: 30, bottom: 30, right: 40, left: 10 } },
             plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `Margem: ${context.parsed.y.toFixed(2)}%` } } },
             scales: { y: { ticks: { callback: (value) => value.toFixed(0) + "%" }, grace: '10%' } }
         }
@@ -736,7 +735,6 @@ function setupDepartmentBreakdown() {
     const wrapper = document.getElementById('department-breakdown-wrapper');
     if (!wrapper) return;
     
-    // Create the inner structure
     wrapper.innerHTML = `
         <h2>Distribuição de Gastos por Departamento</h2>
         <div class="pie-chart-controls">
@@ -801,7 +799,6 @@ function updateDepartmentBreakdownCharts() {
     const endIndex = totalMonths - pieChartState.offset;
     const monthsToShow = data.months.slice(startIndex, endIndex);
 
-    // Show/hide nav and legend
     navButtons.style.display = (pieChartState.range < 12 && !pieChartState.previousState) ? 'flex' : 'none';
     legendSidebar.style.display = 'block';
     mainContent.style.flexDirection = 'row';
@@ -837,7 +834,7 @@ function updateDepartmentBreakdownCharts() {
         return;
     }
 
-    container.dataset.range = pieChartState.range; // For CSS styling
+    container.dataset.range = pieChartState.range;
 
     monthsToShow.forEach((month) => {
         const monthData = data.data[month];
@@ -860,7 +857,7 @@ function updateDepartmentBreakdownCharts() {
             chartWrapper.appendChild(canvas);
             chartWrapper.appendChild(label);
             
-            pieItem.appendChild(customLegend); // Legend first in DOM for flex order
+            pieItem.appendChild(customLegend);
             pieItem.appendChild(chartWrapper);
         } else {
             pieItem.appendChild(canvas);
@@ -900,7 +897,7 @@ function updateDepartmentBreakdownCharts() {
                                 const label = context.label || '';
                                 const value = context.parsed;
                                 const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
-                                const percentage = total > 0 ? (value / total * 100).toFixed(1) : 0;
+                                const percentage = total > 0 ? (value / total * 100).toFixed(2) : 0;
                                 return `${label}: ${formatCurrencyBRL(value)} (${percentage}%)`;
                             }
                         }
@@ -946,7 +943,7 @@ function renderCustomLegend(container, chartData) {
         legendItem.innerHTML = `
             <div class="legend-swatch" style="background-color: ${colorsByDepartment[item.name] || '#ccc'}"></div>
             <div class="legend-name">${item.name}</div>
-            <div class="legend-percent">${Math.round((item.value / total) * 100)}%</div>
+            <div class="legend-percent">${((item.value / total) * 100).toFixed(2)}%</div>
         `;
         column.appendChild(legendItem);
     });
@@ -978,7 +975,6 @@ async function initDashboard() {
         setupDepartmentBreakdown();
         setupTimeFilters();
 
-        // Trigger default filters after a short delay to ensure charts are ready
         setTimeout(() => {
             document.querySelector('#total-expenditures-wrapper .time-btn[data-months="12"]')?.click();
             document.querySelector('#department-trends-wrapper .time-btn[data-months="12"]')?.click();
