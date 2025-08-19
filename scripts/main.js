@@ -1,7 +1,7 @@
 // Import necessary functions from the Firebase SDK
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 
 // Import view-specific modules
@@ -112,15 +112,26 @@ const dashboardContainer = document.querySelector('.container');
 const loginBtn = document.getElementById('login-btn');
 const authError = document.getElementById('auth-error');
 
-// When the login button is clicked, trigger the Google sign-in popup
+// When the login button is clicked, trigger the Google sign-in redirect
 loginBtn.addEventListener('click', () => {
     const provider = new GoogleAuthProvider();
-    signInWithPopup(auth, provider).catch(error => {
-        console.error("Authentication error:", error);
-        authError.textContent = "Falha no login. Tente novamente.";
-        authError.style.display = 'block';
-    });
+    signInWithRedirect(auth, provider);
 });
+
+// Handle the redirect result when the user comes back to the app
+getRedirectResult(auth)
+  .then((result) => {
+    if (result) {
+      // This is the signed-in user
+      const user = result.user;
+      checkAuthorization(user);
+    }
+  }).catch((error) => {
+    console.error("Authentication error on redirect:", error);
+    authError.textContent = "Falha no login. Tente novamente.";
+    authError.style.display = 'block';
+  });
+
 
 // Listen for changes in authentication state
 onAuthStateChanged(auth, user => {
