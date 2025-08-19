@@ -452,6 +452,12 @@ function setupTimeFilters() {
 const globalChartOptions = {
     responsive: true,
     maintainAspectRatio: false,
+    animation: {
+        y: {
+            from: 500
+        },
+        duration: 800
+    }
 };
 
 function createTotalExpendituresChart(chartData, months) {
@@ -468,7 +474,7 @@ function createTotalExpendituresChart(chartData, months) {
                 borderWidth: 2, fill: true, tension: 0.4
             }]
         },
-        options: { ...globalChartOptions, animation: { duration: 800 }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `${context.dataset.label}: ${formatCurrencyBRL(context.parsed.y)}` } } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
+        options: { ...globalChartOptions, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `${context.dataset.label}: ${formatCurrencyBRL(context.parsed.y)}` } } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
     });
     return {
         update: function(newData, monthsToShow, selectedDepartment = 'all') {
@@ -503,7 +509,7 @@ function createDepartmentTrendsChart(chartData, months, departments) {
                 borderColor: colorsByDepartment[dept] || "#ccc", borderWidth: 2, fill: false, tension: 0.3
             }))
         },
-        options: { ...globalChartOptions, animation: { duration: 800 }, plugins: { legend: { position: 'bottom' }, tooltip: { callbacks: { label: (context) => `${context.dataset.label}: ${formatCurrencyBRL(context.parsed.y)}` } } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
+        options: { ...globalChartOptions, plugins: { legend: { position: 'bottom' }, tooltip: { callbacks: { label: (context) => `${context.dataset.label}: ${formatCurrencyBRL(context.parsed.y)}` } } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
     });
     return {
         update: function(monthsToShow = months, filteredDepartments = departments) {
@@ -531,7 +537,7 @@ function createAvgExpenditureChart(chartData, months) {
                 borderColor: '#024B59', backgroundColor: hexToRGBA('#024B59', 0.1), borderWidth: 2, fill: true, tension: 0.4
             }]
         },
-        options: { ...globalChartOptions, animation: { duration: 800 }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `Média: ${formatCurrencyBRL(context.parsed.y)}` } } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
+        options: { ...globalChartOptions, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `Média: ${formatCurrencyBRL(context.parsed.y)}` } } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
     });
 }
 
@@ -547,7 +553,7 @@ function createEmployeesChart(chartData, months) {
                 borderColor: '#024B59', backgroundColor: hexToRGBA('#024B59', 0.1), borderWidth: 2, fill: true, tension: 0.4
             }]
         },
-        options: { ...globalChartOptions, animation: { duration: 800 }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `Total: ${context.parsed.y}` } } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+        options: { ...globalChartOptions, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `Total: ${context.parsed.y}` } } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
     });
 }
 
@@ -567,7 +573,7 @@ function createPercentageStackedChart(chartData, months, departments) {
                 backgroundColor: colorsByDepartment[dept] || "#ccc"
             }))
         },
-        options: { ...globalChartOptions, animation: { duration: 800 }, plugins: { legend: { position: 'right' }, tooltip: { callbacks: { label: (context) => `${context.dataset.label}: ${context.parsed.y.toFixed(2)}%` } } }, scales: { x: { stacked: true }, y: { stacked: true, max: 100, ticks: { callback: (value) => value + "%" } } } }
+        options: { ...globalChartOptions, plugins: { legend: { position: 'right' }, tooltip: { callbacks: { label: (context) => `${context.dataset.label}: ${context.parsed.y.toFixed(2)}%` } } }, scales: { x: { stacked: true }, y: { stacked: true, max: 100, ticks: { callback: (value) => value + "%" } } } }
     });
 }
 
@@ -583,7 +589,7 @@ function createEarningsVsCostsChart(chartData, months) {
                 { label: 'Gastos com Pessoal', data: months.map(m => chartData[m]?.total || 0), borderColor: '#E44D42', tension: 0.4, borderWidth: 2, fill: true, backgroundColor: hexToRGBA('#E44D42', 0.1) }
             ]
         },
-        options: { ...globalChartOptions, animation: { duration: 800 }, plugins: { legend: { position: 'top' }, tooltip: { callbacks: { label: (context) => `${context.dataset.label}: ${formatCurrencyBRL(context.parsed.y)}` } } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
+        options: { ...globalChartOptions, plugins: { legend: { position: 'top' }, tooltip: { callbacks: { label: (context) => `${context.dataset.label}: ${formatCurrencyBRL(context.parsed.y)}` } } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
     });
 }
 
@@ -600,7 +606,7 @@ function createNetProfitLossChart(chartData, months) {
                 backgroundColor: months.map(m => ((chartData[m]?.earnings || 0) - (chartData[m]?.total || 0)) >= 0 ? '#024B59' : '#E44D42')
             }]
         },
-        options: { ...globalChartOptions, animation: { duration: 800 }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `Diferença: ${formatCurrencyBRL(context.parsed.y)}` } } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
+        options: { ...globalChartOptions, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `Diferença: ${formatCurrencyBRL(context.parsed.y)}` } } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
     });
 }
 
@@ -626,7 +632,6 @@ function createProfitMarginChart(chartData, months) {
         },
         options: {
             ...globalChartOptions,
-            animation: { duration: 800 },
             layout: { padding: { top: 30, bottom: 30, right: 10, left: 10 } },
             plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `Margem: ${context.parsed.y.toFixed(2)}%` } } },
             scales: { y: { ticks: { callback: (value) => value.toFixed(0) + "%" }, grace: '10%' } }
@@ -686,7 +691,6 @@ function createEarningsAllocationChart(chartData, months, departments) {
         },
         options: {
             ...globalChartOptions,
-            animation: { duration: 800 },
             plugins: {
                 legend: { position: 'bottom' },
                 tooltip: {
@@ -755,7 +759,6 @@ function createEarningsPerEmployeeChart(chartData, months) {
         },
         options: {
             ...globalChartOptions,
-            animation: { duration: 800 },
             plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `Valor: ${formatCurrencyBRL(context.parsed.y)}` } } },
             scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } }
         }
@@ -920,48 +923,46 @@ function updateDepartmentBreakdownCharts() {
             .filter(d => d.value > 0)
             .sort((a, b) => b.value - a.value);
 
-        // Use requestAnimationFrame to ensure the canvas is ready before initializing the chart
-        requestAnimationFrame(() => {
-            const chart = new Chart(canvas, {
-                type: 'pie',
-                data: {
-                    labels: filteredDeptData.map(d => d.name),
-                    datasets: [{
-                        data: filteredDeptData.map(d => d.value),
-                        backgroundColor: filteredDeptData.map(d => colorsByDepartment[d.name] || "#ccc"),
-                        borderWidth: 1
-                    }]
+        const chart = new Chart(canvas, {
+            type: 'pie',
+            data: {
+                labels: filteredDeptData.map(d => d.name),
+                datasets: [{
+                    data: filteredDeptData.map(d => d.value),
+                    backgroundColor: filteredDeptData.map(d => colorsByDepartment[d.name] || "#ccc"),
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                animation: {
+                    duration: 800,
+                    easing: 'easeOutQuart',
+                    animateScale: true
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    animation: {
-                        duration: 800,
-                        easing: 'easeOutQuart'
-                    },
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const label = context.label || '';
-                                    const value = context.parsed;
-                                    const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
-                                    const percentage = total > 0 ? (value / total * 100).toFixed(2) : 0;
-                                    return `${label}: ${formatCurrencyBRL(value)} (${percentage}%)`;
-                                }
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed;
+                                const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                const percentage = total > 0 ? (value / total * 100).toFixed(2) : 0;
+                                return `${label}: ${formatCurrencyBRL(value)} (${percentage}%)`;
                             }
                         }
                     }
                 }
-            });
-            
-            if (pieChartState.range === 1) {
-                renderCustomLegend(pieItem.querySelector('.custom-legend-container'), filteredDeptData);
             }
-    
-            pieChartState.chartInstances.push(chart);
         });
+        
+        if (pieChartState.range === 1) {
+            renderCustomLegend(pieItem.querySelector('.custom-legend-container'), filteredDeptData);
+        }
+
+        pieChartState.chartInstances.push(chart);
     });
 }
 
