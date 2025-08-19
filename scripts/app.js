@@ -828,7 +828,6 @@ function createEarningsPerEmployeeChart(chartData, months) {
 
 // --- Pie Chart Section Functions ---
 function setupDepartmentBreakdown() {
-    pieChartState.selectedDepartments = data.departments.slice();
     const wrapper = document.getElementById('department-breakdown-wrapper');
     if (!wrapper) return;
     
@@ -838,20 +837,22 @@ function setupDepartmentBreakdown() {
             <div class="time-filters toggle-switch-group">
                 <button class="filter-btn pie-time-btn" data-months="1">1 Mês</button>
                 <button class="filter-btn pie-time-btn" data-months="3">3 Meses</button>
-                <button class="filter-btn pie-time-btn active" data-months="6">6 Meses</button>
-                <button class="filter-btn pie-time-btn" data-months="12">12 Meses</button>
+                <button class="filter-btn pie-time-btn" data-months="6">6 Meses</button>
+                <button class="filter-btn pie-time-btn active" data-months="12">12 Meses</button>
             </div>
         </div>
         <div class="pie-chart-main-content">
-            <div id="department-breakdown-charts"></div>
+            <div class="pie-chart-area">
+                <div id="department-breakdown-charts"></div>
+                <div class="pie-chart-nav toggle-switch-group">
+                    <button id="pie-nav-prev" class="filter-btn">&lt;</button>
+                    <button id="pie-nav-next" class="filter-btn">&gt;</button>
+                </div>
+            </div>
             <div class="department-legend-sidebar">
                 <h4>Departamentos</h4>
                 <div id="pie-department-filters"></div>
             </div>
-        </div>
-        <div class="pie-chart-nav">
-            <button id="pie-nav-prev" class="filter-btn">&lt;</button>
-            <button id="pie-nav-next" class="filter-btn">&gt;</button>
         </div>
     `;
 
@@ -879,8 +880,6 @@ function setupDepartmentBreakdown() {
 function updateDepartmentBreakdownCharts() {
     const container = document.getElementById('department-breakdown-charts');
     const filterContainer = document.getElementById('pie-department-filters');
-    const mainContent = document.querySelector('.pie-chart-main-content');
-    const legendSidebar = document.querySelector('.department-legend-sidebar');
     const navButtons = document.querySelector('.pie-chart-nav');
     const prevBtn = document.getElementById('pie-nav-prev');
     const nextBtn = document.getElementById('pie-nav-next');
@@ -896,13 +895,11 @@ function updateDepartmentBreakdownCharts() {
     const endIndex = totalMonths - pieChartState.offset;
     const monthsToShow = data.months.slice(startIndex, endIndex);
 
-    navButtons.style.display = (pieChartState.range < 12 && !pieChartState.previousState) ? 'flex' : 'none';
-    legendSidebar.style.display = 'block';
-    mainContent.style.flexDirection = 'row';
-
+    navButtons.style.display = (pieChartState.range < 12 || pieChartState.previousState) ? 'flex' : 'none';
+    
     nextBtn.disabled = pieChartState.offset <= 0;
     prevBtn.disabled = startIndex <= 0;
-
+    
     const allButton = document.createElement('button');
     allButton.className = 'filter-btn' + (pieChartState.selectedDepartments.length === data.departments.length ? ' active' : '');
     allButton.textContent = 'Todos';
@@ -1010,7 +1007,7 @@ function updateDepartmentBreakdownCharts() {
             }
     
             pieChartState.chartInstances.push(chart);
-        }, index * 75); // Stagger animation start
+        }, index * 75);
     });
 }
 
@@ -1049,45 +1046,8 @@ function renderCustomLegend(container, chartData) {
     });
     container.appendChild(column);
 }
-
-// --- DASHBOARD INITIALIZATION ---
-async function initDashboard() {
-    try {
-        if (!data || !data.months.length) {
-            throw new Error('Invalid or incomplete data. Cannot initialize dashboard.');
-        }
         
-        setupViewToggle();
-        setupTableToggle();
-
-        charts = {
-            totalExpenditures: createTotalExpendituresChart(data.data, data.months, data.departments),
-            departmentTrends: createDepartmentTrendsChart(data.data, data.months, data.departments),
-            avgExpenditure: createAvgExpenditureChart(data.data, data.months),
-            employees: createEmployeesChart(data.data, data.months),
-            percentageStacked: createPercentageStackedChart(data.data, data.months, data.departments),
-            earningsVsCosts: createEarningsVsCostsChart(data.data, data.months),
-            netProfitLoss: createNetProfitLossChart(data.data, data.months),
-            profitMargin: createProfitMarginChart(data.data, data.months),
-            earningsAllocation: createEarningsAllocationChart(data.data, data.months, data.departments),
-            earningsPerEmployee: createEarningsPerEmployeeChart(data.data, data.months)
-        };
-        
-        setupDepartmentBreakdown();
-        setupTimeFilters();
-
-        setTimeout(() => {
-            document.querySelector('#total-expenditures-wrapper .time-btn[data-months="12"]')?.click();
-            document.querySelector('#department-trends-wrapper .time-btn[data-months="12"]')?.click();
-        }, 100);
-
-    } catch (error) {
-        console.error('Dashboard initialization failed:', error);
-        showError('Falha ao carregar o dashboard. Por favor, recarregue a página.');
-    }
-}
-
-function showError(message) {
-    const container = document.querySelector('.container') || document.body;
-    container.innerHTML = `<div class="error-message"><h2>Erro</h2><p>${message}</p><button onclick="window.location.reload()">Recarregar Página</button></div>`;
-}
+        document.addEventListener('DOMContentLoaded', setupDepartmentBreakdown);
+    </script>
+</body>
+</html>
