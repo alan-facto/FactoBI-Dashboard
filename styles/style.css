@@ -114,6 +114,7 @@ body {
     display: flex;
     justify-content: center;
     margin-bottom: 20px;
+    width: 100%;
 }
 
 .filter-buttons {
@@ -121,8 +122,24 @@ body {
   flex-wrap: wrap;
   gap: 10px;
   justify-content: center;
-  max-width: 80%;
 }
+
+/* New styles for two-row filter layout */
+.filter-grid {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+}
+
+.filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+}
+
 
 .time-filters, .centered-toggle .filter-buttons {
     max-width: 100%;
@@ -180,6 +197,7 @@ body {
   grid-template-columns: 1fr;
 }
 
+
 .pie-item {
   display: flex;
   flex-direction: column;
@@ -215,17 +233,17 @@ body {
     flex-direction: row;
     align-items: center;
     justify-content: center;
-    gap: 30px;
+    gap: 20px;
     width: 100%;
 }
 
 .pie-item.single-view .pie-chart-wrapper {
-    flex-basis: 70%;
-    max-width: 500px;
+    flex-basis: 85%; /* Increased size */
+    max-width: 600px;
 }
 
 .custom-legend-container {
-    flex-basis: 30%;
+    flex-basis: 15%; /* Decreased size */
 }
 
 /* ====== LEGEND STYLES ====== */
