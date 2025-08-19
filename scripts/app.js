@@ -1048,7 +1048,6 @@ function renderCustomLegend(container, chartData) {
 }
         
         document.addEventListener('DOMContentLoaded', setupDepartmentBreakdown);
-    </script>
-</body>
-</html>
+}
+
 
