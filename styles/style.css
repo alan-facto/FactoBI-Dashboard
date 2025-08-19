@@ -124,7 +124,6 @@ body {
   justify-content: center;
 }
 
-/* New styles for two-row filter layout */
 .filter-grid {
     display: flex;
     flex-direction: column;
@@ -175,7 +174,7 @@ body {
   display: flex;
   gap: 25px;
   flex-grow: 1;
-  align-items: center; /* Vertically center align */
+  align-items: center;
 }
 
 #department-breakdown-charts {
@@ -195,6 +194,9 @@ body {
 }
 #department-breakdown-charts[data-range="1"] {
   grid-template-columns: 1fr;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 
@@ -238,12 +240,12 @@ body {
 }
 
 .pie-item.single-view .pie-chart-wrapper {
-    flex-basis: 85%; /* Increased size */
+    flex-basis: 85%;
     max-width: 600px;
 }
 
 .custom-legend-container {
-    flex-basis: 15%; /* Decreased size */
+    flex-basis: 15%;
 }
 
 /* ====== LEGEND STYLES ====== */
@@ -447,6 +449,38 @@ body {
   height: 40px;
   z-index: 10;
 }
+
+/* ====== EARNINGS ALLOCATION CHART STYLES ====== */
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+.chart-header h2 {
+    text-align: left;
+}
+.toggle-switch-group {
+    display: flex;
+    align-items: center;
+    background-color: #e9ecef;
+    border-radius: 8px;
+    padding: 4px;
+}
+.toggle-switch-group .filter-btn {
+    background-color: transparent;
+    border: none;
+    flex-grow: 1;
+    padding: 6px 12px;
+    font-size: 14px;
+}
+.toggle-switch-group .filter-btn.active {
+    background-color: #fff;
+    color: #024B59;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
 
 /* ====== MISC & RESPONSIVE ====== */
 .error-message {
