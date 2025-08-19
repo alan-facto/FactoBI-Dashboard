@@ -845,8 +845,6 @@ function setupDepartmentBreakdown() {
             <div class="pie-chart-area">
                 <div id="department-breakdown-charts"></div>
                 <div class="pie-chart-nav toggle-switch-group">
-                    <button id="pie-nav-prev" class="filter-btn">&lt;</button>
-                    <button id="pie-nav-next" class="filter-btn">&gt;</button>
                 </div>
             </div>
             <div class="department-legend-sidebar">
@@ -855,6 +853,19 @@ function setupDepartmentBreakdown() {
             </div>
         </div>
     `;
+
+    const navContainer = wrapper.querySelector('.pie-chart-nav');
+    const prevBtn = document.createElement('button');
+    prevBtn.id = 'pie-nav-prev';
+    prevBtn.className = 'filter-btn';
+    prevBtn.innerHTML = '&lt;';
+    navContainer.appendChild(prevBtn);
+
+    const nextBtn = document.createElement('button');
+    nextBtn.id = 'pie-nav-next';
+    nextBtn.className = 'filter-btn';
+    nextBtn.innerHTML = '&gt;';
+    navContainer.appendChild(nextBtn);
 
     document.querySelectorAll('.pie-time-btn').forEach(button => {
         button.addEventListener('click', () => {
@@ -866,11 +877,11 @@ function setupDepartmentBreakdown() {
             updateDepartmentBreakdownCharts();
         });
     });
-    document.getElementById('pie-nav-prev').addEventListener('click', () => {
+    prevBtn.addEventListener('click', () => {
         pieChartState.offset += pieChartState.range;
         updateDepartmentBreakdownCharts();
     });
-    document.getElementById('pie-nav-next').addEventListener('click', () => {
+    nextBtn.addEventListener('click', () => {
         pieChartState.offset -= pieChartState.range;
         updateDepartmentBreakdownCharts();
     });
@@ -1048,6 +1059,6 @@ function renderCustomLegend(container, chartData) {
 }
         
         document.addEventListener('DOMContentLoaded', setupDepartmentBreakdown);
-}
-
-
+    </script>
+</body>
+</html>
