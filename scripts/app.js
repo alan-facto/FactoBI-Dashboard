@@ -864,8 +864,13 @@ function updateDepartmentBreakdownCharts() {
                 }]
             },
             options: {
-                ...globalChartOptions,
-                responsive: true, maintainAspectRatio: true,
+                responsive: true,
+                maintainAspectRatio: true,
+                // UPDATED: Explicit animation options to ensure consistency
+                animation: {
+                    duration: 800,
+                    easing: 'easeOutQuart'
+                },
                 plugins: {
                     legend: { display: false },
                     tooltip: {
