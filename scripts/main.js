@@ -118,35 +118,26 @@ loginBtn.addEventListener('click', () => {
     signInWithRedirect(auth, provider);
 });
 
-// Main function to handle authentication state
-async function handleAuthState() {
-    try {
-        const result = await getRedirectResult(auth);
-        if (result && result.user) {
-            // User signed in via redirect.
-            await checkAuthorization(result.user);
-        } else {
-            // Check if a user is already signed in from a previous session
-            onAuthStateChanged(auth, async (user) => {
-                if (user) {
-                    await checkAuthorization(user);
-                } else {
-                    // No user is signed in, show the login screen.
-                    loginView.style.display = 'flex';
-                    dashboardContainer.style.display = 'none';
-                    dashboardInitialized = false;
-                }
-            });
-        }
-    } catch (error) {
-        console.error("Authentication error:", error);
-        authError.textContent = "Falha no login. Tente novamente.";
-        authError.style.display = 'block';
-    }
-}
+// First, handle the redirect result when the page loads.
+// This updates the auth state, which then triggers onAuthStateChanged.
+getRedirectResult(auth).catch((error) => {
+    console.error("Error processing redirect result:", error);
+    authError.textContent = "Falha ao processar o login. Tente novamente.";
+    authError.style.display = 'block';
+});
 
-// Run the authentication handler when the DOM is loaded
-document.addEventListener('DOMContentLoaded', handleAuthState);
+// onAuthStateChanged is the single source of truth for the user's sign-in state.
+onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        // A user is signed in (either from the redirect or a previous session).
+        await checkAuthorization(user);
+    } else {
+        // No user is signed in. Show the login page.
+        loginView.style.display = 'flex';
+        dashboardContainer.style.display = 'none';
+        dashboardInitialized = false;
+    }
+});
 
 
 async function checkAuthorization(user) {
