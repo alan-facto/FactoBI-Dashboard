@@ -98,11 +98,12 @@ body {
 .chart-row.double {
     display: flex;
     gap: 20px;
+    flex-wrap: nowrap;
 }
 
 .chart-row.double .card {
-  flex: 1;
-  min-width: calc(50% - 10px);
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .chart-row.double .chart-container {
