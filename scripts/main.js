@@ -118,25 +118,28 @@ loginBtn.addEventListener('click', () => {
     signInWithRedirect(auth, provider);
 });
 
-// First, handle the redirect result when the page loads.
-// This updates the auth state, which then triggers onAuthStateChanged.
-getRedirectResult(auth).catch((error) => {
-    console.error("Error processing redirect result:", error);
-    authError.textContent = "Falha ao processar o login. Tente novamente.";
-    authError.style.display = 'block';
-});
-
 // onAuthStateChanged is the single source of truth for the user's sign-in state.
+// It will fire after the redirect has been processed.
 onAuthStateChanged(auth, async (user) => {
     if (user) {
-        // A user is signed in (either from the redirect or a previous session).
+        // A user is signed in.
         await checkAuthorization(user);
     } else {
         // No user is signed in. Show the login page.
+        // This also runs after auth.signOut(), successfully logging the user out.
         loginView.style.display = 'flex';
         dashboardContainer.style.display = 'none';
         dashboardInitialized = false;
     }
+});
+
+// We still need to process the redirect result when the page loads.
+// This completes the sign-in flow and triggers onAuthStateChanged.
+getRedirectResult(auth).catch((error) => {
+    // Handle errors from the redirect flow here.
+    console.error("Error processing redirect result:", error);
+    authError.textContent = "Falha ao processar o login. Tente novamente.";
+    authError.style.display = 'block';
 });
 
 
