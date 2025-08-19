@@ -781,8 +781,8 @@ function updateDepartmentBreakdownCharts() {
 
     // Show/hide nav and legend
     navButtons.style.display = (pieChartState.range < 12 && !pieChartState.previousState) ? 'flex' : 'none';
-    legendSidebar.style.display = (pieChartState.range > 1) ? 'block' : 'none';
-    mainContent.style.flexDirection = (pieChartState.range === 1) ? 'column' : 'row';
+    legendSidebar.style.display = 'block';
+    mainContent.style.flexDirection = 'row';
 
     nextBtn.disabled = pieChartState.offset <= 0;
     prevBtn.disabled = startIndex <= 0;
@@ -866,7 +866,6 @@ function updateDepartmentBreakdownCharts() {
             options: {
                 responsive: true,
                 maintainAspectRatio: true,
-                // UPDATED: Explicit animation options to ensure consistency
                 animation: {
                     duration: 800,
                     easing: 'easeOutQuart'
