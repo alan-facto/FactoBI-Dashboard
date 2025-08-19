@@ -615,6 +615,52 @@ function createNetProfitLossChart(chartData, months) {
 function createProfitMarginChart(chartData, months) {
     const ctx = document.getElementById('profit-margin-chart');
     if (!ctx) return null;
+    const percentageChangeBubbles = {
+        id: 'percentageChangeBubbles',
+        afterDatasetsDraw(chart) {
+            const { ctx, data, _metasets } = chart;
+            const meta = _metasets[0];
+            const points = meta.data;
+            ctx.save();
+            for (let i = 1; i < points.length; i++) {
+                const currentPoint = data.datasets[0].data[i];
+                const prevPoint = data.datasets[0].data[i - 1];
+                const change = currentPoint - prevPoint;
+                if (isNaN(change)) continue;
+                const text = `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`;
+                const isPositive = change >= 0;
+                const x = points[i].x;
+                const yOffset = (points[i].y < points[i-1].y) ? -25 : 25;
+                const y = points[i].y + yOffset;
+                ctx.fillStyle = isPositive ? 'rgba(25, 135, 84, 0.85)' : 'rgba(220, 53, 69, 0.85)';
+                ctx.strokeStyle = isPositive ? '#198754' : '#dc3545';
+                ctx.lineWidth = 1;
+                ctx.font = 'bold 12px "Plus Jakarta Sans"';
+                const textMetrics = ctx.measureText(text);
+                const bubbleWidth = textMetrics.width + 16;
+                const bubbleHeight = 24;
+                const borderRadius = 12;
+                ctx.beginPath();
+                ctx.moveTo(x - bubbleWidth / 2 + borderRadius, y - bubbleHeight / 2);
+                ctx.lineTo(x + bubbleWidth / 2 - borderRadius, y - bubbleHeight / 2);
+                ctx.quadraticCurveTo(x + bubbleWidth / 2, y - bubbleHeight / 2, x + bubbleWidth / 2, y - bubbleHeight / 2 + borderRadius);
+                ctx.lineTo(x + bubbleWidth / 2, y + bubbleHeight / 2 - borderRadius);
+                ctx.quadraticCurveTo(x + bubbleWidth / 2, y + bubbleHeight / 2, x + bubbleWidth / 2 - borderRadius, y + bubbleHeight / 2);
+                ctx.lineTo(x - bubbleWidth / 2 + borderRadius, y + bubbleHeight / 2);
+                ctx.quadraticCurveTo(x - bubbleWidth / 2, y + bubbleHeight / 2, x - bubbleWidth / 2, y + bubbleHeight / 2 - borderRadius);
+                ctx.lineTo(x - bubbleWidth / 2, y - bubbleHeight / 2 + borderRadius);
+                ctx.quadraticCurveTo(x - bubbleWidth / 2, y - bubbleHeight / 2, x - bubbleWidth / 2 + borderRadius, y - bubbleHeight / 2);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+                ctx.fillStyle = '#fff';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(text, x, y);
+            }
+            ctx.restore();
+        }
+    };
     const profitMargins = months.map(m => {
         const monthInfo = chartData[m];
         if (!monthInfo) return 0;
@@ -632,6 +678,7 @@ function createProfitMarginChart(chartData, months) {
                 clip: false
             }]
         },
+        plugins: [percentageChangeBubbles],
         options: {
             ...globalChartOptions,
             layout: { padding: { top: 30, bottom: 30, right: 10, left: 10 } },
@@ -727,7 +774,7 @@ function createEarningsAllocationChart(chartData, months, departments) {
             chart.data.datasets.forEach(dataset => {
                 dataset.data = newData[dataset.label];
             });
-            chart.update();
+            chart.update('active');
         });
     });
 }
@@ -767,7 +814,6 @@ function createEarningsPerEmployeeChart(chartData, months) {
     });
     
     const toggleButtons = container.querySelectorAll('.filter-buttons .filter-btn');
-    const chartTitle = container.querySelector('h2');
     
     toggleButtons.forEach(button => {
         button.addEventListener('click', () => {
@@ -775,7 +821,6 @@ function createEarningsPerEmployeeChart(chartData, months) {
             button.classList.add('active');
             const mode = button.dataset.mode;
             chart.data.datasets[0].data = months.map(m => getChartData(m, mode));
-            chartTitle.textContent = `Faturamento por Funcionário (${mode === 'operation' ? 'Operação' : 'Geral'})`;
             chart.update();
         });
     });
