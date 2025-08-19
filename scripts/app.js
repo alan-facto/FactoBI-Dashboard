@@ -60,6 +60,38 @@ function convertMonthToYYYYMM(monthStr) {
     return null;
 }
 
+// --- Dashboard Initialization ---
+function initDashboard() {
+    // Set default selected departments for pie chart state
+    pieChartState.selectedDepartments = [...data.departments];
+
+    // Setup UI controls and event listeners
+    setupViewToggle();
+    setupTableToggle();
+    setupTimeFilters();
+    setupDepartmentBreakdown(); // This sets up the pie chart section, including filters and initial render call
+
+    // --- Create all charts with the last 12 months of data as default ---
+    const last12Months = data.months.slice(-12);
+
+    // Expenses Charts
+    charts.totalExpenditures = createTotalExpendituresChart(data.data, last12Months);
+    charts.departmentTrends = createDepartmentTrendsChart(data.data, last12Months, data.departments);
+    createAvgExpenditureChart(data.data, last12Months);
+    createEmployeesChart(data.data, last12Months);
+    createPercentageStackedChart(data.data, last12Months, data.departments);
+
+    // Earnings Charts
+    createEarningsVsCostsChart(data.data, last12Months);
+    createNetProfitLossChart(data.data, last12Months);
+    createProfitMarginChart(data.data, last12Months);
+    createEarningsAllocationChart(data.data, last12Months, data.departments);
+    createEarningsPerEmployeeChart(data.data, last12Months);
+
+    // Generate the initial default table view
+    generateSummaryByMonth();
+}
+
 
 // --- Main Data Fetching and Processing ---
 document.addEventListener('DOMContentLoaded', async () => {
@@ -237,6 +269,7 @@ function setupViewToggle() {
 function generateSummaryByMonth() {
     const container = document.getElementById('table-summary-month');
     if (!container) return;
+    container.innerHTML = ''; // Clear previous content
     data.months.forEach(month => {
         const monthData = data.data[month];
         if (!monthData) return;
@@ -258,6 +291,7 @@ function generateSummaryByMonth() {
 function generateSummaryByDepartment() {
     const container = document.getElementById('table-summary-department');
     if (!container) return;
+    container.innerHTML = ''; // Clear previous content
     data.departments.forEach(dept => {
         const section = document.createElement('div');
         section.innerHTML = `<h3>${dept}</h3>`;
@@ -278,6 +312,7 @@ function generateSummaryByDepartment() {
 function generateDetailedByMonth() {
     const container = document.getElementById('table-detailed-month');
     if (!container) return;
+    container.innerHTML = ''; // Clear previous content
     data.months.forEach(month => {
         const monthData = data.data[month];
         if (!monthData) return;
@@ -311,6 +346,7 @@ function generateDetailedByMonth() {
 function generateDetailedByDepartment() {
     const container = document.getElementById('table-detailed-department');
     if (!container) return;
+    container.innerHTML = ''; // Clear previous content
     data.departments.forEach(dept => {
         let totalSimples = 0, totalVA = 0, totalBonificacao = 0, totalGeral = 0, employeeSum = 0, monthCount = 0, lastMonthWithVA = '0000-00';
         data.months.forEach(month => {
@@ -348,6 +384,7 @@ function generateDetailedByDepartment() {
 function generateEarningsTable() {
     const container = document.getElementById('table-earnings');
     if (!container) return;
+    container.innerHTML = ''; // Clear previous content
     const section = document.createElement('div');
     section.innerHTML = `<h3>Faturamento Mensal</h3>`;
     const table = document.createElement('table');
@@ -415,22 +452,24 @@ function setupTimeFilters() {
     });
 
     filterGrid.appendChild(row1);
-    filterGrid.appendChild(row2);
+    if (otherDepts.length > 0) {
+        filterGrid.appendChild(row2);
+    }
 
 
     document.querySelectorAll('#total-expenditures-wrapper .time-filters .filter-btn, #total-expenditures-wrapper .filter-buttons-wrapper .filter-btn').forEach(button => {
         button.addEventListener('click', function() {
             const parent = this.closest('.card');
-            parent.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            if (this.closest('.filter-buttons-wrapper')) {
+                 parent.querySelectorAll('.filter-buttons-wrapper .filter-btn').forEach(btn => btn.classList.remove('active'));
+            } else {
+                 parent.querySelectorAll('.time-filters .filter-btn').forEach(btn => btn.classList.remove('active'));
+            }
             this.classList.add('active');
 
-            if(this.closest('.time-filters')) {
-                 const activeDept = document.querySelector('#total-expenditures-wrapper .filter-buttons-wrapper .filter-btn.active').dataset.department;
-                 charts.totalExpenditures.update(data.data, data.months.slice(-this.dataset.months), activeDept);
-            } else {
-                const activeMonths = document.querySelector('#total-expenditures-wrapper .time-filters .filter-btn.active').dataset.months;
-                charts.totalExpenditures.update(data.data, data.months.slice(-activeMonths), this.dataset.department);
-            }
+            const activeMonths = document.querySelector('#total-expenditures-wrapper .time-filters .filter-btn.active').dataset.months;
+            const activeDept = document.querySelector('#total-expenditures-wrapper .filter-buttons-wrapper .filter-btn.active').dataset.department;
+            charts.totalExpenditures.update(data.data, data.months.slice(-activeMonths), activeDept);
         });
     });
 
@@ -1058,10 +1097,7 @@ function renderCustomLegend(container, chartData) {
     container.appendChild(column);
 }
         
-        document.addEventListener('DOMContentLoaded', setupDepartmentBreakdown);
-
 function showError(message) {
     const container = document.querySelector('.container') || document.body;
     container.innerHTML = `<div class="error-message"><h2>Erro</h2><p>${message}</p><button onclick="window.location.reload()">Recarregar Página</button></div>`;
 }
-
