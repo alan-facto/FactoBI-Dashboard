@@ -476,7 +476,7 @@ function createTotalExpendituresChart(chartData, months) {
                 borderWidth: 2, fill: true, tension: 0.4
             }]
         },
-        options: { ...globalChartOptions, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `${context.dataset.label}: ${formatCurrencyBRL(context.parsed.y)}` } } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
+        options: { ...globalChartOptions, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `${context.dataset.label}: ${formatCurrencyBRL(context.parsed.y)}` } } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) }, grace: '10%' } } }
     });
     return {
         update: function(newData, monthsToShow, selectedDepartment = 'all') {
@@ -539,7 +539,7 @@ function createAvgExpenditureChart(chartData, months) {
                 borderColor: '#024B59', backgroundColor: hexToRGBA('#024B59', 0.1), borderWidth: 2, fill: true, tension: 0.4
             }]
         },
-        options: { ...globalChartOptions, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `Média: ${formatCurrencyBRL(context.parsed.y)}` } } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
+        options: { ...globalChartOptions, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `Média: ${formatCurrencyBRL(context.parsed.y)}` } } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) }, grace: '10%' } } }
     });
 }
 
@@ -681,14 +681,13 @@ function createProfitMarginChart(chartData, months) {
         plugins: [percentageChangeBubbles],
         options: {
             ...globalChartOptions,
-            layout: { padding: { top: 30, bottom: 30, right: 10, left: 10 } },
+            layout: { padding: { top: 30, bottom: 30, right: 40, left: 10 } },
             plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `Margem: ${context.parsed.y.toFixed(2)}%` } } },
             scales: { y: { ticks: { callback: (value) => value.toFixed(0) + "%" }, grace: '10%' } }
         }
     });
 }
 
-// --- [NEW] Earnings Allocation Chart ---
 function createEarningsAllocationChart(chartData, months, departments) {
     const ctx = document.getElementById('earnings-allocation-chart');
     if (!ctx) return;
@@ -774,7 +773,7 @@ function createEarningsAllocationChart(chartData, months, departments) {
             chart.data.datasets.forEach(dataset => {
                 dataset.data = newData[dataset.label];
             });
-            chart.update('active');
+            chart.update();
         });
     });
 }
@@ -809,7 +808,7 @@ function createEarningsPerEmployeeChart(chartData, months) {
         options: {
             ...globalChartOptions,
             plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `Valor: ${formatCurrencyBRL(context.parsed.y)}` } } },
-            scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } }
+            scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) }, grace: '10%' } }
         }
     });
     
