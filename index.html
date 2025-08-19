@@ -13,8 +13,13 @@
 </head>
 <body>
 
+  <!-- Loading View (New) -->
+  <div id="loading-view" style="display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column; background-color: #024B59; color: white;">
+      <p>Carregando...</p>
+  </div>
+
   <!-- Login View -->
-  <div id="login-view" style="display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column;">
+  <div id="login-view" style="display: none; justify-content: center; align-items: center; height: 100vh; flex-direction: column;">
       <img src="assets/logo.png" alt="Facto Logo" style="height: 60px; margin-bottom: 20px;">
       <button id="login-btn" style="padding: 12px 24px; font-size: 16px; cursor: pointer; background-color: #fff; color: #024B59; border: 1px solid #024B59; border-radius: 8px; font-weight: 600;">Entrar com Google</button>
       <p id="auth-error" style="color: #E44D42; margin-top: 15px; display: none;"></p>
