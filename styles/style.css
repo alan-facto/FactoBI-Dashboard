@@ -109,19 +109,47 @@ body {
   height: 350px;
 }
 
-/* ====== FILTER BUTTONS (Modern Style) ====== */
+/* ====== FILTER BUTTONS (Standardized Style) ====== */
+.centered-toggle {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.toggle-switch-group {
+    display: inline-flex;
+    align-items: center;
+    background-color: #e9ecef;
+    border-radius: 8px;
+    padding: 4px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.filter-btn {
+    background-color: transparent;
+    color: #495057;
+    border: none;
+    padding: 6px 12px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: 6px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.filter-btn.active {
+    background-color: #fff;
+    color: #024B59;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
 .filter-buttons-wrapper {
     display: flex;
     justify-content: center;
     margin-bottom: 20px;
     width: 100%;
-}
-
-.filter-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  justify-content: center;
 }
 
 .filter-grid {
@@ -137,36 +165,6 @@ body {
     flex-wrap: wrap;
     justify-content: center;
     gap: 10px;
-}
-
-
-.time-filters, .centered-toggle .filter-buttons {
-    max-width: 100%;
-}
-
-.filter-btn, .pie-time-btn, .pie-chart-nav button {
-  background-color: #e9ecef;
-  color: #495057;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-family: 'Plus Jakarta Sans', sans-serif;
-}
-
-.filter-btn.active, .pie-time-btn.active {
-  background-color: #024B59;
-  color: #fff;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
-
-.time-filters {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  margin-bottom: 15px;
 }
 
 /* ====== PIE CHARTS SECTION ====== */
@@ -450,38 +448,6 @@ body {
   z-index: 10;
 }
 
-/* ====== EARNINGS ALLOCATION CHART STYLES ====== */
-.chart-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-}
-.chart-header h2 {
-    text-align: left;
-}
-.toggle-switch-group {
-    display: flex;
-    align-items: center;
-    background-color: #e9ecef;
-    border-radius: 8px;
-    padding: 4px;
-}
-.toggle-switch-group .filter-btn {
-    background-color: transparent;
-    border: none;
-    flex-grow: 1;
-    padding: 6px 12px;
-    font-size: 14px;
-}
-.toggle-switch-group .filter-btn.active {
-    background-color: #fff;
-    color: #024B59;
-    border-radius: 6px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
-
-
 /* ====== MISC & RESPONSIVE ====== */
 .error-message {
   color: white;
@@ -501,13 +467,6 @@ body {
   border-radius: 5px;
   cursor: pointer;
   font-weight: bold;
-}
-
-/* Centered toggle for specific charts */
-.centered-toggle {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 20px;
 }
 
 @media (max-width: 768px) {
