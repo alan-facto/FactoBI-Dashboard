@@ -195,6 +195,8 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
+  padding-right: 245px; /* Compensate for sidebar width */
+  box-sizing: border-box;
 }
 
 
