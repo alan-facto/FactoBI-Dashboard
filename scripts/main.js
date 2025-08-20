@@ -19,9 +19,6 @@ const firebaseConfig = {
   measurementId: "G-C8GQJJR945"
 };
 
-// --- Admin Configuration ---
-const ADMIN_EMAIL = "alanrodrigues.facto@gmail.com"; // Your admin email
-
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
@@ -110,7 +107,6 @@ function convertMonthToYYYYMM(monthStr) {
 const loadingView = document.getElementById('loading-view');
 const dashboardContainer = document.querySelector('.container');
 const logoutBtn = document.getElementById("logout-btn");
-const devToolsBtn = document.getElementById("btn-devtools-main");
 
 // --- Main Application Flow ---
 
@@ -130,12 +126,7 @@ async function checkAuthorization(user) {
         const querySnapshot = await getDocs(q);
 
         if (!querySnapshot.empty) {
-            // User is authorized, check if they are an admin.
-            if (user.email === ADMIN_EMAIL) {
-                devToolsBtn.style.display = 'block'; // Show the button for the admin
-            }
-            
-            // Load the dashboard for all authorized users.
+            // User is authorized, load the dashboard.
             await loadDashboardData();
             loadingView.style.display = 'none';
             dashboardContainer.style.display = 'block';
@@ -143,6 +134,7 @@ async function checkAuthorization(user) {
             // User is not authorized. Sign them out and redirect to login.
             alert(`A conta ${user.email} não tem permissão de acesso.`);
             await signOut(auth);
+            // The onAuthStateChanged listener will catch the sign-out and redirect.
         }
     } catch (error) {
         console.error("Authorization check error:", error);
@@ -244,8 +236,7 @@ function setupViewToggle() {
     const views = {
         'btn-expenses-main': 'charts-view',
         'btn-earnings-main': 'earnings-view',
-        'btn-tables-main': 'tables-view',
-        'btn-devtools-main': 'devtools-view' // Add the new view
+        'btn-tables-main': 'tables-view'
     };
 
     buttons.forEach(button => {
@@ -254,13 +245,9 @@ function setupViewToggle() {
             button.classList.add('active');
             const viewId = views[button.id];
 
-            Object.values(views).forEach(id => {
-                const viewEl = document.getElementById(id);
-                if (viewEl) viewEl.style.display = 'none';
-            });
-
+            Object.values(views).forEach(id => document.getElementById(id).style.display = 'none');
             const viewEl = document.getElementById(viewId);
-            if (viewEl) viewEl.style.display = 'flex';
+            viewEl.style.display = 'flex';
 
             if (viewId === 'tables-view' && !document.querySelector('.table-toggle-btn.active')) {
                  document.getElementById('btn-summary-month')?.click();
