@@ -117,11 +117,12 @@ async function updateIgnoredCodesInDb(updatedCodesSet) {
     }
     try {
         const docRef = doc(db, IGNORED_CODES_DOC_PATH);
-        await setDoc(docRef, { codes: Array.from(updatedCodesSet) });
-        console.log("Successfully updated ignored codes in Firebase.");
+        const codesArray = Array.from(updatedCodesSet);
+        await setDoc(docRef, { codes: codesArray });
+        console.log("Successfully attempted to update ignored codes in Firebase with:", codesArray);
     } catch (err) {
         console.error("Error updating ignored codes:", err);
-        showError(`Could not save ignored codes to Firebase: ${err.message}`);
+        showError(`Could not save ignored codes to Firebase: ${err.message}. Check Firestore security rules.`);
     }
 }
 
@@ -142,13 +143,17 @@ async function handleProcessing() {
         }
 
         const allPayslipData = new Map();
-        for (const pdf of pdfFiles) {
-            const data = await processPdf(pdf);
-            data.forEach((value, key) => allPayslipData.set(key, value));
-        }
-        payslipData = allPayslipData;
+        // Process all PDF files concurrently
+        const processingPromises = pdfFiles.map(pdf => processPdf(pdf));
+        const results = await Promise.all(processingPromises);
 
+        results.forEach(dataMap => {
+            dataMap.forEach((value, key) => allPayslipData.set(key, value));
+        });
+        
+        payslipData = allPayslipData;
         correlateAndGenerateOutput();
+
     } catch (err) {
         console.error("File processing error:", err);
         showError(`An error occurred: ${err.message}`);
@@ -167,8 +172,8 @@ async function processPdf(file) {
     });
 
     const prompt = `
-        Analyze each page of the provided PDF, which contains payslips.
-        For each page, you MUST identify the employee's full name, which is typically in a large font above the main table of values.
+        Analyze the provided PDF, which contains a single-page payslip.
+        You MUST identify the employee's full name, which is typically in a large font above the main table of values.
         Then, for that employee, meticulously extract every single line item from the table.
         For each line item, you MUST provide:
         1. 'codigo': The number from the 'Código' column.
@@ -176,7 +181,7 @@ async function processPdf(file) {
         3. 'vencimentos': The numerical value from the 'Vencimentos' (Earnings) column. If this cell is empty for a line, use 0.
         4. 'descontos': The numerical value from the 'Descontos' (Deductions) column. If this cell is empty for a line, use 0.
         It is critical to correctly associate values with their descriptions, even if there are large empty spaces in the table layout.
-        Return the data as a single JSON object where keys are the employee full names (in uppercase) and values are arrays of their line items.
+        Return the data as a single JSON object where the key is the employee's full name (in uppercase) and the value is an array of their line items.
     `;
 
     const payload = {
@@ -203,8 +208,7 @@ async function processPdf(file) {
         }
     };
 
-    // Replace MOCK with actual API call in production
-    const resultText = await makeApiCallWithRetry(payload); 
+    const resultText = await makeApiCallWithRetry(payload);
     const parsedResult = JSON.parse(resultText);
     const normalizedMap = new Map();
     for (const name in parsedResult) {
@@ -213,29 +217,32 @@ async function processPdf(file) {
     return normalizedMap;
 }
 
-async function makeApiCallWithRetry(payload) {
-    // This is a MOCK response. Replace with your actual Gemini API fetch logic.
-    console.log("Making API call (mock)...");
-    return new Promise(resolve => setTimeout(() => {
-        const mockData = {
-            "ALAN MARTINS RODRIGUES": [
-                { "codigo": 1, "descricao": "HORAS NORMAIS", "vencimentos": 2600.00, "descontos": 0 },
-                { "codigo": 250, "descricao": "REFLEXO EXTRAS DSR", "vencimentos": 1.34, "descontos": 0 },
-                { "codigo": 150, "descricao": "HORAS EXTRAS", "vencimentos": 9.04, "descontos": 0 },
-                { "codigo": 998, "descricao": "I.N.S.S.", "vencimentos": 0, "descontos": 210.78 },
-                { "codigo": 8069, "descricao": "HORAS FALTAS PARCIAL", "vencimentos": 0, "descontos": 15.36 },
-                { "codigo": 48, "descricao": "VALE TRANSPORTE", "vencimentos": 0, "descontos": 155.08 },
-                { "codigo": 9999, "descricao": "NEW UNKNOWN BENEFIT", "vencimentos": 100.00, "descontos": 0 }
-            ],
-            "JANE DOE": [
-                { "codigo": 1, "descricao": "HORAS NORMAIS", "vencimentos": 3000.00, "descontos": 0 },
-                { "codigo": 981, "descricao": "ADIANTAMENTO SALARIAL", "vencimentos": 0, "descontos": 1200.00 },
-                { "codigo": 37, "descricao": "COMISSOES", "vencimentos": 554.89, "descontos": 0 },
-                { "codigo": 853, "descricao": "REFLEXO COMISSOES DSR", "vencimentos": 96.50, "descontos": 0 }
-            ]
-        };
-        resolve(JSON.stringify(mockData));
-    }, 1500));
+async function makeApiCallWithRetry(payload, maxRetries = 3) {
+    const apiKey = ""; // This will be provided by the environment
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+    let delay = 1000;
+    for (let i = 0; i < maxRetries; i++) {
+        try {
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
+            const result = await response.json();
+            if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
+                return result.candidates[0].content.parts[0].text;
+            } else {
+                throw new Error("Invalid response structure from API.");
+            }
+        } catch (error) {
+            console.warn(`API call attempt ${i + 1} failed. Retrying in ${delay / 1000}s...`);
+            if (i === maxRetries - 1) throw error;
+            await new Promise(resolve => setTimeout(resolve, delay));
+            delay *= 2;
+        }
+    }
+    throw new Error("API call failed after multiple retries.");
 }
 
 function correlateAndGenerateOutput() {
