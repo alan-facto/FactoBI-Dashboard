@@ -1,7 +1,7 @@
 // Import necessary functions from the Firebase SDK
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, getDocs, doc, getDoc, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getAuth, GoogleAuthProvider, signInWithRedirect, onAuthStateChanged, signOut, getRedirectResult, browserLocalPersistence, setPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth, GoogleAuthProvider, signInWithRedirect, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 
 // Import view-specific modules
@@ -107,8 +107,6 @@ function convertMonthToYYYYMM(monthStr) {
 }
 
 // --- Authentication Flow ---
-console.log("Auth script started.");
-
 const loadingView = document.getElementById('loading-view');
 const loginView = document.getElementById('login-view');
 const dashboardContainer = document.querySelector('.container');
@@ -126,79 +124,37 @@ const userName = document.getElementById('user-name');
 const userEmail = document.getElementById('user-email');
 
 // Event Listeners
-loginBtn.addEventListener('click', async () => {
-    console.log("Login button clicked.");
-    try {
-        await setPersistence(auth, browserLocalPersistence);
-        const provider = new GoogleAuthProvider();
-        signInWithRedirect(auth, provider);
-    } catch (error) {
-        console.error("Error setting persistence or signing in:", error);
-        authError.textContent = "Erro ao iniciar o login. Tente novamente.";
-        authError.style.display = 'block';
-    }
+loginBtn.addEventListener('click', () => {
+    const provider = new GoogleAuthProvider();
+    signInWithRedirect(auth, provider);
 });
 
 logoutBtn.addEventListener('click', async () => {
-    console.log("Logout button clicked.");
     await signOut(auth);
 });
 
+
 // This function handles showing the correct view
 function showView(view) {
-    console.log(`Switching to view: ${view}`);
     loadingView.style.display = view === 'loading' ? 'flex' : 'none';
     loginView.style.display = view === 'login' ? 'flex' : 'none';
     dashboardContainer.style.display = view === 'dashboard' ? 'block' : 'none';
 }
 
-// Main Authentication Logic
-async function initializeAuthentication() {
-    showView('loading');
-    const loadingMessage = loadingView.querySelector('p');
-    loadingMessage.textContent = 'Verificando autenticação...';
-
-    // This promise resolves with the user from the redirect, or null if there was no redirect
-    const redirectResultPromise = getRedirectResult(auth).catch(error => {
-        console.error("Error getting redirect result:", error);
-        authError.textContent = `Erro no login: ${error.message}`;
-        return null; // Treat as no redirect result on error
-    });
-
-    // This promise resolves with the user from the current session, or null if there is none.
-    // It only resolves once, when the initial state is determined.
-    const sessionUserPromise = new Promise(resolve => {
-        const unsubscribe = onAuthStateChanged(auth, user => {
-            unsubscribe(); // Stop listening after we get the initial state
-            resolve(user);
-        });
-    });
-
-    try {
-        const [redirectResult, sessionUser] = await Promise.all([redirectResultPromise, sessionUserPromise]);
-
-        const user = redirectResult?.user || sessionUser;
-
-        if (user) {
-            console.log("User identified:", user.email);
-            await checkAuthorization(user);
-        } else {
-            console.log("No user found from redirect or session.");
-            showLoginScreen();
-        }
-    } catch (error) {
-        console.error("Error during authentication initialization:", error);
-        showLoginScreen();
+// This is the primary listener for authentication state.
+onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        // A user is signed in. Check if they are authorized.
+        showView('loading');
+        await checkAuthorization(user);
+    } else {
+        // No user is signed in. Show the default login page.
+        defaultLoginState.style.display = 'block';
+        unauthorizedUserState.style.display = 'none';
+        authError.style.display = 'none'; // Hide any previous errors
+        showView('login');
     }
-}
-
-function showLoginScreen() {
-    defaultLoginState.style.display = 'block';
-    unauthorizedUserState.style.display = 'none';
-    authError.style.display = 'none';
-    showView('login');
-}
-
+});
 
 async function checkAuthorization(user) {
     console.log("Checking authorization for:", user.email);
@@ -208,12 +164,14 @@ async function checkAuthorization(user) {
 
         if (!querySnapshot.empty) {
             console.log("Authorization successful.");
+            // User is authorized. Load data and show the dashboard.
             if (!dashboardInitialized) {
                 await loadDashboardData();
             }
             showView('dashboard');
         } else {
             console.log("Authorization failed: User not in whitelist.");
+            // User is not on the whitelist. Show the unauthorized user state.
             userPhoto.src = user.photoURL || `https://placehold.co/80x80/cccccc/FFFFFF?text=${user.displayName?.[0] || 'U'}`;
             userName.textContent = user.displayName;
             userEmail.textContent = user.email;
@@ -227,9 +185,10 @@ async function checkAuthorization(user) {
         }
     } catch (error) {
         console.error("Authorization check error:", error);
+        // An error occurred during the check. Sign the user out and show a generic error.
         authError.textContent = "Erro ao verificar permissão. Tente novamente.";
-        await signOut(auth);
-        showLoginScreen();
+        authError.style.display = 'block';
+        await signOut(auth); // This will trigger onAuthStateChanged to show the default login
     }
 }
 
@@ -360,5 +319,6 @@ function showError(message) {
     container.innerHTML = `<div class="error-message"><h2>Erro</h2><p>${message}</p><button onclick="window.location.reload()">Recarregar Página</button></div>`;
 }
 
-// Start the authentication process when the script loads
-initializeAuthentication();
+// Show the initial loading screen. The onAuthStateChanged listener will then
+// determine whether to show the login page or the dashboard.
+showView('loading');
