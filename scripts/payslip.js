@@ -7,7 +7,7 @@ import { app } from './main.js';
 // --- IMPORTANT: PASTE YOUR GEMINI API KEY HERE FOR DEVELOPMENT ---
 // For production, it's highly recommended to move this logic to a secure backend (like a Cloud Function)
 // to protect your key.
-const GEMINI_API_KEY = "AIzaSyBaM10J2fS0Zxa3GoL-DrCxyLFXYpeVeig";
+const GEMINI_API_KEY = "PASTE_YOUR_GEMINI_API_KEY_HERE";
 
 // --- Module State ---
 let db;
@@ -184,18 +184,24 @@ async function handleProcessing() {
         }
 
         const allPayslipData = new Map();
-        const processingPromises = pdfFiles.map(pdf => {
+        
+        // --- RATE LIMIT FIX: Process PDFs sequentially instead of all at once ---
+        let count = 1;
+        for (const pdf of pdfFiles) {
+            console.log(`Processing file ${count} of ${pdfFiles.length}: ${pdf.name}`);
             if (pdf.size === 0) {
                 console.warn(`Skipping empty file: ${pdf.name}`);
-                return Promise.resolve(new Map());
+                continue; // Skip to the next file in the loop
             }
-            return processPdf(pdf);
-        });
-        const results = await Promise.all(processingPromises);
-
-        results.forEach(dataMap => {
-            dataMap.forEach((value, key) => allPayslipData.set(key, value));
-        });
+            try {
+                const dataMap = await processPdf(pdf);
+                dataMap.forEach((value, key) => allPayslipData.set(key, value));
+            } catch (pdfError) {
+                 console.error(`Failed to process ${pdf.name}. Skipping.`, pdfError);
+                 showError(`An error occurred while processing ${pdf.name}. It has been skipped.`);
+            }
+            count++;
+        }
         
         payslipData = allPayslipData;
         correlateAndGenerateOutput();
