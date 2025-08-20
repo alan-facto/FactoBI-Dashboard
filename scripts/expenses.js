@@ -9,6 +9,13 @@ let pieChartState = {
 };
 
 export function initExpensesView() {
+    // This function is now responsible for finding its own elements.
+    const viewContainer = document.getElementById('charts-view');
+    if (!viewContainer) {
+        console.error("Expenses view container not found!");
+        return;
+    }
+
     pieChartState.selectedDepartments = [...data.departments];
     const last12Months = data.months.slice(-12);
 
@@ -34,6 +41,7 @@ function setupTimeFilters() {
     };
     
     const filterButtonsContainer = document.querySelector('#total-expenditures-wrapper .filter-buttons-wrapper');
+    if (!filterButtonsContainer) return;
     filterButtonsContainer.innerHTML = '<div class="filter-grid"></div>';
     const filterGrid = filterButtonsContainer.querySelector('.filter-grid');
 
@@ -78,9 +86,9 @@ function setupTimeFilters() {
         button.addEventListener('click', function() {
             const parent = this.closest('.card');
             if (this.closest('.filter-buttons-wrapper')) {
-                 parent.querySelectorAll('.filter-buttons-wrapper .filter-btn').forEach(btn => btn.classList.remove('active'));
+                parent.querySelectorAll('.filter-buttons-wrapper .filter-btn').forEach(btn => btn.classList.remove('active'));
             } else {
-                 parent.querySelectorAll('.time-filters .filter-btn').forEach(btn => btn.classList.remove('active'));
+                parent.querySelectorAll('.time-filters .filter-btn').forEach(btn => btn.classList.remove('active'));
             }
             this.classList.add('active');
 
