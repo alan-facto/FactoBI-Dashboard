@@ -1,12 +1,11 @@
 import { data, colorsByDepartment, formatMonthLabel, formatCurrencyBRL, formatVA } from './main.js';
 
 export function initTablesView() {
-    // This function is now responsible for finding its own elements,
-    // which is safe because it's called after the DOM is ready.
     setupTableToggle();
 }
 
 function setupTableToggle() {
+    // FIX: Be more specific. Look for the container only inside the tables view.
     const container = document.querySelector('#tables-view .table-toggle-container');
     if (!container) {
         console.error("Table toggle container not found in the document!");
@@ -31,7 +30,7 @@ function setupTableToggle() {
             const tableEl = document.getElementById(tableId);
             if (tableEl) {
                 tableEl.style.display = 'block';
-                tableEl.innerHTML = ''; // Clear before generating new content
+                tableEl.innerHTML = '';
             }
 
             if (button.id === 'btn-summary-month') generateSummaryByMonth();
@@ -46,7 +45,7 @@ function setupTableToggle() {
 function generateSummaryByMonth() {
     const container = document.getElementById('table-summary-month');
     if (!container) return;
-    container.innerHTML = ''; // Clear previous content
+    container.innerHTML = '';
     data.months.forEach(month => {
         const monthData = data.data[month];
         if (!monthData) return;
@@ -68,7 +67,7 @@ function generateSummaryByMonth() {
 function generateSummaryByDepartment() {
     const container = document.getElementById('table-summary-department');
     if (!container) return;
-    container.innerHTML = ''; // Clear previous content
+    container.innerHTML = '';
     data.departments.forEach(dept => {
         const section = document.createElement('div');
         section.innerHTML = `<h3>${dept}</h3>`;
@@ -89,7 +88,7 @@ function generateSummaryByDepartment() {
 function generateDetailedByMonth() {
     const container = document.getElementById('table-detailed-month');
     if (!container) return;
-    container.innerHTML = ''; // Clear previous content
+    container.innerHTML = '';
     data.months.forEach(month => {
         const monthData = data.data[month];
         if (!monthData) return;
@@ -123,7 +122,7 @@ function generateDetailedByMonth() {
 function generateDetailedByDepartment() {
     const container = document.getElementById('table-detailed-department');
     if (!container) return;
-    container.innerHTML = ''; // Clear previous content
+    container.innerHTML = '';
     data.departments.forEach(dept => {
         let totalSimples = 0, totalVA = 0, totalBonificacao = 0, totalGeral = 0, employeeSum = 0, monthCount = 0, lastMonthWithVA = '0000-00';
         data.months.forEach(month => {
@@ -161,7 +160,7 @@ function generateDetailedByDepartment() {
 function generateEarningsTable() {
     const container = document.getElementById('table-earnings');
     if (!container) return;
-    container.innerHTML = ''; // Clear previous content
+    container.innerHTML = '';
     const section = document.createElement('div');
     section.innerHTML = `<h3>Faturamento Mensal</h3>`;
     const table = document.createElement('table');
