@@ -335,9 +335,12 @@ function initializeAppFlow() {
             // This listener is the single source of truth for the UI.
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
+                    // *** FIX: Prevent re-initialization if dashboard is already loaded ***
+                    if (dashboardInitialized) return; 
                     await checkAuthorization(user);
                 } else {
                     // No user is signed in. Show the login page.
+                    dashboardInitialized = false; // Reset flag on sign out
                     document.getElementById("initial-login-prompt").style.display = "block";
                     document.getElementById("failed-login-prompt").style.display = "none";
                     document.getElementById("login-status").textContent = "Faça login para continuar";
