@@ -3,6 +3,9 @@
 import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { app } from './main.js';
 
+// --- IMPORTANT: ADD YOUR GEMINI API KEY HERE ---
+const GEMINI_API_KEY = ""; // <--- PASTE YOUR GOOGLE AI STUDIO API KEY HERE
+
 // --- Module State ---
 let db;
 let tsvFile = null;
@@ -127,6 +130,10 @@ async function updateIgnoredCodesInDb(updatedCodesSet) {
 }
 
 async function handleProcessing() {
+    if (!GEMINI_API_KEY) {
+        showError("Gemini API Key is missing in payslip.js. Please add it to proceed.");
+        return;
+    }
     showLoader(true);
     processBtn.disabled = true;
     showError('');
@@ -143,7 +150,6 @@ async function handleProcessing() {
         }
 
         const allPayslipData = new Map();
-        // Process all PDF files concurrently
         const processingPromises = pdfFiles.map(pdf => processPdf(pdf));
         const results = await Promise.all(processingPromises);
 
@@ -218,8 +224,7 @@ async function processPdf(file) {
 }
 
 async function makeApiCallWithRetry(payload, maxRetries = 3) {
-    const apiKey = ""; // This will be provided by the environment
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${GEMINI_API_KEY}`;
     let delay = 1000;
     for (let i = 0; i < maxRetries; i++) {
         try {
