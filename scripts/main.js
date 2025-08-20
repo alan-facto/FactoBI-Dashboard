@@ -129,7 +129,6 @@ const userEmail = document.getElementById('user-email');
 loginBtn.addEventListener('click', async () => {
     console.log("Login button clicked.");
     try {
-        // ** THE FIX **: Set persistence to local storage
         await setPersistence(auth, browserLocalPersistence);
         const provider = new GoogleAuthProvider();
         signInWithRedirect(auth, provider);
@@ -153,50 +152,58 @@ function showView(view) {
     dashboardContainer.style.display = view === 'dashboard' ? 'block' : 'none';
 }
 
-// TROUBLESHOOTING: Check for redirect result explicitly for logging
-getRedirectResult(auth)
-  .then((result) => {
-    console.log("getRedirectResult successful.");
-    if (result) {
-      // This gives you one time the Google OAuth access token.
-      // You can use it to access the Google API.
-      const credential = GoogleAuthProvider.credentialFromResult(result);
-      const token = credential.accessToken;
-      // The signed-in user info.
-      const user = result.user;
-      console.log("Redirect result contains user:", user.email);
-    } else {
-        console.log("No redirect result found on this page load.");
+// Main Authentication Logic
+async function initializeAuthentication() {
+    showView('loading');
+    const loadingMessage = loadingView.querySelector('p');
+    loadingMessage.textContent = 'Verificando autenticação...';
+
+    try {
+        const result = await getRedirectResult(auth);
+        if (result && result.user) {
+            console.log("Redirect result contains user:", result.user.email);
+            await checkAuthorization(result.user);
+            return; // Stop execution here, authorization check handles the view
+        }
+        
+        console.log("No redirect result. Checking for existing session...");
+        // onAuthStateChanged will handle the case of an existing session
+        // but we need to give it a moment to fire.
+        // A small delay helps ensure the listener has run.
+        setTimeout(() => {
+            if (!auth.currentUser) {
+                 console.log("No user session found. Showing login page.");
+                 showLoginScreen();
+            } else {
+                console.log("Active session found for:", auth.currentUser.email);
+                checkAuthorization(auth.currentUser);
+            }
+        }, 250);
+
+
+    } catch (error) {
+        console.error("Error during authentication initialization:", error);
+        authError.textContent = `Erro no login: ${error.message}`;
+        showLoginScreen();
     }
-  }).catch((error) => {
-    // Handle Errors here.
-    console.error("Error getting redirect result:", error);
-    const errorCode = error.code;
-    const errorMessage = error.message;
-    const email = error.customData.email;
-    const credential = GoogleAuthProvider.credentialFromError(error);
-    authError.textContent = `Erro no login: ${errorMessage}`;
-    authError.style.display = 'block';
-  });
+}
 
-
-// This is the primary listener for authentication state.
-onAuthStateChanged(auth, async (user) => {
+// Listener for subsequent auth changes (like signing out)
+onAuthStateChanged(auth, (user) => {
     console.log("onAuthStateChanged triggered.");
-    if (user) {
-        console.log("User object is PRESENT in onAuthStateChanged:", user.email);
-        // A user is signed in. Check if they are authorized.
-        showView('loading');
-        await checkAuthorization(user);
-    } else {
-        console.log("User object is NULL in onAuthStateChanged.");
-        // No user is signed in. Show the default login page.
-        defaultLoginState.style.display = 'block';
-        unauthorizedUserState.style.display = 'none';
-        authError.style.display = 'none'; // Hide any previous errors
-        showView('login');
+    if (!user) {
+        console.log("User logged out or session expired.");
+        showLoginScreen();
     }
 });
+
+function showLoginScreen() {
+    defaultLoginState.style.display = 'block';
+    unauthorizedUserState.style.display = 'none';
+    authError.style.display = 'none';
+    showView('login');
+}
+
 
 async function checkAuthorization(user) {
     console.log("Checking authorization for:", user.email);
@@ -206,14 +213,12 @@ async function checkAuthorization(user) {
 
         if (!querySnapshot.empty) {
             console.log("Authorization successful.");
-            // User is authorized. Load data and show the dashboard.
             if (!dashboardInitialized) {
                 await loadDashboardData();
             }
             showView('dashboard');
         } else {
             console.log("Authorization failed: User not in whitelist.");
-            // User is not on the whitelist. Show the unauthorized user state.
             userPhoto.src = user.photoURL || `https://placehold.co/80x80/cccccc/FFFFFF?text=${user.displayName?.[0] || 'U'}`;
             userName.textContent = user.displayName;
             userEmail.textContent = user.email;
@@ -227,10 +232,8 @@ async function checkAuthorization(user) {
         }
     } catch (error) {
         console.error("Authorization check error:", error);
-        // An error occurred during the check. Sign the user out and show a generic error.
         authError.textContent = "Erro ao verificar permissão. Tente novamente.";
-        authError.style.display = 'block';
-        await signOut(auth); // This will trigger onAuthStateChanged to show the default login
+        await signOut(auth);
     }
 }
 
@@ -361,5 +364,5 @@ function showError(message) {
     container.innerHTML = `<div class="error-message"><h2>Erro</h2><p>${message}</p><button onclick="window.location.reload()">Recarregar Página</button></div>`;
 }
 
-// Show the initial loading screen.
-showView('loading');
+// Start the authentication process when the script loads
+initializeAuthentication();
