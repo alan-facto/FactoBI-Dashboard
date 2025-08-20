@@ -107,7 +107,7 @@
             </div>
         </div>
 
-        <!-- NEW PAYSLIP PROCESSOR TOOL -->
+<!-- NEW PAYSLIP PROCESSOR TOOL -->
 <div class="theme-card dev-container" style="margin-top: 2rem;">
     <div class="dev-header">
         <div>
@@ -118,22 +118,22 @@
     <div class="dev-card">
         <div class="payslip-upload-grid">
             <!-- TSV Upload -->
-            <div class="payslip-upload-area">
+            <div id="tsv-drop-area" class="payslip-upload-area">
                 <label for="payslip-tsv-upload" class="dev-btn btn-secondary w-full">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="inline-block mr-2"><path d="M14 4.5V14a2 2 0 0 1-2 2h-1v-1h1a1 1 0 0 0 1-1V4.5h-2A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v9H2V2a2 2 0 0 1 2-2h5.5L14 4.5zM3 12h2v1h1v1h1v1H6v-1H5v-1H4v-1H3v-1zm10-2h-3v3h-1v-3h-3v-1h3V7h1v3h3v1z"/></svg>
                     Carregar Lista TSV
                 </label>
                 <input id="payslip-tsv-upload" type="file" class="sr-only" accept=".tsv">
-                <div id="tsv-file-indicator" class="file-indicator">Nenhum arquivo selecionado.</div>
+                <div id="tsv-file-indicator" class="file-indicator">Arraste um arquivo aqui</div>
             </div>
             <!-- PDF Upload -->
-            <div class="payslip-upload-area">
+            <div id="pdf-drop-area" class="payslip-upload-area">
                 <label for="payslip-pdf-upload" class="dev-btn btn-secondary w-full">
                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="inline-block mr-2"><path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 1.5L13 5h-2.5a1 1 0 0 1-1-1V1.5zM4.354 11.354a.5.5 0 0 1 0-.708L5.293 9.707a.5.5 0 0 1 .707 0L7 10.646l1.293-1.293a.5.5 0 0 1 .707 0L10 10.293l.646-.647a.5.5 0 0 1 .708 0L12 9.793a.5.5 0 0 1 0 .707l-.647.647a.5.5 0 0 1-.708 0L10 10.293 8.707 11.5a.5.5 0 0 1-.707 0L7 10.646 5.707 11.95a.5.5 0 0 1-.707 0l-.646-.647z"/></svg>
                     Carregar PDFs
                 </label>
                 <input id="payslip-pdf-upload" type="file" class="sr-only" accept=".pdf" multiple>
-                <div id="pdf-file-indicator" class="file-indicator">Nenhum arquivo selecionado.</div>
+                <div id="pdf-file-indicator" class="file-indicator">Arraste um ou mais arquivos</div>
             </div>
         </div>
         
@@ -162,6 +162,7 @@
     </div>
 </div>
 
+
         <!-- Modals -->
         <!-- ... existing modals ... -->
     </div>
@@ -170,4 +171,5 @@
   <script type="module" src="scripts/main.js"></script>
 </body>
 </html>
+
 
