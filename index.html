@@ -8,35 +8,43 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles/style.css">
+  <link rel="stylesheet" href="styles/login.css"> <!-- New CSS for login page -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="icon" href="data:,"> <!-- Prevents 404 for missing favicon -->
 </head>
 <body>
 
   <!-- Loading View -->
-  <div id="loading-view" style="display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column; background-color: #024B59; color: white;">
+  <div id="loading-view" class="auth-view">
+      <div class="spinner"></div>
       <p>Carregando...</p>
   </div>
 
-  <!-- Login View -->
-  <div id="login-view" style="display: none; justify-content: center; align-items: center; height: 100vh; flex-direction: column;">
-      <img src="assets/logo.png" alt="Facto Logo" style="height: 60px; margin-bottom: 20px;">
-      
-      <!-- Default login state -->
-      <div id="default-login-state">
-        <button id="login-btn" style="padding: 12px 24px; font-size: 16px; cursor: pointer; background-color: #fff; color: #024B59; border: 1px solid #024B59; border-radius: 8px; font-weight: 600;">Entrar com Google</button>
-      </div>
+  <!-- Login View (Completely Rebuilt) -->
+  <div id="login-view" class="auth-view" style="display: none;">
+    <div class="login-card">
+        <img src="assets/logo.png" alt="Facto Logo" class="login-logo">
+        
+        <!-- User Info Display (hidden by default) -->
+        <div id="user-info-display" class="user-info" style="display: none;">
+            <img id="user-photo" src="" alt="User Photo">
+            <p id="user-name"></p>
+            <p id="user-email"></p>
+        </div>
 
-      <!-- Unauthorized user state (new) -->
-      <div id="unauthorized-user-state" style="display: none; text-align: center;">
-          <img id="user-photo" src="" alt="User Photo" style="width: 80px; height: 80px; border-radius: 50%; margin-bottom: 15px;">
-          <p id="user-name" style="font-weight: 600; margin: 0; color: #333;"></p>
-          <p id="user-email" style="color: #555; margin-top: 5px; margin-bottom: 20px;"></p>
-          <button id="logout-btn" style="padding: 12px 24px; font-size: 16px; cursor: pointer; background-color: #E44D42; color: #fff; border: none; border-radius: 8px; font-weight: 600;">Trocar de Conta</button>
-      </div>
-
-      <p id="auth-error" style="color: #E44D42; margin-top: 15px; display: none; max-width: 350px; text-align: center;"></p>
+        <p id="login-status" class="login-status">Faça login para continuar</p>
+        
+        <!-- Action Buttons -->
+        <div id="initial-login-prompt">
+            <button id="login-btn" class="login-button">Entrar com Google</button>
+        </div>
+        
+        <div id="failed-login-prompt" style="display: none;">
+            <button id="retry-login-btn" class="login-button">Tentar com outra conta</button>
+        </div>
+    </div>
   </div>
+
 
   <!-- Main Dashboard Container (hidden by default) -->
   <div class="container" style="display: none;">
