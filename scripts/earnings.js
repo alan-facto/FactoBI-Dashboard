@@ -1,16 +1,69 @@
 import { data, colorsByDepartment, globalChartOptions, hexToRGBA, formatMonthShort, formatCurrencyBRL } from './main.js';
 
 export function initEarningsView() {
-    // This function is now responsible for finding its own elements.
     const viewContainer = document.getElementById('earnings-view');
     if (!viewContainer) {
         console.error("Earnings view container not found!");
         return;
     }
+    // Clear previous content and add the structure
+    viewContainer.innerHTML = `
+      <div class="chart-row single">
+        <div class="card">
+            <h2>Faturamento vs. Gastos Totais</h2>
+            <div class="chart-container">
+                <canvas id="earnings-vs-costs-chart"></canvas>
+            </div>
+        </div>
+      </div>
+      <div class="chart-row single">
+        <div class="card">
+            <h2>Diferença Líquida Mensal</h2>
+            <div class="chart-container">
+                <canvas id="net-profit-loss-chart"></canvas>
+            </div>
+        </div>
+      </div>
+      <div class="chart-row single">
+        <div class="card">
+            <h2>Margem de Diferença Percentual</h2>
+            <div class="chart-container">
+                <canvas id="profit-margin-chart"></canvas>
+            </div>
+        </div>
+      </div>
+      <div class="chart-row single">
+        <div class="card" id="earnings-allocation-card">
+            <h2>Alocação de Faturamento</h2>
+            <div class="centered-toggle">
+                <div class="toggle-switch-group">
+                    <button class="filter-btn active" data-mode="headcount">Headcount</button>
+                    <button class="filter-btn" data-mode="costs">Custos</button>
+                </div>
+            </div>
+            <div class="chart-container" style="height: 500px;">
+                <canvas id="earnings-allocation-chart"></canvas>
+            </div>
+        </div>
+      </div>
+      <div class="chart-row single">
+        <div class="card" id="earnings-per-employee-card">
+            <h2>Faturamento por Funcionário</h2>
+            <div class="centered-toggle">
+                <div class="filter-buttons toggle-switch-group">
+                    <button class="filter-btn active" data-mode="company">Geral</button>
+                    <button class="filter-btn" data-mode="operation">Operação</button>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="earnings-per-employee-chart"></canvas>
+            </div>
+        </div>
+      </div>
+    `;
 
     const last12Months = data.months.slice(-12);
 
-    // Create charts
     createEarningsVsCostsChart(data.data, last12Months);
     createNetProfitLossChart(data.data, last12Months);
     createProfitMarginChart(data.data, last12Months);
