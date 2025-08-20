@@ -830,3 +830,16 @@ body {
 #dev-view .validation-summary h4 { font-weight: 600; color: #15803d; }
 #dev-view .validation-summary ul { list-style: disc; list-style-position: inside; font-size: 0.875rem; color: #166534; margin-top: 0.5rem; space-y: 0.25rem; }
 #dev-view .dev-code { background-color: #e5e7eb; color: #be123c; font-family: monospace; padding: 0.25rem; border-radius: 0.25rem; }
+
+/* ====== ADDITIONS FOR PAYSLIP PROCESSOR ====== */
+#dev-view .file-drop-zone.dragover {
+  border-color: #024B59;
+  background-color: #f0f7f8;
+}
+
+#dev-view #payslip-output-section .dev-textarea {
+  background-color: #f3f4f6;
+  font-family: monospace;
+  font-size: 12px;
+  color: #374151;
+}
