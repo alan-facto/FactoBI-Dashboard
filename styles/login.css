@@ -1,4 +1,9 @@
 /* ====== LOGIN PAGE STYLES ====== */
+body {
+  margin: 0; /* Removes the white border */
+  font-family: 'Plus Jakarta Sans', sans-serif; /* Applies correct font to the page */
+}
+
 .auth-view {
   display: flex;
   justify-content: center;
