@@ -1,6 +1,13 @@
 import { data, colorsByDepartment, globalChartOptions, hexToRGBA, formatMonthShort, formatCurrencyBRL } from './main.js';
 
 export function initEarningsView() {
+    // This function is now responsible for finding its own elements.
+    const viewContainer = document.getElementById('earnings-view');
+    if (!viewContainer) {
+        console.error("Earnings view container not found!");
+        return;
+    }
+
     const last12Months = data.months.slice(-12);
 
     // Create charts
