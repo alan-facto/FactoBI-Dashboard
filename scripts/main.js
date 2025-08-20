@@ -1,7 +1,7 @@
 // Import necessary functions from the Firebase SDK
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, getDocs, doc, getDoc, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getAuth, GoogleAuthProvider, signInWithRedirect, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth, GoogleAuthProvider, signInWithRedirect, onAuthStateChanged, signOut, getRedirectResult } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 
 // Import view-specific modules
@@ -107,6 +107,8 @@ function convertMonthToYYYYMM(monthStr) {
 }
 
 // --- Authentication Flow ---
+console.log("Auth script started.");
+
 const loadingView = document.getElementById('loading-view');
 const loginView = document.getElementById('login-view');
 const dashboardContainer = document.querySelector('.container');
@@ -125,29 +127,61 @@ const userEmail = document.getElementById('user-email');
 
 // Event Listeners
 loginBtn.addEventListener('click', () => {
+    console.log("Login button clicked.");
     const provider = new GoogleAuthProvider();
     signInWithRedirect(auth, provider);
 });
 
 logoutBtn.addEventListener('click', async () => {
+    console.log("Logout button clicked.");
     await signOut(auth);
 });
 
-
 // This function handles showing the correct view
 function showView(view) {
+    console.log(`Switching to view: ${view}`);
     loadingView.style.display = view === 'loading' ? 'flex' : 'none';
     loginView.style.display = view === 'login' ? 'flex' : 'none';
     dashboardContainer.style.display = view === 'dashboard' ? 'block' : 'none';
 }
 
+// TROUBLESHOOTING: Check for redirect result explicitly for logging
+getRedirectResult(auth)
+  .then((result) => {
+    console.log("getRedirectResult successful.");
+    if (result) {
+      // This gives you one time the Google OAuth access token.
+      // You can use it to access the Google API.
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      const token = credential.accessToken;
+      // The signed-in user info.
+      const user = result.user;
+      console.log("Redirect result contains user:", user.email);
+    } else {
+        console.log("No redirect result found on this page load.");
+    }
+  }).catch((error) => {
+    // Handle Errors here.
+    console.error("Error getting redirect result:", error);
+    const errorCode = error.code;
+    const errorMessage = error.message;
+    const email = error.customData.email;
+    const credential = GoogleAuthProvider.credentialFromError(error);
+    authError.textContent = `Erro no login: ${errorMessage}`;
+    authError.style.display = 'block';
+  });
+
+
 // This is the primary listener for authentication state.
 onAuthStateChanged(auth, async (user) => {
+    console.log("onAuthStateChanged triggered.");
     if (user) {
+        console.log("User object is PRESENT in onAuthStateChanged:", user.email);
         // A user is signed in. Check if they are authorized.
         showView('loading');
         await checkAuthorization(user);
     } else {
+        console.log("User object is NULL in onAuthStateChanged.");
         // No user is signed in. Show the default login page.
         defaultLoginState.style.display = 'block';
         unauthorizedUserState.style.display = 'none';
@@ -319,6 +353,5 @@ function showError(message) {
     container.innerHTML = `<div class="error-message"><h2>Erro</h2><p>${message}</p><button onclick="window.location.reload()">Recarregar Página</button></div>`;
 }
 
-// Show the initial loading screen. The onAuthStateChanged listener will then
-// determine whether to show the login page or the dashboard.
+// Show the initial loading screen.
 showView('loading');
