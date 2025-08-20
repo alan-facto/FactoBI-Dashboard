@@ -7,6 +7,7 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
 import { initExpensesView } from './expenses.js';
 import { initEarningsView } from './earnings.js';
 import { initTablesView } from './tables.js';
+import { initDevView } from './dev.js'; // Import the new dev module
 
 // --- Firebase Configuration ---
 const firebaseConfig = {
@@ -109,7 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const loadingView = document.getElementById('loading-view');
     const dashboardContainer = document.querySelector('.container');
     const logoutBtn = document.getElementById("logout-btn");
-    const devToolsBtn = document.getElementById("btn-devtools-main");
+    const devBtn = document.getElementById("btn-dev-main");
 
     onAuthStateChanged(auth, async (user) => {
         if (user) {
@@ -121,18 +122,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function checkAuthorization(user) {
         try {
-            // *** FIX: Query the collection for a document with the user's email ***
             const q = query(collection(db, "authorizedUsers"), where("email", "==", user.email));
             const querySnapshot = await getDocs(q);
 
             if (!querySnapshot.empty) {
-                // Get the first document found
                 const userDoc = querySnapshot.docs[0];
                 const userData = userDoc.data();
 
-                // Check for the 'type' field to determine if the user is an admin
                 if (userData.type === 'admin') {
-                    devToolsBtn.style.display = 'block';
+                    devBtn.style.display = 'block';
                 }
                 
                 await loadDashboardData();
@@ -232,6 +230,7 @@ document.addEventListener('DOMContentLoaded', () => {
         initExpensesView();
         initEarningsView();
         initTablesView();
+        initDevView(); // Initialize the new dev view
 
         const summaryMonthBtn = document.getElementById('btn-summary-month');
         if(summaryMonthBtn) {
@@ -246,7 +245,7 @@ document.addEventListener('DOMContentLoaded', () => {
             'btn-expenses-main': 'charts-view',
             'btn-earnings-main': 'earnings-view',
             'btn-tables-main': 'tables-view',
-            'btn-devtools-main': 'devtools-view'
+            'btn-dev-main': 'dev-view' // Updated view mapping
         };
 
         buttons.forEach(button => {
@@ -261,7 +260,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 const viewEl = document.getElementById(viewId);
-                if (viewEl) viewEl.style.display = (viewId === 'devtools-view') ? 'block' : 'flex';
+                if (viewEl) viewEl.style.display = (viewId === 'dev-view') ? 'block' : 'flex';
 
                 if (viewId === 'tables-view' && !document.querySelector('.table-toggle-btn.active')) {
                      const summaryMonthBtn = document.getElementById('btn-summary-month');
