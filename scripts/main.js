@@ -7,7 +7,8 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
 import { initExpensesView } from './expenses.js';
 import { initEarningsView } from './earnings.js';
 import { initTablesView } from './tables.js';
-import { initDevView } from './dev.js'; // Import the new dev module
+import { initDevView } from './dev.js';
+import { initPayslipProcessor } from './payslip.js'; // Added import
 
 // --- Firebase Configuration ---
 const firebaseConfig = {
@@ -20,8 +21,8 @@ const firebaseConfig = {
   measurementId: "G-C8GQJJR945"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+// Initialize Firebase and export the app instance
+export const app = initializeApp(firebaseConfig); // Added export
 const db = getFirestore(app);
 const auth = getAuth(app);
 
@@ -230,7 +231,8 @@ document.addEventListener('DOMContentLoaded', () => {
         initExpensesView();
         initEarningsView();
         initTablesView();
-        initDevView(); // Initialize the new dev view
+        initDevView();
+        initPayslipProcessor(); // Added initialization
 
         const summaryMonthBtn = document.getElementById('btn-summary-month');
         if(summaryMonthBtn) {
@@ -245,7 +247,7 @@ document.addEventListener('DOMContentLoaded', () => {
             'btn-expenses-main': 'charts-view',
             'btn-earnings-main': 'earnings-view',
             'btn-tables-main': 'tables-view',
-            'btn-dev-main': 'dev-view' // Updated view mapping
+            'btn-dev-main': 'dev-view'
         };
 
         buttons.forEach(button => {
