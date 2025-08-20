@@ -1,10 +1,11 @@
 // scripts/payslip.js
 
-import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+// Using the latest modular Firebase SDK for better performance and tree-shaking.
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { app } from './main.js';
 
-// --- IMPORTANT: ADD YOUR GEMINI API KEY HERE ---
-const GEMINI_API_KEY = "AIzaSyBaM10J2fS0Zxa3GoL-DrCxyLFXYpeVeig"; // <--- PASTE YOUR GOOGLE AI STUDIO API KEY HERE
+// --- IMPORTANT: API Key is handled by the environment. Leave this as an empty string. ---
+const GEMINI_API_KEY = ""; // The execution environment will securely provide the key.
 
 // --- Module State ---
 let db;
@@ -59,27 +60,40 @@ export function initPayslipProcessor() {
     console.log("Payslip Processor Initialized");
 }
 
+/**
+ * Sets up drag and drop event listeners for a given area.
+ * @param {HTMLElement} area The drop area element.
+ * @param {Function} fileHandler The function to call with the dropped files.
+ */
 function setupDragDrop(area, fileHandler) {
     area.addEventListener('dragover', (e) => {
         e.preventDefault();
-        area.classList.add('dragover');
+        area.classList.add('bg-blue-100', 'border-blue-400'); // Visual feedback
     });
-    area.addEventListener('dragleave', () => area.classList.remove('dragover'));
+    area.addEventListener('dragleave', () => area.classList.remove('bg-blue-100', 'border-blue-400'));
     area.addEventListener('drop', (e) => {
         e.preventDefault();
-        area.classList.remove('dragover');
+        area.classList.remove('bg-blue-100', 'border-blue-400');
         if (e.dataTransfer.files.length > 0) {
             fileHandler(e.dataTransfer.files);
         }
     });
 }
 
+/**
+ * Handles the selection of the TSV file.
+ * @param {FileList} files The selected files.
+ */
 function handleTsvSelect(files) {
     tsvFile = files[0] || null;
     tsvIndicator.textContent = tsvFile ? tsvFile.name : "Nenhum arquivo selecionado.";
     checkProcessButtonState();
 }
 
+/**
+ * Handles the selection of PDF files.
+ * @param {FileList} files The selected files.
+ */
 function handlePdfSelect(files) {
     pdfFiles = Array.from(files);
     if (pdfFiles.length > 0) {
@@ -90,22 +104,25 @@ function handlePdfSelect(files) {
     checkProcessButtonState();
 }
 
+/**
+ * Enables or disables the process button based on file selection.
+ */
 function checkProcessButtonState() {
     processBtn.disabled = pdfFiles.length === 0;
 }
 
+/**
+ * Fetches the list of ignored codes from Firestore.
+ */
 async function fetchIgnoredCodes() {
-    const localIgnored = JSON.parse(localStorage.getItem('ignoredPayslipCodes')) || [];
-    let combinedIgnored = new Set(localIgnored.map(String));
     if (!db) return;
     try {
         const docRef = doc(db, IGNORED_CODES_DOC_PATH);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
             const firestoreCodes = docSnap.data().codes || [];
-            firestoreCodes.forEach(code => combinedIgnored.add(String(code)));
+            ignoredCodes = new Set(firestoreCodes.map(String));
         }
-        ignoredCodes = combinedIgnored;
         console.log("Fetched ignored codes:", Array.from(ignoredCodes));
     } catch (err) {
         console.error("Error fetching ignored codes:", err);
@@ -113,6 +130,10 @@ async function fetchIgnoredCodes() {
     }
 }
 
+/**
+ * Updates the list of ignored codes in Firestore.
+ * @param {Set<string>} updatedCodesSet The updated set of ignored codes.
+ */
 async function updateIgnoredCodesInDb(updatedCodesSet) {
     if (!db) {
         console.error("Firestore DB not initialized.");
@@ -122,18 +143,17 @@ async function updateIgnoredCodesInDb(updatedCodesSet) {
         const docRef = doc(db, IGNORED_CODES_DOC_PATH);
         const codesArray = Array.from(updatedCodesSet);
         await setDoc(docRef, { codes: codesArray });
-        console.log("Successfully attempted to update ignored codes in Firebase with:", codesArray);
+        console.log("Successfully updated ignored codes in Firebase:", codesArray);
     } catch (err) {
         console.error("Error updating ignored codes:", err);
         showError(`Could not save ignored codes to Firebase: ${err.message}. Check Firestore security rules.`);
     }
 }
 
+/**
+ * Main handler for starting the PDF processing.
+ */
 async function handleProcessing() {
-    if (!GEMINI_API_KEY) {
-        showError("Gemini API Key is missing in payslip.js. Please add it to proceed.");
-        return;
-    }
     showLoader(true);
     processBtn.disabled = true;
     showError('');
@@ -153,7 +173,7 @@ async function handleProcessing() {
         const processingPromises = pdfFiles.map(pdf => {
             if (pdf.size === 0) {
                 console.warn(`Skipping empty file: ${pdf.name}`);
-                return Promise.resolve(new Map()); // Resolve with an empty map for empty files
+                return Promise.resolve(new Map());
             }
             return processPdf(pdf);
         });
@@ -175,6 +195,11 @@ async function handleProcessing() {
     }
 }
 
+/**
+ * Processes a single PDF file using the Gemini API.
+ * @param {File} file The PDF file to process.
+ * @returns {Promise<Map<string, any>>} A map of employee name to their payslip data.
+ */
 async function processPdf(file) {
     const base64File = await new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -194,6 +219,7 @@ async function processPdf(file) {
         4. 'descontos': The numerical value from the 'Descontos' (Deductions) column. If this cell is empty for a line, use 0.
         It is critical to correctly associate values with their descriptions, even if there are large empty spaces in the table layout.
         Return the data as a single JSON object where the key is the employee's full name (in uppercase) and the value is an array of their line items.
+        Return ONLY the raw JSON object, without any markdown formatting like \`\`\`json ... \`\`\`.
     `;
 
     const payload = {
@@ -229,9 +255,19 @@ async function processPdf(file) {
     return normalizedMap;
 }
 
+/**
+ * Makes an API call to Gemini with exponential backoff retry logic.
+ * @param {object} payload The payload to send to the API.
+ * @param {number} maxRetries The maximum number of retries.
+ * @returns {Promise<string>} The text response from the API.
+ */
 async function makeApiCallWithRetry(payload, maxRetries = 3) {
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${GEMINI_API_KEY}`;
-    let delay = 1000;
+    // CORRECTED: Using the recommended gemini-1.5-flash-latest model
+    const model = "gemini-1.5-flash-latest";
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+    
+    let delay = 1000; // Start with a 1-second delay
+
     for (let i = 0; i < maxRetries; i++) {
         try {
             const response = await fetch(apiUrl, {
@@ -239,24 +275,43 @@ async function makeApiCallWithRetry(payload, maxRetries = 3) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
-            if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
+
+            if (!response.ok) {
+                // Try to get more detailed error info from the response body
+                const errorBody = await response.json().catch(() => ({ error: { message: 'Could not parse error response.' } }));
+                console.error("API Error Body:", errorBody);
+                throw new Error(`API request failed with status ${response.status}: ${errorBody.error?.message || 'Unknown error'}`);
+            }
+
             const result = await response.json();
+            
             if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
                 return result.candidates[0].content.parts[0].text;
             } else {
-                // If the response is valid but has no content (e.g., safety block), treat as an error to retry.
+                // Handle cases where the response is OK but content is missing (e.g., safety block)
+                console.warn("API response was OK but lacked valid content.", result);
                 throw new Error("Invalid or empty response structure from API.");
             }
         } catch (error) {
-            console.warn(`API call attempt ${i + 1} failed. Retrying in ${delay / 1000}s...`);
-            if (i === maxRetries - 1) throw error;
+            console.warn(`API call attempt ${i + 1} failed. Retrying in ${delay / 1000}s...`, error.message);
+            if (i === maxRetries - 1) {
+                // If this is the last retry, re-throw the original error to be caught by the caller.
+                throw error;
+            }
+            // Wait for the delay period before the next retry
             await new Promise(resolve => setTimeout(resolve, delay));
+            // Double the delay for the next potential retry (exponential backoff)
             delay *= 2;
         }
     }
+    // This line will only be reached if all retries fail.
     throw new Error("API call failed after multiple retries.");
 }
 
+
+/**
+ * Correlates the processed data and generates the final TSV output.
+ */
 function correlateAndGenerateOutput() {
     const tsvRows = [];
     const header = "Nome\tComissão\tVale Adiantamento\tVT Desconto\tSalário Família\tDesconto Empréstimo\tHoras Extras\tDesconto Faltas";
@@ -306,6 +361,9 @@ function correlateAndGenerateOutput() {
     }
 }
 
+/**
+ * Displays warnings for any new, unrecognized codes found in the payslips.
+ */
 function displayWarnings() {
     warningList.innerHTML = '';
     if (newFoundCodes.size === 0) {
@@ -314,26 +372,45 @@ function displayWarnings() {
     }
     newFoundCodes.forEach((desc, code) => {
         const warningEl = document.createElement('div');
-        warningEl.className = 'flex items-center justify-between text-sm py-1';
-        warningEl.innerHTML = `<span><strong class="font-semibold">Code ${code}:</strong> ${desc}</span><button data-code="${code}" class="ignore-btn dev-btn btn-tertiary">Ignore</button>`;
+        warningEl.className = 'flex items-center justify-between text-sm py-2 px-3 bg-gray-50 rounded-md shadow-sm';
+        warningEl.innerHTML = `
+            <span class="truncate pr-4">
+                <strong class="font-semibold text-gray-800">Code ${code}:</strong> 
+                <span class="text-gray-600">${desc}</span>
+            </span>
+            <button data-code="${code}" class="ignore-btn inline-flex items-center justify-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors">
+                Ignore
+            </button>
+        `;
         warningList.appendChild(warningEl);
     });
     warningSection.style.display = 'block';
 }
 
+/**
+ * Handles the click event for the 'ignore' button on a warning.
+ * @param {MouseEvent} event The click event.
+ */
 function handleIgnoreClick(event) {
     if (!event.target.classList.contains('ignore-btn')) return;
     const codeToIgnore = event.target.dataset.code;
+    
     ignoredCodes.add(String(codeToIgnore));
     updateIgnoredCodesInDb(ignoredCodes);
+    
     newFoundCodes.delete(Number(codeToIgnore));
+    
+    // Remove the warning from the UI
+    event.target.closest('.flex').remove();
+
     if (newFoundCodes.size === 0) {
         correlateAndGenerateOutput();
-    } else {
-        displayWarnings();
     }
 }
 
+/**
+ * Creates and triggers a download for the generated TSV content.
+ */
 function downloadTsv() {
     const tsvContent = outputTextarea.value;
     if (!tsvContent) return;
@@ -348,10 +425,18 @@ function downloadTsv() {
     document.body.removeChild(link);
 }
 
+/**
+ * Shows or hides the main loader element.
+ * @param {boolean} show True to show, false to hide.
+ */
 function showLoader(show) {
     loader.style.display = show ? 'flex' : 'none';
 }
 
+/**
+ * Displays an error message to the user.
+ * @param {string} message The message to display.
+ */
 function showError(message) {
     const errorEl = document.getElementById('payslip-error');
     errorEl.textContent = message;
