@@ -8,16 +8,26 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles/style.css">
+  <link rel="stylesheet" href="styles/login.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link rel="icon" href="data:,"> <!-- Prevents 404 for missing favicon -->
+  <link rel="icon" href="data:,">
 </head>
 <body>
-  <div class="container">
+
+  <!-- Loading View -->
+  <div id="loading-view" class="auth-view" style="display: flex;">
+      <div class="spinner"></div>
+      <p>Carregando...</p>
+  </div>
+
+  <!-- Main Dashboard Container (hidden by default) -->
+  <div class="container" style="display: none;">
     <img src="assets/logo.png" alt="Facto Logo" class="facto-logo">
     <div class="view-toggle">
       <button id="btn-expenses-main" class="active">Gastos</button>
       <button id="btn-earnings-main">Faturamento</button>
       <button id="btn-tables-main">Tabelas</button>
+      <button id="logout-btn" style="margin-left: auto; background-color: #E44D42;">Sair</button>
     </div>
 
     <!-- Gastos (Expenses) View -->

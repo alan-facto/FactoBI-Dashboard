@@ -1,6 +1,7 @@
 // Import necessary functions from the Firebase SDK
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 // Import view-specific modules
 import { initExpensesView } from './expenses.js';
@@ -21,10 +22,12 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
 
 // --- Global Variables & Shared State ---
 export let data = { months: [], departments: [], data: {} };
 export let charts = {};
+
 export const colorsByDepartment = {
     "Administrativo": "#6B5B95", "Apoio": "#FF6F61", "Comercial": "#E44D42",
     "Diretoria": "#0072B5", "Jurídico": "#2E8B57", "Marketing": "#FFA500",
@@ -39,7 +42,7 @@ export const globalChartOptions = {
     }
 };
 
-// --- Utility Functions (Exported for use in other modules) ---
+// --- Utility Functions ---
 export function hexToRGBA(hex, alpha = 1) {
     const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
@@ -68,7 +71,6 @@ export function formatVA(value, month) {
     }
     return formatCurrencyBRL(value);
 }
-
 
 // --- Mappings and Helpers ---
 const deptMap = {
@@ -101,8 +103,47 @@ function convertMonthToYYYYMM(monthStr) {
     return null;
 }
 
-// --- Main Data Fetching and Processing ---
-document.addEventListener('DOMContentLoaded', async () => {
+// --- DOM Elements ---
+const loadingView = document.getElementById('loading-view');
+const dashboardContainer = document.querySelector('.container');
+const logoutBtn = document.getElementById("logout-btn");
+
+// --- Main Application Flow ---
+
+onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        // User is signed in, check if they are authorized.
+        await checkAuthorization(user);
+    } else {
+        // No user is signed in. Redirect to the login page.
+        window.location.href = '/login.html';
+    }
+});
+
+async function checkAuthorization(user) {
+    try {
+        const q = query(collection(db, "authorizedUsers"), where("email", "==", user.email));
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+            // User is authorized, load the dashboard.
+            await loadDashboardData();
+            loadingView.style.display = 'none';
+            dashboardContainer.style.display = 'block';
+        } else {
+            // User is not authorized. Sign them out and redirect to login.
+            alert(`A conta ${user.email} não tem permissão de acesso.`);
+            await signOut(auth);
+            // The onAuthStateChanged listener will catch the sign-out and redirect.
+        }
+    } catch (error) {
+        console.error("Authorization check error:", error);
+        alert("Erro ao verificar permissão. Tente novamente.");
+        await signOut(auth);
+    }
+}
+
+async function loadDashboardData() {
     try {
         const [expendituresSnapshot, earningsSnapshot] = await Promise.all([
             getDocs(collection(db, "expenditures")),
@@ -167,7 +208,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
         
-        // Assign processed data to the exported variable
         data.months = Array.from(monthsSet).sort();
         data.departments = Array.from(departmentsSet).sort();
         data.data = structuredData;
@@ -178,24 +218,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error("Error loading data from Firestore:", error);
         showError(`Falha ao carregar os dados: ${error.message}`);
     }
-});
+}
 
-// --- Dashboard Initialization & View Toggling ---
 function initDashboard() {
     setupViewToggle();
     
-    // Initialize the default view
     initExpensesView();
     initEarningsView();
     initTablesView();
 
-    // Trigger the default table view to render
     document.getElementById('btn-summary-month')?.click();
 }
 
 function setupViewToggle() {
     const container = document.querySelector('.view-toggle');
-    const buttons = container.querySelectorAll('button');
+    const buttons = container.querySelectorAll('button:not(#logout-btn)');
     const views = {
         'btn-expenses-main': 'charts-view',
         'btn-earnings-main': 'earnings-view',
@@ -212,7 +249,6 @@ function setupViewToggle() {
             const viewEl = document.getElementById(viewId);
             viewEl.style.display = 'flex';
 
-            // If tables view is selected, ensure a default table is shown
             if (viewId === 'tables-view' && !document.querySelector('.table-toggle-btn.active')) {
                  document.getElementById('btn-summary-month')?.click();
             }
@@ -221,6 +257,13 @@ function setupViewToggle() {
 }
 
 function showError(message) {
-    const container = document.querySelector('.container') || document.body;
-    container.innerHTML = `<div class="error-message"><h2>Erro</h2><p>${message}</p><button onclick="window.location.reload()">Recarregar Página</button></div>`;
+    dashboardContainer.innerHTML = `<div class="error-message"><h2>Erro</h2><p>${message}</p><button onclick="window.location.reload()">Recarregar Página</button></div>`;
+    dashboardContainer.style.display = 'block';
+    loadingView.style.display = 'none';
 }
+
+// Event Listeners
+logoutBtn.addEventListener('click', async () => {
+    await signOut(auth);
+    // onAuthStateChanged will handle the redirect to login.html
+});

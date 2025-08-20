@@ -1,0 +1,81 @@
+/* ====== LOGIN PAGE STYLES ====== */
+body {
+  margin: 0; /* Removes the white border */
+  font-family: 'Plus Jakarta Sans', sans-serif; /* Applies correct font to the page */
+}
+
+.auth-view {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  flex-direction: column;
+  background-color: #024B59;
+  color: white;
+  text-align: center;
+}
+
+/* --- UPDATED LOGIN CARD --- */
+.login-card {
+  background-color: #013a45; /* Darker shade for the card */
+  color: #fff; /* White text for contrast */
+  padding: 40px 50px;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.login-logo {
+  height: 50px;
+  margin-bottom: 30px;
+}
+
+.login-status {
+  font-weight: 500;
+  margin-bottom: 30px;
+  min-height: 24px;
+}
+
+.login-status.error {
+    color: #FFB3AD; /* Lighter red for dark background */
+}
+
+/* --- UPDATED BUTTON STYLE --- */
+.login-button {
+  width: 100%;
+  padding: 14px 28px;
+  font-size: 16px;
+  cursor: pointer;
+  background-color: #fff; /* White button */
+  color: #024B59; /* Dark blue text */
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.login-button:hover {
+  background-color: #e6e6e6; /* Slightly darker on hover */
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+/* Spinner for loading view (no changes needed) */
+.spinner {
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top: 4px solid #fff;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
