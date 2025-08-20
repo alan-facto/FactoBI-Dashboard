@@ -1,7 +1,7 @@
 // Import necessary functions from the Firebase SDK
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, getDocs, doc, getDoc, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getAuth, GoogleAuthProvider, signInWithRedirect, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence, getRedirectResult } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 
 // Import view-specific modules
@@ -123,11 +123,23 @@ const userEmail = document.getElementById("user-email");
 const userInfoDisplay = document.getElementById("user-info-display");
 
 // Event Listeners
+async function handleSignIn() {
+    const provider = new GoogleAuthProvider();
+    try {
+        // Use signInWithPopup instead of redirect
+        await signInWithPopup(auth, provider);
+        // onAuthStateChanged will automatically handle the successful login.
+    } catch (error) {
+        console.error("Error during sign-in with popup:", error);
+        if (authError) {
+            authError.textContent = `Erro no login: ${error.message}`;
+            authError.style.display = 'block';
+        }
+    }
+}
+
 if (loginBtn) {
-    loginBtn.addEventListener('click', () => {
-        const provider = new GoogleAuthProvider();
-        signInWithRedirect(auth, provider);
-    });
+    loginBtn.addEventListener('click', handleSignIn);
 }
 
 if (logoutBtn) {
@@ -137,10 +149,7 @@ if (logoutBtn) {
 }
 
 if (retryLoginBtn) {
-    retryLoginBtn.addEventListener("click", () => {
-        const provider = new GoogleAuthProvider();
-        signInWithRedirect(auth, provider);
-    });
+    retryLoginBtn.addEventListener("click", handleSignIn);
 }
 
 
@@ -150,48 +159,6 @@ function showView(view) {
     loginView.style.display = view === 'login' ? 'flex' : 'none';
     dashboardContainer.style.display = view === 'dashboard' ? 'block' : 'none';
 }
-
-/**
- * Main function to initialize the authentication flow.
- */
-async function initializeAuth() {
-    await setPersistence(auth, browserLocalPersistence);
-
-    // First, check if we are returning from a redirect
-    try {
-        const result = await getRedirectResult(auth);
-        if (result) {
-            // If we get a result, it means the user just signed in.
-            // The onAuthStateChanged listener will handle the user object.
-            console.log("Redirect result successfully processed.");
-        }
-    } catch (error) {
-        // Handle errors from the redirect (e.g., user closes the popup)
-        console.error("Error processing redirect result:", error);
-        if (authError) {
-            authError.textContent = `Erro de autenticação: ${error.message}.`;
-            authError.style.display = 'block';
-        }
-    }
-
-    // Now, set up the primary listener for auth state.
-    onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            // A user is signed in.
-            showView('loading');
-            await checkAuthorization(user);
-        } else {
-            // No user is signed in. Show the login page.
-            document.getElementById("initial-login-prompt").style.display = "block";
-            document.getElementById("failed-login-prompt").style.display = "none";
-            document.getElementById("login-status").textContent = "Faça login para continuar";
-            if (userInfoDisplay) userInfoDisplay.style.display = 'none';
-            if (authError && !authError.textContent) authError.style.display = 'none';
-            showView('login');
-        }
-    });
-}
-
 
 async function checkAuthorization(user) {
     console.log("Checking authorization for:", user.email);
@@ -360,5 +327,34 @@ function showError(message) {
 }
 
 // --- Start the application ---
-showView('loading');
-initializeAuth();
+function initializeAppFlow() {
+    showView('loading');
+
+    setPersistence(auth, browserLocalPersistence)
+        .then(() => {
+            // This listener is the single source of truth for the UI.
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    await checkAuthorization(user);
+                } else {
+                    // No user is signed in. Show the login page.
+                    document.getElementById("initial-login-prompt").style.display = "block";
+                    document.getElementById("failed-login-prompt").style.display = "none";
+                    document.getElementById("login-status").textContent = "Faça login para continuar";
+                    if (userInfoDisplay) userInfoDisplay.style.display = 'none';
+                    if (authError) authError.style.display = 'none';
+                    showView('login');
+                }
+            });
+        })
+        .catch((error) => {
+            console.error("Error setting persistence:", error);
+            showView('login'); // Fallback to login view
+            if (authError) {
+                authError.textContent = `Erro de configuração: ${error.message}`;
+                authError.style.display = 'block';
+            }
+        });
+}
+
+initializeAppFlow();
