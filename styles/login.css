@@ -12,11 +12,10 @@
 
 /* --- UPDATED LOGIN CARD --- */
 .login-card {
-  background-color: #024B59; /* Dark background to match the page */
+  background-color: #013a45; /* Darker shade for the card */
   color: #fff; /* White text for contrast */
   padding: 40px 50px;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.2); /* Subtle border */
   box-shadow: 0 10px 30px rgba(0,0,0,0.3);
   width: 100%;
   max-width: 400px;
