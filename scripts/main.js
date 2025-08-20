@@ -158,44 +158,39 @@ async function initializeAuthentication() {
     const loadingMessage = loadingView.querySelector('p');
     loadingMessage.textContent = 'Verificando autenticação...';
 
+    // This promise resolves with the user from the redirect, or null if there was no redirect
+    const redirectResultPromise = getRedirectResult(auth).catch(error => {
+        console.error("Error getting redirect result:", error);
+        authError.textContent = `Erro no login: ${error.message}`;
+        return null; // Treat as no redirect result on error
+    });
+
+    // This promise resolves with the user from the current session, or null if there is none.
+    // It only resolves once, when the initial state is determined.
+    const sessionUserPromise = new Promise(resolve => {
+        const unsubscribe = onAuthStateChanged(auth, user => {
+            unsubscribe(); // Stop listening after we get the initial state
+            resolve(user);
+        });
+    });
+
     try {
-        const result = await getRedirectResult(auth);
-        if (result && result.user) {
-            console.log("Redirect result contains user:", result.user.email);
-            await checkAuthorization(result.user);
-            return; // Stop execution here, authorization check handles the view
+        const [redirectResult, sessionUser] = await Promise.all([redirectResultPromise, sessionUserPromise]);
+
+        const user = redirectResult?.user || sessionUser;
+
+        if (user) {
+            console.log("User identified:", user.email);
+            await checkAuthorization(user);
+        } else {
+            console.log("No user found from redirect or session.");
+            showLoginScreen();
         }
-        
-        console.log("No redirect result. Checking for existing session...");
-        // onAuthStateChanged will handle the case of an existing session
-        // but we need to give it a moment to fire.
-        // A small delay helps ensure the listener has run.
-        setTimeout(() => {
-            if (!auth.currentUser) {
-                 console.log("No user session found. Showing login page.");
-                 showLoginScreen();
-            } else {
-                console.log("Active session found for:", auth.currentUser.email);
-                checkAuthorization(auth.currentUser);
-            }
-        }, 250);
-
-
     } catch (error) {
         console.error("Error during authentication initialization:", error);
-        authError.textContent = `Erro no login: ${error.message}`;
         showLoginScreen();
     }
 }
-
-// Listener for subsequent auth changes (like signing out)
-onAuthStateChanged(auth, (user) => {
-    console.log("onAuthStateChanged triggered.");
-    if (!user) {
-        console.log("User logged out or session expired.");
-        showLoginScreen();
-    }
-});
 
 function showLoginScreen() {
     defaultLoginState.style.display = 'block';
@@ -234,6 +229,7 @@ async function checkAuthorization(user) {
         console.error("Authorization check error:", error);
         authError.textContent = "Erro ao verificar permissão. Tente novamente.";
         await signOut(auth);
+        showLoginScreen();
     }
 }
 
