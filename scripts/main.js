@@ -121,13 +121,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function checkAuthorization(user) {
         try {
-            // The document ID in 'authorizedUsers' should be the user's email
             const userDocRef = doc(db, "authorizedUsers", user.email);
             const userDoc = await getDoc(userDocRef);
 
             if (userDoc.exists()) {
                 const userData = userDoc.data();
-                // Check for the 'type' field to determine if the user is an admin
                 if (userData.type === 'admin') {
                     devToolsBtn.style.display = 'block';
                 }
@@ -226,6 +224,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function initDashboard() {
         setupViewToggle();
         
+        // These functions will now safely find their own elements
         initExpensesView();
         initEarningsView();
         initTablesView();
