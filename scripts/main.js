@@ -1,6 +1,6 @@
 // Import necessary functions from the Firebase SDK
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, getDocs, query, where, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 // Import view-specific modules
@@ -103,167 +103,180 @@ function convertMonthToYYYYMM(monthStr) {
     return null;
 }
 
-// --- DOM Elements ---
-const loadingView = document.getElementById('loading-view');
-const dashboardContainer = document.querySelector('.container');
-const logoutBtn = document.getElementById("logout-btn");
-
 // --- Main Application Flow ---
 
-onAuthStateChanged(auth, async (user) => {
-    if (user) {
-        // User is signed in, check if they are authorized.
-        await checkAuthorization(user);
-    } else {
-        // No user is signed in. Redirect to the login page.
-        window.location.href = '/login.html';
-    }
-});
+document.addEventListener('DOMContentLoaded', () => {
+    const loadingView = document.getElementById('loading-view');
+    const dashboardContainer = document.querySelector('.container');
+    const logoutBtn = document.getElementById("logout-btn");
+    const devToolsBtn = document.getElementById("btn-devtools-main");
 
-async function checkAuthorization(user) {
-    try {
-        const q = query(collection(db, "authorizedUsers"), where("email", "==", user.email));
-        const querySnapshot = await getDocs(q);
-
-        if (!querySnapshot.empty) {
-            // User is authorized, load the dashboard.
-            await loadDashboardData();
-            loadingView.style.display = 'none';
-            dashboardContainer.style.display = 'block';
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            await checkAuthorization(user);
         } else {
-            // User is not authorized. Sign them out and redirect to login.
-            alert(`A conta ${user.email} não tem permissão de acesso.`);
-            await signOut(auth);
-            // The onAuthStateChanged listener will catch the sign-out and redirect.
+            window.location.href = '/login.html';
         }
-    } catch (error) {
-        console.error("Authorization check error:", error);
-        alert("Erro ao verificar permissão. Tente novamente.");
-        await signOut(auth);
-    }
-}
-
-async function loadDashboardData() {
-    try {
-        const [expendituresSnapshot, earningsSnapshot] = await Promise.all([
-            getDocs(collection(db, "expenditures")),
-            getDocs(collection(db, "earnings"))
-        ]);
-
-        const fetchedRows = expendituresSnapshot.docs.map(doc => doc.data());
-        const earningsData = earningsSnapshot.docs.map(doc => doc.data());
-
-        if (!fetchedRows.length && !earningsData.length) {
-            throw new Error("No expenditure or earnings data found in Firestore.");
-        }
-
-        const monthsSet = new Set();
-        const departmentsSet = new Set();
-        const structuredData = {};
-
-        [...fetchedRows, ...earningsData].forEach(row => {
-            const monthKey = convertMonthToYYYYMM(row["Month"] || row["Mês"]);
-            if (monthKey) monthsSet.add(monthKey);
-        });
-
-        monthsSet.forEach(month => {
-            if (!structuredData[month]) {
-                structuredData[month] = { departments: {}, total: 0, totalEmployees: 0, earnings: 0 };
-            }
-        });
-
-        fetchedRows.forEach(row => {
-            const monthKey = convertMonthToYYYYMM(row["Month"]);
-            if (!monthKey || !structuredData[monthKey]) return;
-            const rawDept = row["Department"];
-            const dept = deptMap[rawDept] || rawDept;
-            const total = parseFloat(String(row["Total"]).replace(',', '.')) || 0;
-            const bonificacao = parseFloat(String(row["Bonificacao 20"]).replace(',', '.')) || 0;
-            const valeAlimentacao = parseFloat(String(row["Vale Alimentação"]).replace(',', '.')) || 0;
-            const count = parseInt(row["Employee Count"]) || 0;
-            const geral = total + bonificacao;
-
-            if (dept && dept.toLowerCase() !== "total geral") {
-                departmentsSet.add(dept);
-                if (!structuredData[monthKey].departments[dept]) {
-                    structuredData[monthKey].departments[dept] = { total: 0, bonificacao: 0, valeAlimentacao: 0, count: 0, geral: 0 };
-                }
-                structuredData[monthKey].departments[dept].total += total;
-                structuredData[monthKey].departments[dept].bonificacao += bonificacao;
-                structuredData[monthKey].departments[dept].valeAlimentacao += valeAlimentacao;
-                structuredData[monthKey].departments[dept].count += count;
-                structuredData[monthKey].departments[dept].geral += geral;
-
-                structuredData[monthKey].total += geral;
-                structuredData[monthKey].totalEmployees += count;
-            }
-        });
-
-        earningsData.forEach(row => {
-            const monthKey = convertMonthToYYYYMM(row["Mês"]);
-            const faturamentoStr = row["Faturamento"];
-            if (monthKey && faturamentoStr && structuredData[monthKey]) {
-                const faturamentoValue = typeof faturamentoStr === 'number' ? faturamentoStr : parseFloat(String(faturamentoStr).replace(/["R$\s.]/g, '').replace(',', '.')) || 0;
-                structuredData[monthKey].earnings = faturamentoValue;
-            }
-        });
-        
-        data.months = Array.from(monthsSet).sort();
-        data.departments = Array.from(departmentsSet).sort();
-        data.data = structuredData;
-
-        initDashboard();
-
-    } catch (error) {
-        console.error("Error loading data from Firestore:", error);
-        showError(`Falha ao carregar os dados: ${error.message}`);
-    }
-}
-
-function initDashboard() {
-    setupViewToggle();
-    
-    initExpensesView();
-    initEarningsView();
-    initTablesView();
-
-    document.getElementById('btn-summary-month')?.click();
-}
-
-function setupViewToggle() {
-    const container = document.querySelector('.view-toggle');
-    const buttons = container.querySelectorAll('button:not(#logout-btn)');
-    const views = {
-        'btn-expenses-main': 'charts-view',
-        'btn-earnings-main': 'earnings-view',
-        'btn-tables-main': 'tables-view'
-    };
-
-    buttons.forEach(button => {
-        button.addEventListener('click', () => {
-            buttons.forEach(btn => btn.classList.remove('active'));
-            button.classList.add('active');
-            const viewId = views[button.id];
-
-            Object.values(views).forEach(id => document.getElementById(id).style.display = 'none');
-            const viewEl = document.getElementById(viewId);
-            viewEl.style.display = 'flex';
-
-            if (viewId === 'tables-view' && !document.querySelector('.table-toggle-btn.active')) {
-                 document.getElementById('btn-summary-month')?.click();
-            }
-        });
     });
-}
 
-function showError(message) {
-    dashboardContainer.innerHTML = `<div class="error-message"><h2>Erro</h2><p>${message}</p><button onclick="window.location.reload()">Recarregar Página</button></div>`;
-    dashboardContainer.style.display = 'block';
-    loadingView.style.display = 'none';
-}
+    async function checkAuthorization(user) {
+        try {
+            // The document ID in 'authorizedUsers' should be the user's email
+            const userDocRef = doc(db, "authorizedUsers", user.email);
+            const userDoc = await getDoc(userDocRef);
 
-// Event Listeners
-logoutBtn.addEventListener('click', async () => {
-    await signOut(auth);
-    // onAuthStateChanged will handle the redirect to login.html
+            if (userDoc.exists()) {
+                const userData = userDoc.data();
+                // Check for the 'type' field to determine if the user is an admin
+                if (userData.type === 'admin') {
+                    devToolsBtn.style.display = 'block';
+                }
+                
+                await loadDashboardData();
+                loadingView.style.display = 'none';
+                dashboardContainer.style.display = 'block';
+            } else {
+                alert(`A conta ${user.email} não tem permissão de acesso.`);
+                await signOut(auth);
+            }
+        } catch (error) {
+            console.error("Authorization check error:", error);
+            alert("Erro ao verificar permissão. Tente novamente.");
+            await signOut(auth);
+        }
+    }
+
+    async function loadDashboardData() {
+        try {
+            const [expendituresSnapshot, earningsSnapshot] = await Promise.all([
+                getDocs(collection(db, "expenditures")),
+                getDocs(collection(db, "earnings"))
+            ]);
+
+            const fetchedRows = expendituresSnapshot.docs.map(doc => doc.data());
+            const earningsData = earningsSnapshot.docs.map(doc => doc.data());
+
+            if (!fetchedRows.length && !earningsData.length) {
+                throw new Error("No expenditure or earnings data found in Firestore.");
+            }
+
+            const monthsSet = new Set();
+            const departmentsSet = new Set();
+            const structuredData = {};
+
+            [...fetchedRows, ...earningsData].forEach(row => {
+                const monthKey = convertMonthToYYYYMM(row["Month"] || row["Mês"]);
+                if (monthKey) monthsSet.add(monthKey);
+            });
+
+            monthsSet.forEach(month => {
+                if (!structuredData[month]) {
+                    structuredData[month] = { departments: {}, total: 0, totalEmployees: 0, earnings: 0 };
+                }
+            });
+
+            fetchedRows.forEach(row => {
+                const monthKey = convertMonthToYYYYMM(row["Month"]);
+                if (!monthKey || !structuredData[monthKey]) return;
+                const rawDept = row["Department"];
+                const dept = deptMap[rawDept] || rawDept;
+                const total = parseFloat(String(row["Total"]).replace(',', '.')) || 0;
+                const bonificacao = parseFloat(String(row["Bonificacao 20"]).replace(',', '.')) || 0;
+                const valeAlimentacao = parseFloat(String(row["Vale Alimentação"]).replace(',', '.')) || 0;
+                const count = parseInt(row["Employee Count"]) || 0;
+                const geral = total + bonificacao;
+
+                if (dept && dept.toLowerCase() !== "total geral") {
+                    departmentsSet.add(dept);
+                    if (!structuredData[monthKey].departments[dept]) {
+                        structuredData[monthKey].departments[dept] = { total: 0, bonificacao: 0, valeAlimentacao: 0, count: 0, geral: 0 };
+                    }
+                    structuredData[monthKey].departments[dept].total += total;
+                    structuredData[monthKey].departments[dept].bonificacao += bonificacao;
+                    structuredData[monthKey].departments[dept].valeAlimentacao += valeAlimentacao;
+                    structuredData[monthKey].departments[dept].count += count;
+                    structuredData[monthKey].departments[dept].geral += geral;
+
+                    structuredData[monthKey].total += geral;
+                    structuredData[monthKey].totalEmployees += count;
+                }
+            });
+
+            earningsData.forEach(row => {
+                const monthKey = convertMonthToYYYYMM(row["Mês"]);
+                const faturamentoStr = row["Faturamento"];
+                if (monthKey && faturamentoStr && structuredData[monthKey]) {
+                    const faturamentoValue = typeof faturamentoStr === 'number' ? faturamentoStr : parseFloat(String(faturamentoStr).replace(/["R$\s.]/g, '').replace(',', '.')) || 0;
+                    structuredData[monthKey].earnings = faturamentoValue;
+                }
+            });
+            
+            data.months = Array.from(monthsSet).sort();
+            data.departments = Array.from(departmentsSet).sort();
+            data.data = structuredData;
+
+            initDashboard();
+
+        } catch (error) {
+            console.error("Error loading data from Firestore:", error);
+            showError(`Falha ao carregar os dados: ${error.message}`);
+        }
+    }
+
+    function initDashboard() {
+        setupViewToggle();
+        
+        initExpensesView();
+        initEarningsView();
+        initTablesView();
+
+        const summaryMonthBtn = document.getElementById('btn-summary-month');
+        if(summaryMonthBtn) {
+            summaryMonthBtn.click();
+        }
+    }
+
+    function setupViewToggle() {
+        const container = document.querySelector('.view-toggle');
+        const buttons = container.querySelectorAll('button:not(#logout-btn)');
+        const views = {
+            'btn-expenses-main': 'charts-view',
+            'btn-earnings-main': 'earnings-view',
+            'btn-tables-main': 'tables-view',
+            'btn-devtools-main': 'devtools-view'
+        };
+
+        buttons.forEach(button => {
+            button.addEventListener('click', () => {
+                buttons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                const viewId = views[button.id];
+
+                Object.values(views).forEach(id => {
+                    const viewEl = document.getElementById(id);
+                    if (viewEl) viewEl.style.display = 'none';
+                });
+
+                const viewEl = document.getElementById(viewId);
+                if (viewEl) viewEl.style.display = (viewId === 'devtools-view') ? 'block' : 'flex';
+
+                if (viewId === 'tables-view' && !document.querySelector('.table-toggle-btn.active')) {
+                     const summaryMonthBtn = document.getElementById('btn-summary-month');
+                     if(summaryMonthBtn) {
+                        summaryMonthBtn.click();
+                     }
+                }
+            });
+        });
+    }
+
+    function showError(message) {
+        dashboardContainer.innerHTML = `<div class="error-message"><h2>Erro</h2><p>${message}</p><button onclick="window.location.reload()">Recarregar Página</button></div>`;
+        dashboardContainer.style.display = 'block';
+        loadingView.style.display = 'none';
+    }
+
+    logoutBtn.addEventListener('click', async () => {
+        await signOut(auth);
+    });
 });
