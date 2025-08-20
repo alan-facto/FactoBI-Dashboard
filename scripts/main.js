@@ -1,7 +1,7 @@
 // Import necessary functions from the Firebase SDK
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, getDocs, doc, getDoc, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getAuth, GoogleAuthProvider, signInWithRedirect, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth, GoogleAuthProvider, signInWithRedirect, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence, getRedirectResult } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 
 // Import view-specific modules
@@ -126,7 +126,6 @@ const userInfoDisplay = document.getElementById("user-info-display");
 if (loginBtn) {
     loginBtn.addEventListener('click', () => {
         const provider = new GoogleAuthProvider();
-        // This now simply triggers the redirect. The handler page will do the rest.
         signInWithRedirect(auth, provider);
     });
 }
@@ -152,35 +151,47 @@ function showView(view) {
     dashboardContainer.style.display = view === 'dashboard' ? 'block' : 'none';
 }
 
+/**
+ * Main function to initialize the authentication flow.
+ */
+async function initializeAuth() {
+    await setPersistence(auth, browserLocalPersistence);
 
-// Primary listener for authentication state changes.
-onAuthStateChanged(auth, async (user) => {
-    // Check if an error was passed from the handler page
-    const authErrorString = sessionStorage.getItem('authError');
-    if (authErrorString) {
-        const authErrorData = JSON.parse(authErrorString);
-        console.error("Authentication error from handler:", authErrorData);
+    // First, check if we are returning from a redirect
+    try {
+        const result = await getRedirectResult(auth);
+        if (result) {
+            // If we get a result, it means the user just signed in.
+            // The onAuthStateChanged listener will handle the user object.
+            console.log("Redirect result successfully processed.");
+        }
+    } catch (error) {
+        // Handle errors from the redirect (e.g., user closes the popup)
+        console.error("Error processing redirect result:", error);
         if (authError) {
-            authError.textContent = `Erro de autenticação: ${authErrorData.message}`;
+            authError.textContent = `Erro de autenticação: ${error.message}.`;
             authError.style.display = 'block';
         }
-        sessionStorage.removeItem('authError'); // Clear error after displaying
     }
 
-    if (user) {
-        // A user is signed in.
-        showView('loading');
-        await checkAuthorization(user);
-    } else {
-        // No user is signed in.
-        document.getElementById("initial-login-prompt").style.display = "block";
-        document.getElementById("failed-login-prompt").style.display = "none";
-        document.getElementById("login-status").textContent = "Faça login para continuar";
-        if (userInfoDisplay) userInfoDisplay.style.display = 'none';
-        if (!authErrorString && authError) authError.style.display = 'none';
-        showView('login');
-    }
-});
+    // Now, set up the primary listener for auth state.
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            // A user is signed in.
+            showView('loading');
+            await checkAuthorization(user);
+        } else {
+            // No user is signed in. Show the login page.
+            document.getElementById("initial-login-prompt").style.display = "block";
+            document.getElementById("failed-login-prompt").style.display = "none";
+            document.getElementById("login-status").textContent = "Faça login para continuar";
+            if (userInfoDisplay) userInfoDisplay.style.display = 'none';
+            if (authError && !authError.textContent) authError.style.display = 'none';
+            showView('login');
+        }
+    });
+}
+
 
 async function checkAuthorization(user) {
     console.log("Checking authorization for:", user.email);
@@ -348,5 +359,6 @@ function showError(message) {
     container.innerHTML = `<div class="error-message"><h2>Erro</h2><p>${message}</p><button onclick="window.location.reload()">Recarregar Página</button></div>`;
 }
 
-// Show the initial loading screen.
+// --- Start the application ---
 showView('loading');
+initializeAuth();
