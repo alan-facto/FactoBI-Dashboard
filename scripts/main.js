@@ -1,8 +1,7 @@
 // Import necessary functions from the Firebase SDK
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, getDocs, doc, getDoc, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
+import { getFirestore, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 // Import view-specific modules
 import { initExpensesView } from './expenses.js';
@@ -28,7 +27,6 @@ const auth = getAuth(app);
 // --- Global Variables & Shared State ---
 export let data = { months: [], departments: [], data: {} };
 export let charts = {};
-let dashboardInitialized = false; // Flag to prevent re-initialization
 
 export const colorsByDepartment = {
     "Administrativo": "#6B5B95", "Apoio": "#FF6F61", "Comercial": "#E44D42",
@@ -44,7 +42,7 @@ export const globalChartOptions = {
     }
 };
 
-// --- Utility Functions (Exported for use in other modules) ---
+// --- Utility Functions ---
 export function hexToRGBA(hex, alpha = 1) {
     const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
@@ -73,7 +71,6 @@ export function formatVA(value, month) {
     }
     return formatCurrencyBRL(value);
 }
-
 
 // --- Mappings and Helpers ---
 const deptMap = {
@@ -106,110 +103,47 @@ function convertMonthToYYYYMM(monthStr) {
     return null;
 }
 
-// --- Authentication Flow ---
+// --- DOM Elements ---
 const loadingView = document.getElementById('loading-view');
-const loginView = document.getElementById('login-view');
 const dashboardContainer = document.querySelector('.container');
-
-// Buttons and User Info Elements
-const loginBtn = document.getElementById("login-btn");
 const logoutBtn = document.getElementById("logout-btn");
-const retryLoginBtn = document.getElementById("retry-login-btn");
-const authError = document.getElementById("auth-error");
-const loginStatus = document.getElementById("login-status");
-const userPhoto = document.getElementById("user-photo");
-const userName = document.getElementById("user-name");
-const userEmail = document.getElementById("user-email");
-const userInfoDisplay = document.getElementById("user-info-display");
 
-// Event Listeners
-async function handleSignIn() {
-    const provider = new GoogleAuthProvider();
-    try {
-        // Use signInWithPopup instead of redirect
-        await signInWithPopup(auth, provider);
-        // onAuthStateChanged will automatically handle the successful login.
-    } catch (error) {
-        console.error("Error during sign-in with popup:", error);
-        if (authError) {
-            authError.textContent = `Erro no login: ${error.message}`;
-            authError.style.display = 'block';
-        }
+// --- Main Application Flow ---
+
+onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        // User is signed in, check if they are authorized.
+        await checkAuthorization(user);
+    } else {
+        // No user is signed in. Redirect to the login page.
+        window.location.href = '/login.html';
     }
-}
-
-if (loginBtn) {
-    loginBtn.addEventListener('click', handleSignIn);
-}
-
-if (logoutBtn) {
-    logoutBtn.addEventListener('click', async () => {
-        await signOut(auth);
-    });
-}
-
-if (retryLoginBtn) {
-    retryLoginBtn.addEventListener("click", handleSignIn);
-}
-
-
-// This function handles showing the correct view
-function showView(view) {
-    loadingView.style.display = view === 'loading' ? 'flex' : 'none';
-    loginView.style.display = view === 'login' ? 'flex' : 'none';
-    dashboardContainer.style.display = view === 'dashboard' ? 'block' : 'none';
-    
-    if (view === 'dashboard') {
-        document.getElementById('charts-view').style.display = 'flex';
-    }
-}
+});
 
 async function checkAuthorization(user) {
-    console.log("Checking authorization for:", user.email);
     try {
         const q = query(collection(db, "authorizedUsers"), where("email", "==", user.email));
         const querySnapshot = await getDocs(q);
 
         if (!querySnapshot.empty) {
-            console.log("Authorization successful.");
-            // User is authorized.
-            if (!dashboardInitialized) {
-                await loadDashboardData();
-            }
-            showView('dashboard');
+            // User is authorized, load the dashboard.
+            await loadDashboardData();
+            loadingView.style.display = 'none';
+            dashboardContainer.style.display = 'block';
         } else {
-            console.log("Authorization failed: User not in whitelist.");
-            // User is not authorized. Display message and sign out.
-            if (userPhoto) userPhoto.src = user.photoURL || `https://placehold.co/80x80/cccccc/FFFFFF?text=${user.displayName?.[0] || 'U'}`;
-            if (userName) userName.textContent = user.displayName;
-            if (userEmail) userEmail.textContent = user.email;
-            if (userInfoDisplay) userInfoDisplay.style.display = 'block';
-            
-            document.getElementById('initial-login-prompt').style.display = 'none';
-            document.getElementById('failed-login-prompt').style.display = 'block';
-            document.getElementById('login-status').textContent = 'Conta não autorizada';
-            
-            if (authError) {
-                authError.textContent = `A conta ${user.email} não tem permissão. Por favor, troque para uma conta autorizada.`;
-                authError.style.display = 'block';
-            }
-            
+            // User is not authorized. Sign them out and redirect to login.
+            alert(`A conta ${user.email} não tem permissão de acesso.`);
             await signOut(auth);
+            // The onAuthStateChanged listener will catch the sign-out and redirect.
         }
     } catch (error) {
         console.error("Authorization check error:", error);
-        if (authError) {
-            authError.textContent = "Erro ao verificar permissão. Tente novamente.";
-            authError.style.display = 'block';
-        }
-        await signOut(auth); // Sign out on error
+        alert("Erro ao verificar permissão. Tente novamente.");
+        await signOut(auth);
     }
 }
 
-
-// --- Main Data Fetching and Processing ---
 async function loadDashboardData() {
-    console.log("Loading dashboard data...");
     try {
         const [expendituresSnapshot, earningsSnapshot] = await Promise.all([
             getDocs(collection(db, "expenditures")),
@@ -279,8 +213,6 @@ async function loadDashboardData() {
         data.data = structuredData;
 
         initDashboard();
-        dashboardInitialized = true;
-        console.log("Dashboard data loaded and initialized.");
 
     } catch (error) {
         console.error("Error loading data from Firestore:", error);
@@ -288,7 +220,6 @@ async function loadDashboardData() {
     }
 }
 
-// --- Dashboard Initialization & View Toggling ---
 function initDashboard() {
     setupViewToggle();
     
@@ -301,7 +232,7 @@ function initDashboard() {
 
 function setupViewToggle() {
     const container = document.querySelector('.view-toggle');
-    const buttons = container.querySelectorAll('button');
+    const buttons = container.querySelectorAll('button:not(#logout-btn)');
     const views = {
         'btn-expenses-main': 'charts-view',
         'btn-earnings-main': 'earnings-view',
@@ -326,44 +257,13 @@ function setupViewToggle() {
 }
 
 function showError(message) {
-    const container = document.querySelector('.container') || document.body;
-    container.innerHTML = `<div class="error-message"><h2>Erro</h2><p>${message}</p><button onclick="window.location.reload()">Recarregar Página</button></div>`;
+    dashboardContainer.innerHTML = `<div class="error-message"><h2>Erro</h2><p>${message}</p><button onclick="window.location.reload()">Recarregar Página</button></div>`;
+    dashboardContainer.style.display = 'block';
+    loadingView.style.display = 'none';
 }
 
-// --- Start the application ---
-function initializeAppFlow() {
-    showView('loading');
-
-    setPersistence(auth, browserLocalPersistence)
-        .then(() => {
-            // This listener is the single source of truth for the UI.
-            onAuthStateChanged(auth, async (user) => {
-                if (user) {
-                    if (dashboardInitialized) return; 
-                    await checkAuthorization(user);
-                } else {
-                    // No user is signed in. Show the login page.
-                    dashboardInitialized = false; // Reset flag on sign out
-                    document.getElementById("initial-login-prompt").style.display = "block";
-                    document.getElementById("failed-login-prompt").style.display = "none";
-                    document.getElementById("login-status").textContent = "Faça login para continuar";
-                    if (userInfoDisplay) userInfoDisplay.style.display = 'none';
-                    if (authError) authError.style.display = 'none';
-                    showView('login');
-                }
-            });
-        })
-        .catch((error) => {
-            console.error("Error setting persistence:", error);
-            showView('login'); // Fallback to login view
-            if (authError) {
-                authError.textContent = `Erro de configuração: ${error.message}`;
-                authError.style.display = 'block';
-            }
-        });
-}
-
-// *** FIX: Wait for the DOM to be fully loaded before starting the app ***
-document.addEventListener('DOMContentLoaded', () => {
-    initializeAppFlow();
+// Event Listeners
+logoutBtn.addEventListener('click', async () => {
+    await signOut(auth);
+    // onAuthStateChanged will handle the redirect to login.html
 });
