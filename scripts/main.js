@@ -111,9 +111,6 @@ const loadingView = document.getElementById('loading-view');
 const loginView = document.getElementById('login-view');
 const dashboardContainer = document.querySelector('.container');
 
-// Login View States
-
-
 // Buttons and User Info Elements
 const loginBtn = document.getElementById("login-btn");
 const logoutBtn = document.getElementById("logout-btn");
@@ -133,10 +130,16 @@ if (loginBtn) {
     });
 }
 
-// FIX: Check if the logout button exists before adding a listener
 if (logoutBtn) {
     logoutBtn.addEventListener('click', async () => {
         await signOut(auth);
+    });
+}
+
+if (retryLoginBtn) {
+    retryLoginBtn.addEventListener("click", () => {
+        const provider = new GoogleAuthProvider();
+        signInWithRedirect(auth, provider);
     });
 }
 
@@ -148,19 +151,16 @@ function showView(view) {
     dashboardContainer.style.display = view === 'dashboard' ? 'block' : 'none';
 }
 
+// Set persistence and check for redirect result
 setPersistence(auth, browserLocalPersistence)
     .then(() => {
         return getRedirectResult(auth);
     })
     .then((result) => {
         if (result) {
-            // This is a redirect back from Google Auth
-            const user = result.user;
-            console.log("Redirect result user:", user);
-            // onAuthStateChanged will handle the rest
-        } else {
-            // No redirect result, proceed with normal auth state check
-            console.log("No redirect result, checking auth state...");
+            // This is a redirect back from Google Auth.
+            // onAuthStateChanged will handle the user object.
+            console.log("Redirect result processed.");
         }
     })
     .catch((error) => {
@@ -172,19 +172,19 @@ setPersistence(auth, browserLocalPersistence)
         showView('login');
     });
 
-// This is the primary listener for authentication state.
+// Primary listener for authentication state changes.
 onAuthStateChanged(auth, async (user) => {
     if (user) {
-        // A user is signed in. Check if they are authorized.
+        // A user is signed in.
         showView('loading');
         await checkAuthorization(user);
     } else {
-        // No user is signed in. Show the default login page.
+        // No user is signed in.
         document.getElementById("initial-login-prompt").style.display = "block";
         document.getElementById("failed-login-prompt").style.display = "none";
         document.getElementById("login-status").textContent = "Faça login para continuar";
         if (userInfoDisplay) userInfoDisplay.style.display = 'none';
-        if (authError) authError.style.display = 'none'; // Hide any previous errors
+        if (authError) authError.style.display = 'none';
         showView('login');
     }
 });
@@ -197,42 +197,39 @@ async function checkAuthorization(user) {
 
         if (!querySnapshot.empty) {
             console.log("Authorization successful.");
-            // User is authorized. Load data and show the dashboard.
+            // User is authorized.
             if (!dashboardInitialized) {
                 await loadDashboardData();
             }
             showView('dashboard');
         } else {
             console.log("Authorization failed: User not in whitelist.");
-            // User is not on the whitelist. Show the unauthorized user state.
+            // User is not authorized. Display message and sign out.
             if (userPhoto) userPhoto.src = user.photoURL || `https://placehold.co/80x80/cccccc/FFFFFF?text=${user.displayName?.[0] || 'U'}`;
             if (userName) userName.textContent = user.displayName;
             if (userEmail) userEmail.textContent = user.email;
             if (userInfoDisplay) userInfoDisplay.style.display = 'block';
             
-            // Hide initial and failed login prompts
             document.getElementById('initial-login-prompt').style.display = 'none';
-            document.getElementById('failed-login-prompt').style.display = 'none';
-            document.getElementById('login-status').textContent = 'Faça login para continuar'; // Reset status message
-
+            document.getElementById('failed-login-prompt').style.display = 'block';
+            document.getElementById('login-status').textContent = 'Conta não autorizada';
             
             if (authError) {
                 authError.textContent = `A conta ${user.email} não tem permissão. Por favor, troque para uma conta autorizada.`;
                 authError.style.display = 'block';
             }
-            document.getElementById("initial-login-prompt").style.display = "none";
-            document.getElementById("failed-login-prompt").style.display = "block";
-            document.getElementById("login-status").textContent = "Conta não autorizada";
-            showView('login');
+            
+            // *** FIX: SIGN THE USER OUT TO PREVENT THE LOOP ***
+            await signOut(auth);
+            // onAuthStateChanged will be triggered again, showing the clean login screen.
         }
     } catch (error) {
         console.error("Authorization check error:", error);
-        // An error occurred during the check. Sign the user out and show a generic error.
         if (authError) {
             authError.textContent = "Erro ao verificar permissão. Tente novamente.";
             authError.style.display = 'block';
         }
-        await signOut(auth); // This will trigger onAuthStateChanged to show the default login
+        await signOut(auth); // Sign out on error
     }
 }
 
@@ -304,13 +301,12 @@ async function loadDashboardData() {
             }
         });
         
-        // Assign processed data to the exported variable
         data.months = Array.from(monthsSet).sort();
         data.departments = Array.from(departmentsSet).sort();
         data.data = structuredData;
 
         initDashboard();
-        dashboardInitialized = true; // Set flag to true after successful load
+        dashboardInitialized = true;
         console.log("Dashboard data loaded and initialized.");
 
     } catch (error) {
@@ -323,12 +319,10 @@ async function loadDashboardData() {
 function initDashboard() {
     setupViewToggle();
     
-    // Initialize all views
     initExpensesView();
     initEarningsView();
     initTablesView();
 
-    // Trigger the default table view to render for the first time
     document.getElementById('btn-summary-month')?.click();
 }
 
@@ -363,15 +357,5 @@ function showError(message) {
     container.innerHTML = `<div class="error-message"><h2>Erro</h2><p>${message}</p><button onclick="window.location.reload()">Recarregar Página</button></div>`;
 }
 
-// Show the initial loading screen. The onAuthStateChanged listener will then
-// determine whether to show the login page or the dashboard.
+// Show the initial loading screen.
 showView('loading');
-
-
-if (retryLoginBtn) {
-    retryLoginBtn.addEventListener("click", () => {
-        const provider = new GoogleAuthProvider();
-        signInWithRedirect(auth, provider);
-    });
-}
-
