@@ -222,6 +222,7 @@ async function processPdf(file) {
         reader.onerror = error => reject(error);
     });
 
+    // CORRECTED PROMPT: Asking for a structured object with fixed keys.
     const prompt = `
         Analyze the provided PDF, which contains a single-page payslip.
         You MUST identify the employee's full name, which is typically in a large font above the main table of values.
@@ -232,39 +233,48 @@ async function processPdf(file) {
         3. 'vencimentos': The numerical value from the 'Vencimentos' (Earnings) column. If this cell is empty for a line, use 0.
         4. 'descontos': The numerical value from the 'Descontos' (Deductions) column. If this cell is empty for a line, use 0.
         It is critical to correctly associate values with their descriptions, even if there are large empty spaces in the table layout.
-        Return the data as a single JSON object where the key is the employee's full name (in uppercase) and the value is an array of their line items.
+        Return the data as a single JSON object with two keys: "employeeName" (containing the full name in uppercase) and "lineItems" (containing the array of extracted line items).
         Return ONLY the raw JSON object, without any markdown formatting like \`\`\`json ... \`\`\`.
     `;
 
+    // CORRECTED SCHEMA: This schema matches the new prompt and uses valid API fields.
     const payload = {
         contents: [{ parts: [{ text: prompt }, { inlineData: { mimeType: "application/pdf", data: base64File } }] }],
         generationConfig: {
             responseMimeType: "application/json",
             responseSchema: {
                 type: "OBJECT",
-                properties: {},
-                additionalProperties: {
-                    type: "ARRAY",
-                    items: {
-                        type: "OBJECT",
-                        properties: {
-                            codigo: { type: "NUMBER" },
-                            descricao: { type: "STRING" },
-                            vencimentos: { type: "NUMBER" },
-                            descontos: { type: "NUMBER" }
-                        },
-                        required: ["codigo", "descricao", "vencimentos", "descontos"]
+                properties: {
+                    employeeName: { type: "STRING" },
+                    lineItems: {
+                        type: "ARRAY",
+                        items: {
+                            type: "OBJECT",
+                            properties: {
+                                codigo: { type: "NUMBER" },
+                                descricao: { type: "STRING" },
+                                vencimentos: { type: "NUMBER" },
+                                descontos: { type: "NUMBER" }
+                            },
+                            required: ["codigo", "descricao", "vencimentos", "descontos"]
+                        }
                     }
-                }
+                },
+                required: ["employeeName", "lineItems"]
             }
         }
     };
 
     const resultText = await makeApiCallWithRetry(payload);
     const parsedResult = JSON.parse(resultText);
+    
+    // CORRECTED PARSING LOGIC: Handles the new, structured response.
     const normalizedMap = new Map();
-    for (const name in parsedResult) {
-        normalizedMap.set(name.toUpperCase().trim(), parsedResult[name]);
+    if (parsedResult.employeeName && parsedResult.lineItems) {
+        const name = parsedResult.employeeName.toUpperCase().trim();
+        normalizedMap.set(name, parsedResult.lineItems);
+    } else {
+        console.warn("Parsed result was missing expected fields 'employeeName' or 'lineItems'", parsedResult);
     }
     return normalizedMap;
 }
