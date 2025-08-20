@@ -9,24 +9,87 @@ let pieChartState = {
 };
 
 export function initExpensesView() {
-    // This function is now responsible for finding its own elements.
     const viewContainer = document.getElementById('charts-view');
     if (!viewContainer) {
         console.error("Expenses view container not found!");
         return;
     }
+    // Clear previous content to prevent duplication
+    viewContainer.innerHTML = `
+      <div class="chart-row single" id="total-expenditures-wrapper">
+        <div class="card">
+          <h2>Gastos Totais ao Longo do Tempo</h2>
+          <div class="centered-toggle">
+            <div class="time-filters toggle-switch-group">
+              <button class="filter-btn time-btn" data-months="3">3 Meses</button>
+              <button class="filter-btn time-btn" data-months="6">6 Meses</button>
+              <button class="filter-btn time-btn active" data-months="12">12 Meses</button>
+            </div>
+          </div>
+          <div class="filter-buttons-wrapper"></div>
+          <div class="chart-container">
+            <canvas id="total-expenditures-chart"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="chart-row single" id="department-trends-wrapper">
+        <div class="card">
+          <h2>Gastos por Departamento</h2>
+          <div class="centered-toggle">
+            <div class="time-filters toggle-switch-group">
+              <button class="filter-btn time-btn" data-months="3">3 Meses</button>
+              <button class="filter-btn time-btn" data-months="6">6 Meses</button>
+              <button class="filter-btn time-btn active" data-months="12">12 Meses</button>
+            </div>
+          </div>
+           <div class="centered-toggle">
+            <div class="filter-buttons toggle-switch-group">
+                <button class="filter-btn active" data-departments='all'>Mostrar Todos</button>
+                <button class="filter-btn" data-departments='["Comercial","Diretoria","Operação"]'>Principais</button>
+                <button class="filter-btn" data-departments='["Administrativo","RH","NEC","Apoio","Marketing","Jurídico","Planejamento Estratégico"]'>Demais</button>
+            </div>
+          </div>
+          <div class="chart-container">
+            <canvas id="department-trends-chart"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="chart-row double">
+        <div class="card">
+          <h2>Média de Gastos por Funcionário</h2>
+          <div class="chart-container">
+            <canvas id="avg-expenditure-chart"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Total de Funcionários</h2>
+          <div class="chart-container">
+            <canvas id="employees-chart"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="chart-row single">
+        <div class="card" id="department-breakdown-wrapper"></div>
+      </div>
+      <div class="chart-row single">
+        <div class="card">
+          <h2>Participação por Departamento</h2>
+          <div class="chart-container">
+            <canvas id="percentage-stacked-chart"></canvas>
+          </div>
+        </div>
+      </div>
+    `;
 
     pieChartState.selectedDepartments = [...data.departments];
     const last12Months = data.months.slice(-12);
 
-    // Create charts
     charts.totalExpenditures = createTotalExpendituresChart(data.data, last12Months);
     charts.departmentTrends = createDepartmentTrendsChart(data.data, last12Months, data.departments);
     createAvgExpenditureChart(data.data, last12Months);
     createEmployeesChart(data.data, last12Months);
     createPercentageStackedChart(data.data, last12Months, data.departments);
 
-    // Setup event listeners
     setupTimeFilters();
     setupDepartmentBreakdown();
 }
@@ -273,9 +336,9 @@ function setupDepartmentBreakdown() {
     nextBtn.innerHTML = '&gt;';
     navContainer.appendChild(nextBtn);
 
-    document.querySelectorAll('.pie-time-btn').forEach(button => {
+    document.querySelectorAll('#department-breakdown-wrapper .pie-time-btn').forEach(button => {
         button.addEventListener('click', () => {
-            document.querySelectorAll('.pie-time-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('#department-breakdown-wrapper .pie-time-btn').forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
             pieChartState.range = parseInt(button.dataset.months);
             pieChartState.offset = 0;
