@@ -4,7 +4,7 @@ import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/fireb
 import { app } from './main.js';
 
 // --- IMPORTANT: ADD YOUR GEMINI API KEY HERE ---
-const GEMINI_API_KEY = ""; // <--- PASTE YOUR GOOGLE AI STUDIO API KEY HERE
+const GEMINI_API_KEY = "AIzaSyBaM10J2fS0Zxa3GoL-DrCxyLFXYpeVeig"; // <--- PASTE YOUR GOOGLE AI STUDIO API KEY HERE
 
 // --- Module State ---
 let db;
