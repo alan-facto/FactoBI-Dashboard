@@ -15,7 +15,7 @@ let ignoredCodes = new Set();
 const IGNORED_CODES_DOC_PATH = "payslipProcessor/ignoredCodes";
 
 // --- DOM Elements ---
-let tsvInput, pdfInput, processBtn, tsvIndicator, pdfIndicator, loader, outputSection, outputTextarea, warningSection, warningList, downloadBtn;
+let tsvInput, pdfInput, processBtn, tsvIndicator, pdfIndicator, loader, outputSection, outputTextarea, warningSection, warningList, downloadBtn, tsvDropArea, pdfDropArea;
 
 /**
  * Initializes the payslip processor module.
@@ -35,12 +35,19 @@ export function initPayslipProcessor() {
     warningSection = document.getElementById('payslip-warning-section');
     warningList = document.getElementById('payslip-warning-list');
     downloadBtn = document.getElementById('payslip-download-btn');
+    tsvDropArea = document.getElementById('tsv-drop-area');
+    pdfDropArea = document.getElementById('pdf-drop-area');
 
     if (!processBtn) return;
 
     // --- Event Listeners ---
-    tsvInput.addEventListener('change', handleTsvSelect);
-    pdfInput.addEventListener('change', handlePdfSelect);
+    tsvInput.addEventListener('change', (e) => handleTsvSelect(e.target.files));
+    pdfInput.addEventListener('change', (e) => handlePdfSelect(e.target.files));
+    
+    // Drag and Drop Listeners
+    setupDragDrop(tsvDropArea, handleTsvSelect);
+    setupDragDrop(pdfDropArea, handlePdfSelect);
+
     processBtn.addEventListener('click', handleProcessing);
     warningSection.addEventListener('click', handleIgnoreClick);
     downloadBtn.addEventListener('click', downloadTsv);
@@ -49,14 +56,29 @@ export function initPayslipProcessor() {
     console.log("Payslip Processor Initialized");
 }
 
-function handleTsvSelect(event) {
-    tsvFile = event.target.files[0] || null;
+function setupDragDrop(area, fileHandler) {
+    area.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        area.classList.add('dragover');
+    });
+    area.addEventListener('dragleave', () => area.classList.remove('dragover'));
+    area.addEventListener('drop', (e) => {
+        e.preventDefault();
+        area.classList.remove('dragover');
+        if (e.dataTransfer.files.length > 0) {
+            fileHandler(e.dataTransfer.files);
+        }
+    });
+}
+
+function handleTsvSelect(files) {
+    tsvFile = files[0] || null;
     tsvIndicator.textContent = tsvFile ? tsvFile.name : "Nenhum arquivo selecionado.";
     checkProcessButtonState();
 }
 
-function handlePdfSelect(event) {
-    pdfFiles = Array.from(event.target.files);
+function handlePdfSelect(files) {
+    pdfFiles = Array.from(files);
     if (pdfFiles.length > 0) {
         pdfIndicator.textContent = `${pdfFiles.length} PDF(s) selecionado(s).`;
     } else {
@@ -89,18 +111,23 @@ async function fetchIgnoredCodes() {
 }
 
 async function updateIgnoredCodesInDb(updatedCodesSet) {
-    if (!db) return;
+    if (!db) {
+        console.error("Firestore DB not initialized.");
+        return;
+    }
     try {
         const docRef = doc(db, IGNORED_CODES_DOC_PATH);
         await setDoc(docRef, { codes: Array.from(updatedCodesSet) });
+        console.log("Successfully updated ignored codes in Firebase.");
     } catch (err) {
         console.error("Error updating ignored codes:", err);
-        showError("Could not save ignored codes to Firebase.");
+        showError(`Could not save ignored codes to Firebase: ${err.message}`);
     }
 }
 
 async function handleProcessing() {
     showLoader(true);
+    processBtn.disabled = true;
     showError('');
     outputSection.style.display = 'none';
     warningSection.style.display = 'none';
@@ -111,7 +138,7 @@ async function handleProcessing() {
             const namesText = await tsvFile.text();
             nameList = namesText.split('\n').map(n => n.trim()).filter(Boolean);
         } else {
-            nameList = []; // Reset if no TSV is provided
+            nameList = [];
         }
 
         const allPayslipData = new Map();
@@ -127,6 +154,7 @@ async function handleProcessing() {
         showError(`An error occurred: ${err.message}`);
     } finally {
         showLoader(false);
+        checkProcessButtonState();
     }
 }
 
@@ -139,10 +167,16 @@ async function processPdf(file) {
     });
 
     const prompt = `
-        For each page in this PDF, identify the employee's full name, which is usually in a large font above the main table.
-        Then, extract all line items from the payslip table on that page. For each item, provide its code ('Código'), description ('Descrição'), 'Vencimentos' (Earnings), and 'Descontos' (Deductions).
-        Return the data as a JSON object where keys are the employee names and values are arrays of their line items.
-        Ensure all monetary values are numbers, using a period as the decimal separator.
+        Analyze each page of the provided PDF, which contains payslips.
+        For each page, you MUST identify the employee's full name, which is typically in a large font above the main table of values.
+        Then, for that employee, meticulously extract every single line item from the table.
+        For each line item, you MUST provide:
+        1. 'codigo': The number from the 'Código' column.
+        2. 'descricao': The text from the 'Descrição' column.
+        3. 'vencimentos': The numerical value from the 'Vencimentos' (Earnings) column. If this cell is empty for a line, use 0.
+        4. 'descontos': The numerical value from the 'Descontos' (Deductions) column. If this cell is empty for a line, use 0.
+        It is critical to correctly associate values with their descriptions, even if there are large empty spaces in the table layout.
+        Return the data as a single JSON object where keys are the employee full names (in uppercase) and values are arrays of their line items.
     `;
 
     const payload = {
@@ -161,14 +195,16 @@ async function processPdf(file) {
                             descricao: { type: "STRING" },
                             vencimentos: { type: "NUMBER" },
                             descontos: { type: "NUMBER" }
-                        }
+                        },
+                        required: ["codigo", "descricao", "vencimentos", "descontos"]
                     }
                 }
             }
         }
     };
 
-    const resultText = await makeApiCallWithRetry(payload);
+    // Replace MOCK with actual API call in production
+    const resultText = await makeApiCallWithRetry(payload); 
     const parsedResult = JSON.parse(resultText);
     const normalizedMap = new Map();
     for (const name in parsedResult) {
@@ -178,11 +214,25 @@ async function processPdf(file) {
 }
 
 async function makeApiCallWithRetry(payload) {
+    // This is a MOCK response. Replace with your actual Gemini API fetch logic.
     console.log("Making API call (mock)...");
     return new Promise(resolve => setTimeout(() => {
         const mockData = {
-            "ALAN MARTINS RODRIGUES": [{ "codigo": 1, "descricao": "HORAS NORMAIS", "vencimentos": 2600.00, "descontos": 0 }, { "codigo": 150, "descricao": "HORAS EXTRAS", "vencimentos": 9.04, "descontos": 0 }, { "codigo": 998, "descricao": "I.N.S.S.", "vencimentos": 0, "descontos": 210.78 }, { "codigo": 8069, "descricao": "HORAS FALTAS PARCIAL", "vencimentos": 0, "descontos": 15.36 }, { "codigo": 9999, "descricao": "NEW UNKNOWN BENEFIT", "vencimentos": 100.00, "descontos": 0 }],
-            "JANE DOE": [{ "codigo": 1, "descricao": "HORAS NORMAIS", "vencimentos": 3000.00, "descontos": 0 }, { "codigo": 981, "descricao": "ADIANTAMENTO SALARIAL", "vencimentos": 0, "descontos": 1200.00 }]
+            "ALAN MARTINS RODRIGUES": [
+                { "codigo": 1, "descricao": "HORAS NORMAIS", "vencimentos": 2600.00, "descontos": 0 },
+                { "codigo": 250, "descricao": "REFLEXO EXTRAS DSR", "vencimentos": 1.34, "descontos": 0 },
+                { "codigo": 150, "descricao": "HORAS EXTRAS", "vencimentos": 9.04, "descontos": 0 },
+                { "codigo": 998, "descricao": "I.N.S.S.", "vencimentos": 0, "descontos": 210.78 },
+                { "codigo": 8069, "descricao": "HORAS FALTAS PARCIAL", "vencimentos": 0, "descontos": 15.36 },
+                { "codigo": 48, "descricao": "VALE TRANSPORTE", "vencimentos": 0, "descontos": 155.08 },
+                { "codigo": 9999, "descricao": "NEW UNKNOWN BENEFIT", "vencimentos": 100.00, "descontos": 0 }
+            ],
+            "JANE DOE": [
+                { "codigo": 1, "descricao": "HORAS NORMAIS", "vencimentos": 3000.00, "descontos": 0 },
+                { "codigo": 981, "descricao": "ADIANTAMENTO SALARIAL", "vencimentos": 0, "descontos": 1200.00 },
+                { "codigo": 37, "descricao": "COMISSOES", "vencimentos": 554.89, "descontos": 0 },
+                { "codigo": 853, "descricao": "REFLEXO COMISSOES DSR", "vencimentos": 96.50, "descontos": 0 }
+            ]
         };
         resolve(JSON.stringify(mockData));
     }, 1500));
@@ -206,6 +256,7 @@ function correlateAndGenerateOutput() {
                 const codigo = item.codigo || 0;
                 let processed = false;
 
+                // Apply special rules
                 if (desc.includes('COMISS')) { rowData.comissao += item.vencimentos || 0; processed = true; }
                 if (desc.includes('EXTRAS')) { rowData.horasExtrasValor += item.vencimentos || 0; processed = true; }
                 if (desc.includes('FALTAS')) { rowData.descontoFaltas += item.descontos || 0; processed = true; }
