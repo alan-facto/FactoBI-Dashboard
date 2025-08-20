@@ -158,6 +158,11 @@ function showView(view) {
     loadingView.style.display = view === 'loading' ? 'flex' : 'none';
     loginView.style.display = view === 'login' ? 'flex' : 'none';
     dashboardContainer.style.display = view === 'dashboard' ? 'block' : 'none';
+    
+    // *** FIX: Ensure the default charts view is visible when the dashboard is shown ***
+    if (view === 'dashboard') {
+        document.getElementById('charts-view').style.display = 'flex';
+    }
 }
 
 async function checkAuthorization(user) {
