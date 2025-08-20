@@ -4,7 +4,7 @@ import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/fireb
 import { app } from './main.js';
 
 // --- IMPORTANT: ADD YOUR GEMINI API KEY HERE ---
-const GEMINI_API_KEY = "AIzaSyBaM10J2fS0Zxa3GoL-DrCxyLFXYpeVeig"; // <--- PASTE YOUR GOOGLE AI STUDIO API KEY HERE
+const GEMINI_API_KEY = ""; // <--- PASTE YOUR GOOGLE AI STUDIO API KEY HERE
 
 // --- Module State ---
 let db;
@@ -150,7 +150,13 @@ async function handleProcessing() {
         }
 
         const allPayslipData = new Map();
-        const processingPromises = pdfFiles.map(pdf => processPdf(pdf));
+        const processingPromises = pdfFiles.map(pdf => {
+            if (pdf.size === 0) {
+                console.warn(`Skipping empty file: ${pdf.name}`);
+                return Promise.resolve(new Map()); // Resolve with an empty map for empty files
+            }
+            return processPdf(pdf);
+        });
         const results = await Promise.all(processingPromises);
 
         results.forEach(dataMap => {
@@ -238,7 +244,8 @@ async function makeApiCallWithRetry(payload, maxRetries = 3) {
             if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
                 return result.candidates[0].content.parts[0].text;
             } else {
-                throw new Error("Invalid response structure from API.");
+                // If the response is valid but has no content (e.g., safety block), treat as an error to retry.
+                throw new Error("Invalid or empty response structure from API.");
             }
         } catch (error) {
             console.warn(`API call attempt ${i + 1} failed. Retrying in ${delay / 1000}s...`);
