@@ -124,14 +124,19 @@ const userName = document.getElementById('user-name');
 const userEmail = document.getElementById('user-email');
 
 // Event Listeners
-loginBtn.addEventListener('click', () => {
-    const provider = new GoogleAuthProvider();
-    signInWithRedirect(auth, provider);
-});
+if (loginBtn) {
+    loginBtn.addEventListener('click', () => {
+        const provider = new GoogleAuthProvider();
+        signInWithRedirect(auth, provider);
+    });
+}
 
-logoutBtn.addEventListener('click', async () => {
-    await signOut(auth);
-});
+// FIX: Check if the logout button exists before adding a listener
+if (logoutBtn) {
+    logoutBtn.addEventListener('click', async () => {
+        await signOut(auth);
+    });
+}
 
 
 // This function handles showing the correct view
@@ -149,9 +154,9 @@ onAuthStateChanged(auth, async (user) => {
         await checkAuthorization(user);
     } else {
         // No user is signed in. Show the default login page.
-        defaultLoginState.style.display = 'block';
-        unauthorizedUserState.style.display = 'none';
-        authError.style.display = 'none'; // Hide any previous errors
+        if (defaultLoginState) defaultLoginState.style.display = 'block';
+        if (unauthorizedUserState) unauthorizedUserState.style.display = 'none';
+        if (authError) authError.style.display = 'none'; // Hide any previous errors
         showView('login');
     }
 });
@@ -172,22 +177,26 @@ async function checkAuthorization(user) {
         } else {
             console.log("Authorization failed: User not in whitelist.");
             // User is not on the whitelist. Show the unauthorized user state.
-            userPhoto.src = user.photoURL || `https://placehold.co/80x80/cccccc/FFFFFF?text=${user.displayName?.[0] || 'U'}`;
-            userName.textContent = user.displayName;
-            userEmail.textContent = user.email;
+            if (userPhoto) userPhoto.src = user.photoURL || `https://placehold.co/80x80/cccccc/FFFFFF?text=${user.displayName?.[0] || 'U'}`;
+            if (userName) userName.textContent = user.displayName;
+            if (userEmail) userEmail.textContent = user.email;
             
-            authError.textContent = `A conta ${user.email} não tem permissão. Por favor, troque para uma conta autorizada.`;
-            authError.style.display = 'block';
+            if (authError) {
+                authError.textContent = `A conta ${user.email} não tem permissão. Por favor, troque para uma conta autorizada.`;
+                authError.style.display = 'block';
+            }
 
-            defaultLoginState.style.display = 'none';
-            unauthorizedUserState.style.display = 'block';
+            if (defaultLoginState) defaultLoginState.style.display = 'none';
+            if (unauthorizedUserState) unauthorizedUserState.style.display = 'block';
             showView('login');
         }
     } catch (error) {
         console.error("Authorization check error:", error);
         // An error occurred during the check. Sign the user out and show a generic error.
-        authError.textContent = "Erro ao verificar permissão. Tente novamente.";
-        authError.style.display = 'block';
+        if (authError) {
+            authError.textContent = "Erro ao verificar permissão. Tente novamente.";
+            authError.style.display = 'block';
+        }
         await signOut(auth); // This will trigger onAuthStateChanged to show the default login
     }
 }
