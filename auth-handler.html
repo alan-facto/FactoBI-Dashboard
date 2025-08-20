@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authenticating...</title>
+    <!-- Re-using the login styles for a consistent look -->
+    <link rel="stylesheet" href="styles/login.css">
+</head>
+<body>
+    <!-- This view provides feedback to the user while Firebase works -->
+    <div class="auth-view">
+        <div class="spinner"></div>
+        <p>Autenticando, por favor aguarde...</p>
+    </div>
+    <!-- The script that does the work -->
+    <script type="module" src="scripts/auth-handler.js"></script>
+</body>
+</html>
