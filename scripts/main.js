@@ -1,7 +1,7 @@
 // Import necessary functions from the Firebase SDK
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, getDocs, doc, getDoc, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth, GoogleAuthProvider, signInWithRedirect, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 
 // Import view-specific modules
@@ -116,6 +116,8 @@ const authError = document.getElementById('auth-error');
 // When the login button is clicked, trigger the Google sign-in redirect
 loginBtn.addEventListener('click', () => {
     const provider = new GoogleAuthProvider();
+    // Clear any previous error messages before trying to sign in again
+    sessionStorage.removeItem('authError');
     signInWithRedirect(auth, provider);
 });
 
@@ -126,73 +128,55 @@ function showView(view) {
     dashboardContainer.style.display = view === 'dashboard' ? 'block' : 'none';
 }
 
-// Main Authentication Logic
-async function initializeAuth() {
-    showView('loading');
-    try {
-        const result = await getRedirectResult(auth);
-        // If result is not null, a user has just signed in.
-        // onAuthStateChanged will handle the user object.
-        // If result is null, it means we are not returning from a redirect.
-        if (!result) {
-            // If no redirect, check if there's a user from a previous session
-            if (!auth.currentUser) {
-                showView('login');
-            }
+// This is the primary listener for authentication state. It's the single
+// source of truth for whether a user is logged in or not.
+onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        // A user is signed in (from a redirect, or a previous session).
+        // Now, we need to check if they are authorized to see the dashboard.
+        showView('loading'); // Show loading while we check authorization
+        await checkAuthorization(user);
+    } else {
+        // No user is signed in. Show the login page.
+        // Check if there was an error message from a failed login attempt.
+        const errorMessage = sessionStorage.getItem('authError');
+        if (errorMessage) {
+            authError.textContent = errorMessage;
+            authError.style.display = 'block';
+            sessionStorage.removeItem('authError'); // Clear the error after displaying it
         }
-    } catch (error) {
-        console.error("Error processing redirect result:", error);
-        authError.textContent = "Falha ao processar o login. Tente novamente.";
         showView('login');
     }
-}
-
-// This is the primary listener for authentication state.
-onAuthStateChanged(auth, (user) => {
-    if (user) {
-        // A user is signed in (either from redirect or existing session).
-        checkAuthorization(user);
-    } else {
-        // No user is signed in.
-        // The initializeAuth function will handle showing the login page
-        // to avoid a flash of the login screen on page load.
-    }
 });
-
-// Run the initialization logic when the page loads.
-initializeAuth();
-
 
 async function checkAuthorization(user) {
     console.log("Checking authorization for:", user.email);
     try {
-        // Query the 'authorizedUsers' collection for a document where the 'email' field matches the user's email.
+        // Query the 'authorizedUsers' collection for the user's email.
         const q = query(collection(db, "authorizedUsers"), where("email", "==", user.email));
         const querySnapshot = await getDocs(q);
 
         if (!querySnapshot.empty) {
             console.log("Authorization successful.");
-            // A matching document was found, so the user is authorized.
-            showView('dashboard');
-            // Load data and initialize the dashboard if it hasn't been done yet
+            // User is authorized. Load data and show the dashboard.
             if (!dashboardInitialized) {
                 await loadDashboardData();
             }
+            showView('dashboard');
         } else {
             console.log("Authorization failed: User not in whitelist.");
-            // User is not on the whitelist
-            authError.textContent = "Acesso negado. Você não tem permissão para ver este painel.";
-            await auth.signOut(); // Sign out the unauthorized user
-            showView('login');
+            // User is not on the whitelist. Store an error message and sign them out.
+            // onAuthStateChanged will then automatically show the login page with the error.
+            sessionStorage.setItem('authError', "Acesso negado. Você não tem permissão para ver este painel.");
+            await signOut(auth);
         }
     } catch (error) {
         console.error("Authorization check error:", error);
-        authError.textContent = "Erro ao verificar permissão.";
-        await auth.signOut();
-        showView('login');
+        // An error occurred during the check. Also sign the user out.
+        sessionStorage.setItem('authError', "Erro ao verificar permissão. Tente novamente.");
+        await signOut(auth);
     }
 }
-
 
 // --- Main Data Fetching and Processing ---
 async function loadDashboardData() {
@@ -319,3 +303,7 @@ function showError(message) {
     const container = document.querySelector('.container') || document.body;
     container.innerHTML = `<div class="error-message"><h2>Erro</h2><p>${message}</p><button onclick="window.location.reload()">Recarregar Página</button></div>`;
 }
+
+// Show the initial loading screen. The onAuthStateChanged listener will then
+// determine whether to show the login page or the dashboard.
+showView('loading');
