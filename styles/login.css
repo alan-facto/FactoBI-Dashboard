@@ -10,12 +10,14 @@
   text-align: center;
 }
 
+/* --- UPDATED LOGIN CARD --- */
 .login-card {
-  background-color: #fff;
-  color: #333;
+  background-color: #024B59; /* Dark background to match the page */
+  color: #fff; /* White text for contrast */
   padding: 40px 50px;
   border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2); /* Subtle border */
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
   width: 100%;
   max-width: 400px;
   display: flex;
@@ -28,66 +30,37 @@
   margin-bottom: 30px;
 }
 
-.user-info {
-  margin-bottom: 20px;
-}
-
-.user-info img {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  margin-bottom: 15px;
-  border: 3px solid #f0f0f0;
-}
-
-.user-info #user-name {
-  font-weight: 600;
-  font-size: 1.1rem;
-  margin: 0;
-}
-
-.user-info #user-email {
-  color: #666;
-  font-size: 0.9rem;
-  margin-top: 5px;
-}
-
 .login-status {
   font-weight: 500;
   margin-bottom: 30px;
-  min-height: 24px; /* Reserve space to prevent layout shifts */
+  min-height: 24px;
 }
 
 .login-status.error {
-    color: #E44D42;
+    color: #FFB3AD; /* Lighter red for dark background */
 }
 
+/* --- UPDATED BUTTON STYLE --- */
 .login-button {
   width: 100%;
   padding: 14px 28px;
   font-size: 16px;
   cursor: pointer;
-  background-color: #0072B5;
-  color: #fff;
+  background-color: #fff; /* White button */
+  color: #024B59; /* Dark blue text */
   border: none;
   border-radius: 8px;
   font-weight: 600;
-  transition: background-color 0.2s ease;
+  transition: all 0.2s ease;
 }
 
 .login-button:hover {
-  background-color: #005a8e;
+  background-color: #e6e6e6; /* Slightly darker on hover */
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
 }
 
-#retry-login-btn {
-    background-color: #555;
-}
-#retry-login-btn:hover {
-    background-color: #333;
-}
-
-
-/* Spinner for loading view */
+/* Spinner for loading view (no changes needed) */
 .spinner {
   border: 4px solid rgba(255, 255, 255, 0.3);
   border-radius: 50%;
