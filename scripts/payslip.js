@@ -4,8 +4,10 @@
 import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { app } from './main.js';
 
-// --- IMPORTANT: API Key is handled by the environment. Leave this as an empty string. ---
-const GEMINI_API_KEY = ""; // The execution environment will securely provide the key.
+// --- IMPORTANT: PASTE YOUR GEMINI API KEY HERE FOR DEVELOPMENT ---
+// For production, it's highly recommended to move this logic to a secure backend (like a Cloud Function)
+// to protect your key.
+const GEMINI_API_KEY = "AIzaSyBaM10J2fS0Zxa3GoL-DrCxyLFXYpeVeig";
 
 // --- Module State ---
 let db;
@@ -25,6 +27,12 @@ let tsvInput, pdfInput, processBtn, tsvIndicator, pdfIndicator, loader, outputSe
  * Initializes the payslip processor module.
  */
 export function initPayslipProcessor() {
+    // This check helps prevent errors if the Firebase app from main.js isn't ready yet.
+    if (!app) {
+        console.error("Firebase app is not initialized. Payslip Processor cannot start.");
+        showError("Critical Error: Firebase connection failed. Please refresh the page.");
+        return;
+    }
     db = getFirestore(app);
 
     // Cache DOM elements
@@ -154,6 +162,12 @@ async function updateIgnoredCodesInDb(updatedCodesSet) {
  * Main handler for starting the PDF processing.
  */
 async function handleProcessing() {
+    // Added a check to ensure the user has replaced the placeholder API key.
+    if (!GEMINI_API_KEY || GEMINI_API_KEY === "PASTE_YOUR_GEMINI_API_KEY_HERE") {
+        showError("Please add your Gemini API Key to the payslip.js file on line 8.");
+        return;
+    }
+
     showLoader(true);
     processBtn.disabled = true;
     showError('');
@@ -262,7 +276,6 @@ async function processPdf(file) {
  * @returns {Promise<string>} The text response from the API.
  */
 async function makeApiCallWithRetry(payload, maxRetries = 3) {
-    // CORRECTED: Using the recommended gemini-1.5-flash-latest model
     const model = "gemini-1.5-flash-latest";
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
     
@@ -277,7 +290,6 @@ async function makeApiCallWithRetry(payload, maxRetries = 3) {
             });
 
             if (!response.ok) {
-                // Try to get more detailed error info from the response body
                 const errorBody = await response.json().catch(() => ({ error: { message: 'Could not parse error response.' } }));
                 console.error("API Error Body:", errorBody);
                 throw new Error(`API request failed with status ${response.status}: ${errorBody.error?.message || 'Unknown error'}`);
@@ -288,23 +300,18 @@ async function makeApiCallWithRetry(payload, maxRetries = 3) {
             if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
                 return result.candidates[0].content.parts[0].text;
             } else {
-                // Handle cases where the response is OK but content is missing (e.g., safety block)
                 console.warn("API response was OK but lacked valid content.", result);
                 throw new Error("Invalid or empty response structure from API.");
             }
         } catch (error) {
             console.warn(`API call attempt ${i + 1} failed. Retrying in ${delay / 1000}s...`, error.message);
             if (i === maxRetries - 1) {
-                // If this is the last retry, re-throw the original error to be caught by the caller.
                 throw error;
             }
-            // Wait for the delay period before the next retry
             await new Promise(resolve => setTimeout(resolve, delay));
-            // Double the delay for the next potential retry (exponential backoff)
             delay *= 2;
         }
     }
-    // This line will only be reached if all retries fail.
     throw new Error("API call failed after multiple retries.");
 }
 
