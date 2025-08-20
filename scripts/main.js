@@ -110,16 +110,29 @@ function convertMonthToYYYYMM(monthStr) {
 const loadingView = document.getElementById('loading-view');
 const loginView = document.getElementById('login-view');
 const dashboardContainer = document.querySelector('.container');
-const loginBtn = document.getElementById('login-btn');
-const authError = document.getElementById('auth-error');
 
-// When the login button is clicked, trigger the Google sign-in redirect
+// Login View States
+const defaultLoginState = document.getElementById('default-login-state');
+const unauthorizedUserState = document.getElementById('unauthorized-user-state');
+
+// Buttons and User Info Elements
+const loginBtn = document.getElementById('login-btn');
+const logoutBtn = document.getElementById('logout-btn');
+const authError = document.getElementById('auth-error');
+const userPhoto = document.getElementById('user-photo');
+const userName = document.getElementById('user-name');
+const userEmail = document.getElementById('user-email');
+
+// Event Listeners
 loginBtn.addEventListener('click', () => {
     const provider = new GoogleAuthProvider();
-    // Clear any previous error messages before trying to sign in again
-    sessionStorage.removeItem('authError');
     signInWithRedirect(auth, provider);
 });
+
+logoutBtn.addEventListener('click', async () => {
+    await signOut(auth);
+});
+
 
 // This function handles showing the correct view
 function showView(view) {
@@ -128,23 +141,17 @@ function showView(view) {
     dashboardContainer.style.display = view === 'dashboard' ? 'block' : 'none';
 }
 
-// This is the primary listener for authentication state. It's the single
-// source of truth for whether a user is logged in or not.
+// This is the primary listener for authentication state.
 onAuthStateChanged(auth, async (user) => {
     if (user) {
-        // A user is signed in (from a redirect, or a previous session).
-        // Now, we need to check if they are authorized to see the dashboard.
-        showView('loading'); // Show loading while we check authorization
+        // A user is signed in. Check if they are authorized.
+        showView('loading');
         await checkAuthorization(user);
     } else {
-        // No user is signed in. Show the login page.
-        // Check if there was an error message from a failed login attempt.
-        const errorMessage = sessionStorage.getItem('authError');
-        if (errorMessage) {
-            authError.textContent = errorMessage;
-            authError.style.display = 'block';
-            sessionStorage.removeItem('authError'); // Clear the error after displaying it
-        }
+        // No user is signed in. Show the default login page.
+        defaultLoginState.style.display = 'block';
+        unauthorizedUserState.style.display = 'none';
+        authError.style.display = 'none'; // Hide any previous errors
         showView('login');
     }
 });
@@ -152,7 +159,6 @@ onAuthStateChanged(auth, async (user) => {
 async function checkAuthorization(user) {
     console.log("Checking authorization for:", user.email);
     try {
-        // Query the 'authorizedUsers' collection for the user's email.
         const q = query(collection(db, "authorizedUsers"), where("email", "==", user.email));
         const querySnapshot = await getDocs(q);
 
@@ -165,18 +171,27 @@ async function checkAuthorization(user) {
             showView('dashboard');
         } else {
             console.log("Authorization failed: User not in whitelist.");
-            // User is not on the whitelist. Store an error message and sign them out.
-            // onAuthStateChanged will then automatically show the login page with the error.
-            sessionStorage.setItem('authError', "Acesso negado. Você não tem permissão para ver este painel.");
-            await signOut(auth);
+            // User is not on the whitelist. Show the unauthorized user state.
+            userPhoto.src = user.photoURL || `https://placehold.co/80x80/cccccc/FFFFFF?text=${user.displayName?.[0] || 'U'}`;
+            userName.textContent = user.displayName;
+            userEmail.textContent = user.email;
+            
+            authError.textContent = `A conta ${user.email} não tem permissão. Por favor, troque para uma conta autorizada.`;
+            authError.style.display = 'block';
+
+            defaultLoginState.style.display = 'none';
+            unauthorizedUserState.style.display = 'block';
+            showView('login');
         }
     } catch (error) {
         console.error("Authorization check error:", error);
-        // An error occurred during the check. Also sign the user out.
-        sessionStorage.setItem('authError', "Erro ao verificar permissão. Tente novamente.");
-        await signOut(auth);
+        // An error occurred during the check. Sign the user out and show a generic error.
+        authError.textContent = "Erro ao verificar permissão. Tente novamente.";
+        authError.style.display = 'block';
+        await signOut(auth); // This will trigger onAuthStateChanged to show the default login
     }
 }
+
 
 // --- Main Data Fetching and Processing ---
 async function loadDashboardData() {
