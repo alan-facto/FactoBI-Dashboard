@@ -159,7 +159,6 @@ function showView(view) {
     loginView.style.display = view === 'login' ? 'flex' : 'none';
     dashboardContainer.style.display = view === 'dashboard' ? 'block' : 'none';
     
-    // *** FIX: Ensure the default charts view is visible when the dashboard is shown ***
     if (view === 'dashboard') {
         document.getElementById('charts-view').style.display = 'flex';
     }
@@ -340,7 +339,6 @@ function initializeAppFlow() {
             // This listener is the single source of truth for the UI.
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
-                    // *** FIX: Prevent re-initialization if dashboard is already loaded ***
                     if (dashboardInitialized) return; 
                     await checkAuthorization(user);
                 } else {
@@ -365,4 +363,7 @@ function initializeAppFlow() {
         });
 }
 
-initializeAppFlow();
+// *** FIX: Wait for the DOM to be fully loaded before starting the app ***
+document.addEventListener('DOMContentLoaded', () => {
+    initializeAppFlow();
+});
