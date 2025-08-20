@@ -279,3 +279,4 @@ document.addEventListener('DOMContentLoaded', () => {
         await signOut(auth);
     });
 });
+ 
