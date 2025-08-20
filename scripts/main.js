@@ -1,7 +1,7 @@
 // Import necessary functions from the Firebase SDK
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, getDocs, doc, getDoc, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getAuth, GoogleAuthProvider, signInWithRedirect, onAuthStateChanged, signOut, getRedirectResult } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth, GoogleAuthProvider, signInWithRedirect, onAuthStateChanged, signOut, getRedirectResult, browserLocalPersistence, setPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 
 // Import view-specific modules
@@ -126,10 +126,18 @@ const userName = document.getElementById('user-name');
 const userEmail = document.getElementById('user-email');
 
 // Event Listeners
-loginBtn.addEventListener('click', () => {
+loginBtn.addEventListener('click', async () => {
     console.log("Login button clicked.");
-    const provider = new GoogleAuthProvider();
-    signInWithRedirect(auth, provider);
+    try {
+        // ** THE FIX **: Set persistence to local storage
+        await setPersistence(auth, browserLocalPersistence);
+        const provider = new GoogleAuthProvider();
+        signInWithRedirect(auth, provider);
+    } catch (error) {
+        console.error("Error setting persistence or signing in:", error);
+        authError.textContent = "Erro ao iniciar o login. Tente novamente.";
+        authError.style.display = 'block';
+    }
 });
 
 logoutBtn.addEventListener('click', async () => {
