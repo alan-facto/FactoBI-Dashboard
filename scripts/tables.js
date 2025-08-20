@@ -1,11 +1,17 @@
 import { data, colorsByDepartment, formatMonthLabel, formatCurrencyBRL, formatVA } from './main.js';
 
 export function initTablesView() {
+    // This function is now responsible for finding its own elements,
+    // which is safe because it's called after the DOM is ready.
     setupTableToggle();
 }
 
 function setupTableToggle() {
-    const container = document.querySelector('.table-toggle-container');
+    const container = document.querySelector('#tables-view .table-toggle-container');
+    if (!container) {
+        console.error("Table toggle container not found in the document!");
+        return;
+    }
     const buttons = container.querySelectorAll('.table-toggle-btn');
     const tables = {
         'btn-summary-month': 'table-summary-month', 'btn-summary-department': 'table-summary-department',
@@ -18,10 +24,15 @@ function setupTableToggle() {
             button.classList.add('active');
             const tableId = tables[button.id];
             
-            Object.values(tables).forEach(id => document.getElementById(id).style.display = 'none');
+            Object.values(tables).forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.style.display = 'none';
+            });
             const tableEl = document.getElementById(tableId);
-            tableEl.style.display = 'block';
-            tableEl.innerHTML = '';
+            if (tableEl) {
+                tableEl.style.display = 'block';
+                tableEl.innerHTML = ''; // Clear before generating new content
+            }
 
             if (button.id === 'btn-summary-month') generateSummaryByMonth();
             if (button.id === 'btn-summary-department') generateSummaryByDepartment();
