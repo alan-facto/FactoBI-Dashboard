@@ -1,7 +1,7 @@
 // Import necessary functions from the Firebase SDK
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, getDocs, doc, getDoc, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getAuth, GoogleAuthProvider, signInWithRedirect, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth, GoogleAuthProvider, signInWithRedirect, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence, getRedirectResult } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 
 // Import view-specific modules
@@ -112,16 +112,18 @@ const loginView = document.getElementById('login-view');
 const dashboardContainer = document.querySelector('.container');
 
 // Login View States
-const defaultLoginState = document.getElementById('default-login-state');
-const unauthorizedUserState = document.getElementById('unauthorized-user-state');
+
 
 // Buttons and User Info Elements
-const loginBtn = document.getElementById('login-btn');
-const logoutBtn = document.getElementById('logout-btn');
-const authError = document.getElementById('auth-error');
-const userPhoto = document.getElementById('user-photo');
-const userName = document.getElementById('user-name');
-const userEmail = document.getElementById('user-email');
+const loginBtn = document.getElementById("login-btn");
+const logoutBtn = document.getElementById("logout-btn");
+const retryLoginBtn = document.getElementById("retry-login-btn");
+const authError = document.getElementById("auth-error");
+const loginStatus = document.getElementById("login-status");
+const userPhoto = document.getElementById("user-photo");
+const userName = document.getElementById("user-name");
+const userEmail = document.getElementById("user-email");
+const userInfoDisplay = document.getElementById("user-info-display");
 
 // Event Listeners
 if (loginBtn) {
@@ -146,6 +148,30 @@ function showView(view) {
     dashboardContainer.style.display = view === 'dashboard' ? 'block' : 'none';
 }
 
+setPersistence(auth, browserLocalPersistence)
+    .then(() => {
+        return getRedirectResult(auth);
+    })
+    .then((result) => {
+        if (result) {
+            // This is a redirect back from Google Auth
+            const user = result.user;
+            console.log("Redirect result user:", user);
+            // onAuthStateChanged will handle the rest
+        } else {
+            // No redirect result, proceed with normal auth state check
+            console.log("No redirect result, checking auth state...");
+        }
+    })
+    .catch((error) => {
+        console.error("Error during redirect result or persistence setup:", error);
+        if (authError) {
+            authError.textContent = `Erro de autenticação: ${error.message}. Tente novamente.`;
+            authError.style.display = 'block';
+        }
+        showView('login');
+    });
+
 // This is the primary listener for authentication state.
 onAuthStateChanged(auth, async (user) => {
     if (user) {
@@ -154,8 +180,10 @@ onAuthStateChanged(auth, async (user) => {
         await checkAuthorization(user);
     } else {
         // No user is signed in. Show the default login page.
-        if (defaultLoginState) defaultLoginState.style.display = 'block';
-        if (unauthorizedUserState) unauthorizedUserState.style.display = 'none';
+        document.getElementById("initial-login-prompt").style.display = "block";
+        document.getElementById("failed-login-prompt").style.display = "none";
+        document.getElementById("login-status").textContent = "Faça login para continuar";
+        if (userInfoDisplay) userInfoDisplay.style.display = 'none';
         if (authError) authError.style.display = 'none'; // Hide any previous errors
         showView('login');
     }
@@ -180,14 +208,21 @@ async function checkAuthorization(user) {
             if (userPhoto) userPhoto.src = user.photoURL || `https://placehold.co/80x80/cccccc/FFFFFF?text=${user.displayName?.[0] || 'U'}`;
             if (userName) userName.textContent = user.displayName;
             if (userEmail) userEmail.textContent = user.email;
+            if (userInfoDisplay) userInfoDisplay.style.display = 'block';
+            
+            // Hide initial and failed login prompts
+            document.getElementById('initial-login-prompt').style.display = 'none';
+            document.getElementById('failed-login-prompt').style.display = 'none';
+            document.getElementById('login-status').textContent = 'Faça login para continuar'; // Reset status message
+
             
             if (authError) {
                 authError.textContent = `A conta ${user.email} não tem permissão. Por favor, troque para uma conta autorizada.`;
                 authError.style.display = 'block';
             }
-
-            if (defaultLoginState) defaultLoginState.style.display = 'none';
-            if (unauthorizedUserState) unauthorizedUserState.style.display = 'block';
+            document.getElementById("initial-login-prompt").style.display = "none";
+            document.getElementById("failed-login-prompt").style.display = "block";
+            document.getElementById("login-status").textContent = "Conta não autorizada";
             showView('login');
         }
     } catch (error) {
@@ -331,3 +366,12 @@ function showError(message) {
 // Show the initial loading screen. The onAuthStateChanged listener will then
 // determine whether to show the login page or the dashboard.
 showView('loading');
+
+
+if (retryLoginBtn) {
+    retryLoginBtn.addEventListener("click", () => {
+        const provider = new GoogleAuthProvider();
+        signInWithRedirect(auth, provider);
+    });
+}
+
