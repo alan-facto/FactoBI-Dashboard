@@ -1,6 +1,6 @@
 // Import necessary functions from the Firebase SDK
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, getDocs, query, where, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 // Import view-specific modules
@@ -121,11 +121,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function checkAuthorization(user) {
         try {
-            const userDocRef = doc(db, "authorizedUsers", user.email);
-            const userDoc = await getDoc(userDocRef);
+            // *** FIX: Query the collection for a document with the user's email ***
+            const q = query(collection(db, "authorizedUsers"), where("email", "==", user.email));
+            const querySnapshot = await getDocs(q);
 
-            if (userDoc.exists()) {
+            if (!querySnapshot.empty) {
+                // Get the first document found
+                const userDoc = querySnapshot.docs[0];
                 const userData = userDoc.data();
+
+                // Check for the 'type' field to determine if the user is an admin
                 if (userData.type === 'admin') {
                     devToolsBtn.style.display = 'block';
                 }
@@ -224,7 +229,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function initDashboard() {
         setupViewToggle();
         
-        // These functions will now safely find their own elements
         initExpensesView();
         initEarningsView();
         initTablesView();
@@ -279,4 +283,3 @@ document.addEventListener('DOMContentLoaded', () => {
         await signOut(auth);
     });
 });
- 
