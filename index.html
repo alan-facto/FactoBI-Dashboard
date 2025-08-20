@@ -8,41 +8,17 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles/style.css">
-  <link rel="stylesheet" href="styles/login.css"> <!-- New CSS for login page -->
+  <link rel="stylesheet" href="styles/login.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link rel="icon" href="data:,"> <!-- Prevents 404 for missing favicon -->
+  <link rel="icon" href="data:,">
 </head>
 <body>
 
   <!-- Loading View -->
-  <div id="loading-view" class="auth-view">
+  <div id="loading-view" class="auth-view" style="display: flex;">
       <div class="spinner"></div>
       <p>Carregando...</p>
   </div>
-
-  <!-- Login View (Completely Rebuilt) -->
-  <div id="login-view" class="auth-view" style="display: none;">
-    <div class="login-card">
-        <img src="assets/logo.png" alt="Facto Logo" class="login-logo">
-        
-        <!-- User Info Display (hidden by default) -->
-        <div id="user-info-display" class="user-info" style="display: none;">
-            <img id="user-photo" src="" alt="User Photo">
-            <p id="user-name"></p>
-            <p id="user-email"></p>
-        </div>
-
-        <p id="login-status" class="login-status">Faça login para continuar</p>
-        
-        <!-- Action Buttons -->
-        <div id="initial-login-prompt">
-            <button id="login-btn" class="login-button">Entrar com Google</button>
-        </div>
-        
-        <div id="failed-login-prompt" style="display: none;">
-            <button id="retry-login-btn" class="login-button">Tentar com outra conta</button>
-        </div>
-
 
   <!-- Main Dashboard Container (hidden by default) -->
   <div class="container" style="display: none;">
@@ -51,6 +27,7 @@
       <button id="btn-expenses-main" class="active">Gastos</button>
       <button id="btn-earnings-main">Faturamento</button>
       <button id="btn-tables-main">Tabelas</button>
+      <button id="logout-btn" style="margin-left: auto; background-color: #E44D42;">Sair</button>
     </div>
 
     <!-- Gastos (Expenses) View -->
@@ -222,4 +199,3 @@
   <script type="module" src="scripts/main.js"></script>
 </body>
 </html>
-
