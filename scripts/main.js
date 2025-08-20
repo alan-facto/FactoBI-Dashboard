@@ -1,7 +1,7 @@
 // Import necessary functions from the Firebase SDK
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, getDocs, doc, getDoc, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getAuth, GoogleAuthProvider, signInWithRedirect, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence, getRedirectResult } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth, GoogleAuthProvider, signInWithRedirect, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 
 // Import view-specific modules
@@ -126,6 +126,7 @@ const userInfoDisplay = document.getElementById("user-info-display");
 if (loginBtn) {
     loginBtn.addEventListener('click', () => {
         const provider = new GoogleAuthProvider();
+        // This now simply triggers the redirect. The handler page will do the rest.
         signInWithRedirect(auth, provider);
     });
 }
@@ -151,29 +152,21 @@ function showView(view) {
     dashboardContainer.style.display = view === 'dashboard' ? 'block' : 'none';
 }
 
-// Set persistence and check for redirect result
-setPersistence(auth, browserLocalPersistence)
-    .then(() => {
-        return getRedirectResult(auth);
-    })
-    .then((result) => {
-        if (result) {
-            // This is a redirect back from Google Auth.
-            // onAuthStateChanged will handle the user object.
-            console.log("Redirect result processed.");
-        }
-    })
-    .catch((error) => {
-        console.error("Error during redirect result or persistence setup:", error);
-        if (authError) {
-            authError.textContent = `Erro de autenticação: ${error.message}. Tente novamente.`;
-            authError.style.display = 'block';
-        }
-        showView('login');
-    });
 
 // Primary listener for authentication state changes.
 onAuthStateChanged(auth, async (user) => {
+    // Check if an error was passed from the handler page
+    const authErrorString = sessionStorage.getItem('authError');
+    if (authErrorString) {
+        const authErrorData = JSON.parse(authErrorString);
+        console.error("Authentication error from handler:", authErrorData);
+        if (authError) {
+            authError.textContent = `Erro de autenticação: ${authErrorData.message}`;
+            authError.style.display = 'block';
+        }
+        sessionStorage.removeItem('authError'); // Clear error after displaying
+    }
+
     if (user) {
         // A user is signed in.
         showView('loading');
@@ -184,7 +177,7 @@ onAuthStateChanged(auth, async (user) => {
         document.getElementById("failed-login-prompt").style.display = "none";
         document.getElementById("login-status").textContent = "Faça login para continuar";
         if (userInfoDisplay) userInfoDisplay.style.display = 'none';
-        if (authError) authError.style.display = 'none';
+        if (!authErrorString && authError) authError.style.display = 'none';
         showView('login');
     }
 });
@@ -219,9 +212,7 @@ async function checkAuthorization(user) {
                 authError.style.display = 'block';
             }
             
-            // *** FIX: SIGN THE USER OUT TO PREVENT THE LOOP ***
             await signOut(auth);
-            // onAuthStateChanged will be triggered again, showing the clean login screen.
         }
     } catch (error) {
         console.error("Authorization check error:", error);
