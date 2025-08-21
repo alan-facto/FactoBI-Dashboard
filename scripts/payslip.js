@@ -30,7 +30,7 @@ let ignoredCodes = new Set([
 ].map(String));
 
 // --- CONFIGURATION ---
-const BATCH_SIZE = 2; // Reduced batch size for the more powerful (and rate-limited) Pro model.
+const BATCH_SIZE = 10; // Increased batch size for the faster Flash-Lite model.
 const DB_CONFIG_PATH = "payslipProcessor/config";
 
 // --- DOM Elements ---
@@ -209,7 +209,7 @@ async function handleProcessing() {
             } catch (pdfError) {
                  console.error(`Failed to process ${pdf.name}.`, pdfError);
                  const tempName = pdf.name.replace('.pdf', '').toUpperCase();
-                 payslipData.set(tempName, { status: 'error', error: pdfError.message, originalFile: { name: pdf.name } });
+                 payslipData.set(tempName, { status: 'error', error: pdfError.message, originalFile: { name: pdf.name, dataUrl: URL.createObjectURL(pdf) } });
             }
             renderResults();
         }
@@ -232,10 +232,8 @@ async function processPdf(file) {
         reader.onerror = error => reject(error);
     });
 
-    const imageBase64 = await renderPdfToImage(fileData.dataUrl);
-
-    const ocrResult = await performOcr(imageBase64);
-    const assembledRows = assembleRowsFromOcr(ocrResult.textAnnotations);
+    const textContent = await extractTextWithCoordinates(fileData.dataUrl);
+    const assembledRows = assembleRowsFromOcr(textContent.items);
     const finalResult = await extractDataFromRows(assembledRows);
 
     const normalizedMap = new Map();
@@ -246,40 +244,24 @@ async function processPdf(file) {
     return normalizedMap;
 }
 
-async function performOcr(imageBase64) {
-    const prompt = "Perform OCR on this image of a table. For each piece of text, return its content and the x, y coordinates of its top-left corner.";
-    const payload = {
-        contents: [{ parts: [{ text: prompt }, { inlineData: { mimeType: "image/png", data: imageBase64 } }] }],
-        generationConfig: {
-            responseMimeType: "application/json",
-            responseSchema: {
-                type: "OBJECT",
-                properties: {
-                    textAnnotations: {
-                        type: "ARRAY",
-                        items: {
-                            type: "OBJECT",
-                            properties: {
-                                text: { type: "STRING" },
-                                x: { type: "NUMBER" },
-                                y: { type: "NUMBER" }
-                            },
-                            required: ["text", "x", "y"]
-                        }
-                    }
-                },
-                required: ["textAnnotations"]
-            }
-        }
-    };
-    const resultText = await makeApiCallWithRetry(payload);
-    return JSON.parse(resultText);
+async function extractTextWithCoordinates(dataUrl) {
+    const pdf = await pdfjsLib.getDocument(dataUrl).promise;
+    const page = await pdf.getPage(1);
+    return await page.getTextContent();
 }
 
 function assembleRowsFromOcr(annotations) {
     if (!annotations || annotations.length === 0) return [];
-    annotations.sort((a, b) => {
-        if (Math.abs(a.y - b.y) > 10) {
+    
+    const items = annotations.map(item => ({
+        text: item.str,
+        x: item.transform[4],
+        y: item.transform[5],
+        height: item.height
+    }));
+
+    items.sort((a, b) => {
+        if (Math.abs(a.y - b.y) > a.height / 2) {
             return a.y - b.y;
         }
         return a.x - b.x;
@@ -289,13 +271,13 @@ function assembleRowsFromOcr(annotations) {
     let currentRow = [];
     let lastY = -1;
 
-    annotations.forEach(ann => {
-        if (lastY === -1 || Math.abs(ann.y - lastY) > 10) {
+    items.forEach(item => {
+        if (lastY === -1 || Math.abs(item.y - lastY) > item.height / 2) {
             if (currentRow.length > 0) rows.push(currentRow.map(c => c.text).join(' '));
-            currentRow = [ann];
-            lastY = ann.y;
+            currentRow = [item];
+            lastY = item.y;
         } else {
-            currentRow.push(ann);
+            currentRow.push(item);
         }
     });
     if (currentRow.length > 0) rows.push(currentRow.map(c => c.text).join(' '));
@@ -306,7 +288,7 @@ async function extractDataFromRows(rows) {
      const prompt = `
         From the following lines of text extracted from a payslip, identify the employee's name and extract the line items.
         The first few lines usually contain the name. The subsequent lines are table rows.
-        For each table row, extract the code, description, earnings, and deductions.
+        For each table row, extract the code, description, earnings (Vencimentos), and deductions (Descontos).
         Return a single JSON object with "employeeName", "lineItems", and a confidence score.
         
         Text Lines:
@@ -349,10 +331,10 @@ async function extractDataFromRows(rows) {
 }
 
 async function makeApiCallWithRetry(payload, maxRetries = 3) {
-    // --- MODEL UPGRADE ---
-    const model = "gemini-1.5-pro-latest";
+    // --- MODEL SWITCH: Using the fastest available model ---
+    const model = "gemini-2.5-flash-lite"; 
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
-    let delay = 2000;
+    let delay = 1000;
     for (let i = 0; i < maxRetries; i++) {
         try {
             const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
