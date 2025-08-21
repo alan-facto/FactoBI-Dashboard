@@ -292,7 +292,7 @@ async function processPdf(file) {
 
 
 async function makeApiCallWithRetry(payload, maxRetries = 3) {
-    const model = "gemini-1.5-pro-latest"; // Reverted to Pro model for highest accuracy
+    const model = "gemini-2.5-flash-lite"; // Reverted to Pro model for highest accuracy
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
     let delay = 2000;
     for (let i = 0; i < maxRetries; i++) {
