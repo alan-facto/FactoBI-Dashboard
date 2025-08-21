@@ -20,6 +20,7 @@ let ruleMappings = {
 
 // --- Module State ---
 let db;
+let tsvFile = null; // FIX: Re-declared tsvFile in the global scope
 let pdfFiles = [];
 let nameList = [];
 let payslipData = new Map(); // Stores processed data, including file reference and confidence
@@ -99,10 +100,8 @@ function bindEventListeners() {
     if(outputTableBody) outputTableBody.addEventListener('click', handleTableClick);
 }
 
-/**
- * Resets the entire process and UI to its initial state.
- */
 function resetProcess() {
+    tsvFile = null;
     pdfFiles = [];
     if(tsvInput) tsvInput.value = '';
     if(pdfInput) pdfInput.value = '';
@@ -423,6 +422,7 @@ function downloadTsv() {
     
     const blob = new Blob([tsvContent], { type: 'text/tab-separated-values;charset=utf-8;' });
     const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
     link.setAttribute("href", url);
     link.setAttribute("download", "folhas_processadas.tsv");
     document.body.appendChild(link);
