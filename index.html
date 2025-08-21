@@ -142,11 +142,10 @@
                 <!-- Action Buttons -->
                 <div class="flex items-center space-x-2 mt-4">
                     <button id="payslip-process-btn" class="dev-btn btn-primary w-full" disabled>Processar Arquivos</button>
-                    <!-- NEW: Reset Button -->
                     <button id="payslip-reset-btn" class="dev-btn btn-tertiary">Resetar</button>
                 </div>
 
-                <!-- NEW: Updated Loader with Progress Bar -->
+                <!-- Loader with Progress Bar -->
                 <div id="payslip-loader" style="display: none; flex-direction: column; align-items: center; margin-top: 1.5rem;">
                     <div class="flex items-center">
                         <div class="loader-spinner"></div>
@@ -159,6 +158,27 @@
 
                 <div id="payslip-error" style="display: none;" class="dev-alert-warning mt-4"></div>
 
+                <!-- NEW: Dynamic Rule Configuration -->
+                <div id="rule-config-section" class="mt-6">
+                    <h3 class="dev-h3">Configuração de Regras</h3>
+                    <div id="rule-config-list" class="space-y-2 mb-4"></div>
+                    <div class="flex items-center space-x-2 p-2 border rounded-md">
+                        <select id="rule-category-select" class="dev-input flex-grow">
+                            <option value="comissao">Comissão</option>
+                            <option value="valeAdiantamento">Vale Adiantamento</option>
+                            <option value="vtDesconto">VT Desconto</option>
+                            <option value="salarioFamilia">Salário Família</option>
+                            <option value="descontoEmprestimo">Desconto Empréstimo</option>
+                            <option value="horasExtrasValor">Horas Extras</option>
+                            <option value="descontoFaltas">Desconto Faltas</option>
+                        </select>
+                        <input type="number" id="rule-code-input" placeholder="Código" class="dev-input w-24">
+                        <button id="add-rule-btn" class="dev-btn btn-secondary">Adicionar</button>
+                    </div>
+                     <button id="save-rules-btn" class="dev-btn btn-success w-full mt-2">Salvar Regras no Banco</button>
+                </div>
+
+
                 <div id="payslip-warning-section" style="display: none;" class="mt-6">
                     <div class="dev-alert-warning">
                         <h3 class="dev-h3" style="color: #ca8a04;">Revisar Novos Códigos</h3>
@@ -167,10 +187,20 @@
                     </div>
                 </div>
                 
+                <!-- NEW: Editable Table Output -->
                 <div id="payslip-output-section" style="display: none;" class="mt-6">
-                    <h3 class="dev-h3">Resultado Gerado</h3>
-                    <textarea id="payslip-output" readonly rows="8" class="dev-textarea"></textarea>
-                    <button id="payslip-download-btn" class="dev-btn btn-success w-full">Baixar Arquivo TSV</button>
+                    <h3 class="dev-h3">Resultado Gerado (Editável)</h3>
+                    <div class="overflow-x-auto">
+                        <table id="payslip-output-table" class="w-full text-sm text-left text-gray-500">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                <!-- Headers will be inserted by JS -->
+                            </thead>
+                            <tbody id="payslip-output-table-body">
+                                <!-- Rows will be inserted by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <button id="payslip-download-btn" class="dev-btn btn-success w-full mt-4">Baixar Arquivo TSV</button>
                 </div>
             </div>
         </div>
