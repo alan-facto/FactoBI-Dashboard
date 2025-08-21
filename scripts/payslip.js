@@ -5,7 +5,7 @@ import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/fireb
 import { app } from './main.js';
 
 // --- IMPORTANT: PASTE YOUR GEMINI API KEY HERE FOR DEVELOPMENT ---
-const GEMINI_API_KEY = "PASTE_YOUR_GEMINI_API_KEY_HERE";
+const GEMINI_API_KEY = "AIzaSyBaM10J2fS0Zxa3GoL-DrCxyLFXYpeVeig";
 
 // --- Hardcoded Rules based on the provided TSV ---
 const ruleMappings = {
@@ -73,7 +73,12 @@ export function initPayslipProcessor() {
     setupDragDrop(tsvDropArea, handleTsvSelect);
     setupDragDrop(pdfDropArea, handlePdfSelect);
     processBtn.addEventListener('click', handleProcessing);
-    resetBtn.addEventListener('click', resetProcess); // New event listener
+    
+    // ERROR FIX: Add a null check before adding the event listener
+    if (resetBtn) {
+        resetBtn.addEventListener('click', resetProcess);
+    }
+
     warningSection.addEventListener('click', handleIgnoreClick);
     downloadBtn.addEventListener('click', downloadTsv);
 
@@ -88,20 +93,20 @@ function resetProcess() {
     // Reset file variables and inputs
     tsvFile = null;
     pdfFiles = [];
-    tsvInput.value = '';
-    pdfInput.value = '';
+    if(tsvInput) tsvInput.value = '';
+    if(pdfInput) pdfInput.value = '';
 
     // Reset data maps
     payslipData.clear();
     newFoundCodes.clear();
 
     // Reset UI elements
-    tsvIndicator.textContent = "Nenhum arquivo selecionado.";
-    pdfIndicator.textContent = "Nenhum arquivo selecionado.";
-    outputSection.style.display = 'none';
-    warningSection.style.display = 'none';
-    outputTextarea.value = '';
-    warningList.innerHTML = '';
+    if(tsvIndicator) tsvIndicator.textContent = "Nenhum arquivo selecionado.";
+    if(pdfIndicator) pdfIndicator.textContent = "Nenhum arquivo selecionado.";
+    if(outputSection) outputSection.style.display = 'none';
+    if(warningSection) warningSection.style.display = 'none';
+    if(outputTextarea) outputTextarea.value = '';
+    if(warningList) warningList.innerHTML = '';
     showError('');
     showLoader(false);
     checkProcessButtonState();
@@ -136,7 +141,7 @@ function handlePdfSelect(files) {
 }
 
 function checkProcessButtonState() {
-    processBtn.disabled = pdfFiles.length === 0;
+    if(processBtn) processBtn.disabled = pdfFiles.length === 0;
 }
 
 async function fetchIgnoredCodes() {
@@ -179,9 +184,9 @@ async function handleProcessing() {
         return;
     }
 
-    showLoader(true, `Starting processing...`);
+    showLoader(true, `Starting processing...`, 0);
     processBtn.disabled = true;
-    resetBtn.disabled = true; // Disable reset while processing
+    if (resetBtn) resetBtn.disabled = true; // Disable reset while processing
     showError('');
     outputSection.style.display = 'none';
     warningSection.style.display = 'none';
@@ -199,7 +204,6 @@ async function handleProcessing() {
         let processedCount = 0;
         for (let i = 0; i < pdfFiles.length; i += BATCH_SIZE) {
             const batch = pdfFiles.slice(i, i + BATCH_SIZE);
-            const startNum = i + 1;
             const endNum = i + batch.length;
             
             for (const pdf of batch) {
@@ -230,7 +234,7 @@ async function handleProcessing() {
     } finally {
         showLoader(false);
         checkProcessButtonState();
-        resetBtn.disabled = false; // Re-enable reset button
+        if(resetBtn) resetBtn.disabled = false; // Re-enable reset button
         console.log("All processing finished.");
     }
 }
@@ -381,7 +385,13 @@ function correlateAndGenerateOutput() {
         tsvRows.push(row);
     });
 
-    newFoundCodes = foundCodes;
+    // Update the map of new codes found in this run
+    newFoundCodes.forEach((desc, code) => {
+        // This check ensures we only show warnings for codes that are truly new
+        if(ignoredCodes.has(String(code)) || codeToCategory.has(String(code))) {
+            newFoundCodes.delete(code);
+        }
+    });
     
     if (payslipData.size > 0) {
         outputTextarea.value = tsvRows.join('\n');
