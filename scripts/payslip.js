@@ -7,7 +7,7 @@ import { app } from './main.js';
 // --- IMPORTANT: PASTE YOUR GEMINI API KEY HERE FOR DEVELOPMENT ---
 // For production, it's highly recommended to move this logic to a secure backend (like a Cloud Function)
 // to protect your key.
-const GEMINI_API_KEY = "PASTE_YOUR_GEMINI_API_KEY_HERE";
+const GEMINI_API_KEY = "AIzaSyBaM10J2fS0Zxa3GoL-DrCxyLFXYpeVeig";
 
 // --- Module State ---
 let db;
