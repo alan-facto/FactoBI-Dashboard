@@ -206,7 +206,6 @@ async function handleProcessing() {
                 dataMap.forEach((value, key) => payslipData.set(key, value));
             } catch (pdfError) {
                  console.error(`Failed to process ${pdf.name}.`, pdfError);
-                 // Add an error entry to be displayed in the table
                  const tempName = pdf.name.replace('.pdf', '').toUpperCase();
                  payslipData.set(tempName, { status: 'error', error: pdfError.message, originalFile: { name: pdf.name } });
             }
@@ -231,16 +230,16 @@ async function processPdf(file) {
         reader.onerror = error => reject(error);
     });
 
-    // Step 1: Render PDF to a cropped PNG for analysis
     const imageBase64 = await renderPdfToImage(fileData.dataUrl);
 
-    // Step 2: High-Fidelity OCR with coordinates
+    // NEW 3-STEP PROCESS FOR HIGH ACCURACY
+    // 1. High-fidelity OCR with coordinates
     const ocrResult = await performOcr(imageBase64);
     
-    // Step 3: Local logic to assemble rows
+    // 2. Local logic to assemble rows based on coordinates
     const assembledRows = assembleRowsFromOcr(ocrResult.textAnnotations);
 
-    // Step 4: Targeted data extraction from assembled rows
+    // 3. Targeted data extraction from the clean, assembled rows
     const finalResult = await extractDataFromRows(assembledRows);
 
     const normalizedMap = new Map();
@@ -283,7 +282,6 @@ async function performOcr(imageBase64) {
 
 function assembleRowsFromOcr(annotations) {
     if (!annotations || annotations.length === 0) return [];
-    // Sort annotations primarily by Y, then by X
     annotations.sort((a, b) => {
         if (Math.abs(a.y - b.y) > 10) { // 10px tolerance for same line
             return a.y - b.y;
@@ -297,18 +295,14 @@ function assembleRowsFromOcr(annotations) {
 
     annotations.forEach(ann => {
         if (lastY === -1 || Math.abs(ann.y - lastY) > 10) {
-            if (currentRow.length > 0) {
-                rows.push(currentRow.map(c => c.text).join(' '));
-            }
+            if (currentRow.length > 0) rows.push(currentRow.map(c => c.text).join(' '));
             currentRow = [ann];
             lastY = ann.y;
         } else {
             currentRow.push(ann);
         }
     });
-    if (currentRow.length > 0) {
-        rows.push(currentRow.map(c => c.text).join(' '));
-    }
+    if (currentRow.length > 0) rows.push(currentRow.map(c => c.text).join(' '));
     return rows;
 }
 
@@ -358,7 +352,6 @@ async function extractDataFromRows(rows) {
     return JSON.parse(resultText);
 }
 
-
 async function makeApiCallWithRetry(payload, maxRetries = 3) {
     const model = "gemini-1.5-flash-latest";
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
@@ -392,7 +385,7 @@ function renderResults() {
     if(outputTableBody) outputTableBody.innerHTML = '';
 
     const foundCodes = new Map();
-    const namesToProcess = nameList.length > 0 ? nameList : Array.from(payslipData.keys()).sort();
+    const namesToProcess = nameList.length > 0 ? nameList : Array.from(new Set([...nameList, ...payslipData.keys()])).sort();
     
     const codeToCategory = new Map();
     for (const category in ruleMappings) {
@@ -426,7 +419,7 @@ function renderResults() {
         actionCell.className = "px-6 py-4";
         if (data) {
             if (data.status === 'error') {
-                 actionCell.innerHTML = `<span title="Erro: ${data.error}" class="text-red-500 font-bold">X</span>`;
+                 actionCell.innerHTML = `<span title="Erro: ${data.error}" class="text-red-500 font-bold text-lg">!</span>`;
             } else {
                 const confidenceScore = data.confidence?.score ?? 0;
                 if (confidenceScore < 0.95) {
@@ -450,7 +443,7 @@ function renderResults() {
     
     if (outputTableBody.querySelector('.hidden-row')) {
         let footer = outputTable.querySelector('tfoot');
-        if (footer) footer.remove(); // Clear previous footer
+        if (footer) footer.remove();
         footer = outputTable.createTFoot();
         const row = footer.insertRow();
         const cell = row.insertCell();
