@@ -32,7 +32,7 @@ let ignoredCodes = new Set([
 const DB_CONFIG_PATH = "payslipProcessor/config";
 
 // --- DOM Elements ---
-let tsvInput, pdfInput, processBtn, resetBtn, tsvIndicator, pdfIndicator, loader, loaderText, outputSection, warningSection, warningList, downloadBtn, tsvDropArea, pdfDropArea, progressBar, ruleConfigList, addRuleBtn, saveRulesBtn, ruleCategorySelect, ruleCodeInput, outputTable, outputTableBody, settingsModal, pdfViewerModal, pdfCanvas;
+let tsvInput, pdfInput, processBtn, resetBtn, tsvIndicator, pdfIndicator, loader, loaderText, outputSection, warningSection, warningList, downloadBtn, tsvDropArea, pdfDropArea, progressBar, ruleConfigList, addRuleBtn, saveRulesBtn, ruleCategorySelect, ruleCodeInput, outputTable, outputTableBody, settingsModal;
 
 /**
  * Initializes the payslip processor module.
@@ -75,8 +75,6 @@ function cacheDomElements() {
     outputTable = document.getElementById('payslip-output-table');
     outputTableBody = document.getElementById('payslip-output-table-body');
     settingsModal = document.getElementById('settings-modal');
-    pdfViewerModal = document.getElementById('pdf-viewer-modal');
-    pdfCanvas = document.getElementById('pdf-canvas');
 }
 
 function bindEventListeners() {
@@ -93,7 +91,6 @@ function bindEventListeners() {
     
     document.getElementById('open-settings-modal-btn')?.addEventListener('click', () => settingsModal.style.display = 'flex');
     document.getElementById('close-settings-modal-btn')?.addEventListener('click', () => settingsModal.style.display = 'none');
-    document.getElementById('close-pdf-viewer-btn')?.addEventListener('click', () => pdfViewerModal.style.display = 'none');
     
     if(outputTableBody) outputTableBody.addEventListener('click', handleTableClick);
 }
@@ -228,29 +225,32 @@ async function processPdf(file) {
     const fileData = await new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
-        reader.onload = () => resolve({ name: file.name, dataUrl: reader.result, base64: reader.result.split(',')[1] });
+        reader.onload = () => resolve({ name: file.name, dataUrl: reader.result });
         reader.onerror = error => reject(error);
     });
 
+    // Step 1: Render PDF to a cropped PNG for analysis
+    const imageBase64 = await renderPdfToImage(fileData.dataUrl);
+
     const prompt = `
-        Your task is to perform optical character recognition (OCR) and data extraction on a payslip PDF with 100% accuracy.
-        The table has columns: 'Código', 'Descrição', 'Referência', 'Vencimentos', and 'Descontos'.
-        Your primary challenge is to correctly associate values from the 'Vencimentos' (Earnings) and 'Descontos' (Deductions) columns with their corresponding 'Descrição' (Description) on the same horizontal line.
-        These documents often use sparse layouts. A value in a right-hand column belongs to the description on its immediate left, regardless of vertical spacing. For example, the value '138,82' in the 'Descontos' column is directly associated with 'I.N.S.S.' in the 'Descrição' column on the same line. Do not mis-associate it with items on lines above or below.
+        Analyze the provided IMAGE of a payslip table with 100% accuracy.
+        Your primary task is to correctly associate values from the 'Vencimentos' and 'Descontos' columns with their corresponding 'Descrição' on the same horizontal line. The visual layout is key.
         
         Mandatory Steps:
-        1.  Identify the employee's full name, usually in a large font at the top.
-        2.  For every single row in the table, extract the 'Código', 'Descrição', 'Vencimentos', and 'Descontos'.
-        3.  If a value for 'Vencimentos' or 'Descontos' is empty on a line, you MUST use 0.
-        4.  After extraction, critically evaluate your own work. Assign a confidence score from 0.0 (uncertain) to 1.0 (certain) based on how clearly you could associate values with descriptions.
-        5.  Provide a brief reasoning for your confidence score. For example, "Certainty is high due to clear, unambiguous table alignment" or "Confidence is lower because of potential ambiguity in row X".
+        1. Identify the employee's full name from the top of the original document (not necessarily in this image).
+        2. For every single row in the IMAGE, extract 'Código', 'Descrição', 'Vencimentos', and 'Descontos'.
+        3. If a value is empty, you MUST use 0.
+        4. Assign a confidence score from 0.0 to 1.0 for the entire table extraction.
+        5. Provide a brief reasoning for your confidence score.
         
-        Return a single JSON object with three keys: "employeeName", "lineItems", and "confidence". The "confidence" object must contain "score" and "reasoning".
-        Return ONLY the raw JSON object.
+        Return a single JSON object with "employeeName", "lineItems", and "confidence". Return ONLY the raw JSON object.
     `;
 
     const payload = {
-        contents: [{ parts: [{ text: prompt }, { inlineData: { mimeType: "application/pdf", data: fileData.base64 } }] }],
+        contents: [{ parts: [
+            { text: prompt }, 
+            { inlineData: { mimeType: "image/png", data: imageBase64 } }
+        ] }],
         generationConfig: {
             responseMimeType: "application/json",
             responseSchema: {
@@ -272,11 +272,8 @@ async function processPdf(file) {
                     },
                     confidence: {
                         type: "OBJECT",
-                        properties: {
-                            score: { type: "NUMBER" },
-                            reasoning: { type: "STRING" }
-                        },
-                         required: ["score", "reasoning"]
+                        properties: { score: { type: "NUMBER" }, reasoning: { type: "STRING" } },
+                        required: ["score", "reasoning"]
                     }
                 },
                 required: ["employeeName", "lineItems", "confidence"]
@@ -324,7 +321,7 @@ async function makeApiCallWithRetry(payload, maxRetries = 3) {
 
 function renderResults() {
     const headers = ["", "Nome", "Comissão", "Vale Adiantamento", "VT Desconto", "Salário Família", "Desconto Empréstimo", "Horas Extras", "Desconto Faltas"];
-    if(outputTable) outputTable.querySelector('thead').innerHTML = `<tr>${headers.map(h => `<th scope="col" class="px-6 py-3">${h}</th>`).join('')}</tr>`;
+    if(outputTable.querySelector('thead')) outputTable.querySelector('thead').innerHTML = `<tr>${headers.map(h => `<th scope="col" class="px-6 py-3">${h}</th>`).join('')}</tr>`;
     if(outputTableBody) outputTableBody.innerHTML = '';
 
     const foundCodes = new Map();
@@ -354,15 +351,20 @@ function renderResults() {
 
         const newRow = outputTableBody.insertRow();
         newRow.className = "bg-white border-b";
+        if (!data) {
+            newRow.classList.add('hidden-row', 'hidden');
+        }
         
         const actionCell = newRow.insertCell();
         actionCell.className = "px-6 py-4";
         if (data) {
             const confidenceScore = data.confidence?.score ?? 0;
             if (confidenceScore < 0.95) {
-                actionCell.innerHTML += `<span title="Confiança baixa: ${data.confidence?.reasoning}" class="text-yellow-500 font-bold">!</span>`;
+                actionCell.innerHTML += `<span title="Confiança baixa: ${data.confidence?.reasoning}" class="text-yellow-500 font-bold mr-2">!</span>`;
             }
-            actionCell.innerHTML += `<button data-name="${name.toUpperCase().trim()}" class="view-pdf-btn ml-2 text-blue-500 hover:underline">Ver PDF</button>`;
+            actionCell.innerHTML += `<button data-name="${name.toUpperCase().trim()}" class="view-pdf-btn text-blue-500 hover:text-blue-700">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg>
+            </button>`;
         }
         
         newRow.insertCell().textContent = name;
@@ -374,10 +376,26 @@ function renderResults() {
             cell.className = "px-6 py-4 text-center";
         });
     });
+    
+    // Add "Show All" button if there are hidden rows
+    if (outputTableBody.querySelector('.hidden-row')) {
+        let footer = outputTable.querySelector('tfoot');
+        if (!footer) {
+            footer = outputTable.createTFoot();
+            const row = footer.insertRow();
+            const cell = row.insertCell();
+            cell.colSpan = headers.length;
+            cell.innerHTML = `<button id="show-all-btn" class="dev-btn btn-secondary w-full mt-2">+ Mostrar nomes não processados</button>`;
+            document.getElementById('show-all-btn').addEventListener('click', () => {
+                outputTableBody.querySelectorAll('.hidden-row').forEach(r => r.classList.remove('hidden'));
+                footer.style.display = 'none';
+            });
+        }
+    }
 
     newFoundCodes = foundCodes;
     if (payslipData.size > 0) outputSection.style.display = 'block';
-    if (newFoundCodes.size > 0) displayWarnings(); else warningSection.style.display = 'none';
+    if (newFoundCodes.size > 0) displayWarnings(); else if(warningSection) warningSection.style.display = 'none';
 }
 
 function displayWarnings() {
@@ -409,9 +427,20 @@ function handleIgnoreClick(event) {
 function downloadTsv() {
     const headers = ["Nome", "Comissão", "Vale Adiantamento", "VT Desconto", "Salário Família", "Desconto Empréstimo", "Horas Extras", "Desconto Faltas"];
     let tsvContent = headers.join('\t') + '\n';
-    outputTableBody.querySelectorAll('tr').forEach(row => {
-        const rowData = Array.from(row.querySelectorAll('td')).slice(1).map(td => td.textContent);
-        tsvContent += rowData.join('\t') + '\n';
+    
+    // Ensure all names from the original list are included in the correct order
+    const namesToExport = nameList.length > 0 ? nameList : Array.from(payslipData.keys()).sort();
+    
+    namesToExport.forEach(name => {
+        const upperCaseName = name.toUpperCase().trim();
+        const row = Array.from(outputTableBody.querySelectorAll('tr')).find(r => r.cells[1].textContent.toUpperCase().trim() === upperCaseName);
+        if (row) {
+            const rowData = Array.from(row.querySelectorAll('td')).slice(1).map(td => td.textContent);
+            tsvContent += rowData.join('\t') + '\n';
+        } else {
+             // Add empty row for names that were not in the processed data
+            tsvContent += `${name}\t0,00\t0,00\t0,00\t0,00\t0,00\t0,00\t0,00\n`;
+        }
     });
     
     const blob = new Blob([tsvContent], { type: 'text/tab-separated-values;charset=utf-8;' });
@@ -482,32 +511,50 @@ function removeRule(event) {
 
 // --- PDF Snippet Viewer ---
 async function handleTableClick(event) {
-    if (event.target.classList.contains('view-pdf-btn')) {
-        const name = event.target.dataset.name;
+    const viewBtn = event.target.closest('.view-pdf-btn');
+    if (viewBtn) {
+        const row = viewBtn.closest('tr');
+        const name = viewBtn.dataset.name;
         const data = payslipData.get(name);
-        if (data && data.originalFile) {
-            await renderPdfSnippet(data.originalFile, name);
+
+        let snippetRow = row.nextElementSibling;
+        if (snippetRow && snippetRow.classList.contains('snippet-row')) {
+            snippetRow.remove(); // Hide if already open
+        } else if (data && data.originalFile) {
+            snippetRow = outputTableBody.insertRow(row.rowIndex);
+            snippetRow.className = 'snippet-row';
+            const cell = snippetRow.insertCell();
+            cell.colSpan = outputTable.rows[0].cells.length;
+            cell.innerHTML = `<div class="p-4 bg-gray-100 flex justify-center items-center"><canvas></canvas></div>`;
+            await renderPdfSnippet(data.originalFile, cell.querySelector('canvas'));
         }
     }
 }
 
-async function renderPdfSnippet(file, name) {
-    document.getElementById('pdf-viewer-title').textContent = `Holerite de ${name}`;
-    pdfViewerModal.style.display = 'flex';
-    
-    const loadingTask = pdfjsLib.getDocument(file.dataUrl);
-    const pdf = await loadingTask.promise;
+async function renderPdfToImage(dataUrl) {
+    const pdf = await pdfjsLib.getDocument(dataUrl).promise;
     const page = await pdf.getPage(1);
     
-    const viewport = page.getViewport({ scale: 1.5, offsetY: -400, rotation: 0 });
+    // Crop viewport to the table area. Adjust values if needed.
+    const viewport = page.getViewport({ scale: 2.0, offsetX: -50, offsetY: -400, rotation: 0 });
 
-    const context = pdfCanvas.getContext('2d');
-    pdfCanvas.height = viewport.height;
-    pdfCanvas.width = viewport.width;
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    canvas.height = viewport.height;
+    canvas.width = viewport.width;
     
-    const renderContext = {
-        canvasContext: context,
-        viewport: viewport
-    };
-    await page.render(renderContext).promise;
+    await page.render({ canvasContext: context, viewport: viewport }).promise;
+    return canvas.toDataURL('image/png').split(',')[1];
+}
+
+async function renderPdfSnippet(file, canvas) {
+    const pdf = await pdfjsLib.getDocument(file.dataUrl).promise;
+    const page = await pdf.getPage(1);
+    const viewport = page.getViewport({ scale: 1.5, offsetX: -50, offsetY: -400, rotation: 0 });
+    
+    const context = canvas.getContext('2d');
+    canvas.height = viewport.height;
+    canvas.width = viewport.width;
+    
+    await page.render({ canvasContext: context, viewport: viewport }).promise;
 }
