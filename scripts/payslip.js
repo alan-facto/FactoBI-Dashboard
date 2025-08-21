@@ -7,7 +7,7 @@ import { app } from './main.js';
 // --- IMPORTANT: PASTE YOUR GEMINI API KEY HERE FOR DEVELOPMENT ---
 // For production, it's highly recommended to move this logic to a secure backend (like a Cloud Function)
 // to protect your key.
-const GEMINI_API_KEY = "AIzaSyBaM10J2fS0Zxa3GoL-DrCxyLFXYpeVeig";
+const GEMINI_API_KEY = "PASTE_YOUR_GEMINI_API_KEY_HERE";
 
 // --- Module State ---
 let db;
@@ -17,11 +17,12 @@ let nameList = [];
 let payslipData = new Map();
 let newFoundCodes = new Map();
 let ignoredCodes = new Set();
+const BATCH_SIZE = 10; // Process 10 PDFs at a time to respect API rate limits.
 
 const IGNORED_CODES_DOC_PATH = "payslipProcessor/ignoredCodes";
 
 // --- DOM Elements ---
-let tsvInput, pdfInput, processBtn, tsvIndicator, pdfIndicator, loader, outputSection, outputTextarea, warningSection, warningList, downloadBtn, tsvDropArea, pdfDropArea;
+let tsvInput, pdfInput, processBtn, tsvIndicator, pdfIndicator, loader, loaderText, outputSection, outputTextarea, warningSection, warningList, downloadBtn, tsvDropArea, pdfDropArea;
 
 /**
  * Initializes the payslip processor module.
@@ -42,6 +43,7 @@ export function initPayslipProcessor() {
     tsvIndicator = document.getElementById('tsv-file-indicator');
     pdfIndicator = document.getElementById('pdf-file-indicator');
     loader = document.getElementById('payslip-loader');
+    loaderText = document.getElementById('payslip-loader-text'); // For showing progress
     outputSection = document.getElementById('payslip-output-section');
     outputTextarea = document.getElementById('payslip-output');
     warningSection = document.getElementById('payslip-warning-section');
@@ -168,12 +170,13 @@ async function handleProcessing() {
         return;
     }
 
-    showLoader(true);
+    showLoader(true, `Starting processing...`);
     processBtn.disabled = true;
     showError('');
     outputSection.style.display = 'none';
     warningSection.style.display = 'none';
     newFoundCodes.clear();
+    payslipData.clear(); // Clear previous results before starting a new run
 
     try {
         if (tsvFile) {
@@ -183,35 +186,41 @@ async function handleProcessing() {
             nameList = [];
         }
 
-        const allPayslipData = new Map();
-        
-        // --- RATE LIMIT FIX: Process PDFs sequentially instead of all at once ---
-        let count = 1;
-        for (const pdf of pdfFiles) {
-            console.log(`Processing file ${count} of ${pdfFiles.length}: ${pdf.name}`);
-            if (pdf.size === 0) {
-                console.warn(`Skipping empty file: ${pdf.name}`);
-                continue; // Skip to the next file in the loop
+        // --- BATCH PROCESSING & SAFETY SAVE IMPLEMENTATION ---
+        for (let i = 0; i < pdfFiles.length; i += BATCH_SIZE) {
+            const batch = pdfFiles.slice(i, i + BATCH_SIZE);
+            const startNum = i + 1;
+            const endNum = i + batch.length;
+            
+            showLoader(true, `Processing files ${startNum}-${endNum} of ${pdfFiles.length}...`);
+
+            // Process the current batch sequentially
+            for (const pdf of batch) {
+                if (pdf.size === 0) {
+                    console.warn(`Skipping empty file: ${pdf.name}`);
+                    continue;
+                }
+                try {
+                    const dataMap = await processPdf(pdf);
+                    dataMap.forEach((value, key) => payslipData.set(key, value));
+                } catch (pdfError) {
+                     console.error(`Failed to process ${pdf.name}. Skipping.`, pdfError);
+                     showError(`An error occurred while processing ${pdf.name}. It has been skipped.`);
+                }
             }
-            try {
-                const dataMap = await processPdf(pdf);
-                dataMap.forEach((value, key) => allPayslipData.set(key, value));
-            } catch (pdfError) {
-                 console.error(`Failed to process ${pdf.name}. Skipping.`, pdfError);
-                 showError(`An error occurred while processing ${pdf.name}. It has been skipped.`);
-            }
-            count++;
+            
+            // Generate and display the output after each batch as a safety save
+            correlateAndGenerateOutput();
+            console.log(`Batch ${startNum}-${endNum} complete. TSV has been updated.`);
         }
         
-        payslipData = allPayslipData;
-        correlateAndGenerateOutput();
-
     } catch (err) {
         console.error("File processing error:", err);
         showError(`An error occurred: ${err.message}`);
     } finally {
         showLoader(false);
         checkProcessButtonState();
+        console.log("All processing finished.");
     }
 }
 
@@ -228,7 +237,6 @@ async function processPdf(file) {
         reader.onerror = error => reject(error);
     });
 
-    // CORRECTED PROMPT: Asking for a structured object with fixed keys.
     const prompt = `
         Analyze the provided PDF, which contains a single-page payslip.
         You MUST identify the employee's full name, which is typically in a large font above the main table of values.
@@ -243,7 +251,6 @@ async function processPdf(file) {
         Return ONLY the raw JSON object, without any markdown formatting like \`\`\`json ... \`\`\`.
     `;
 
-    // CORRECTED SCHEMA: This schema matches the new prompt and uses valid API fields.
     const payload = {
         contents: [{ parts: [{ text: prompt }, { inlineData: { mimeType: "application/pdf", data: base64File } }] }],
         generationConfig: {
@@ -274,7 +281,6 @@ async function processPdf(file) {
     const resultText = await makeApiCallWithRetry(payload);
     const parsedResult = JSON.parse(resultText);
     
-    // CORRECTED PARSING LOGIC: Handles the new, structured response.
     const normalizedMap = new Map();
     if (parsedResult.employeeName && parsedResult.lineItems) {
         const name = parsedResult.employeeName.toUpperCase().trim();
@@ -374,13 +380,18 @@ function correlateAndGenerateOutput() {
     });
 
     newFoundCodes = foundCodes;
-    if (newFoundCodes.size === 0) {
+    
+    // Always show the output if there is data to show.
+    if (payslipData.size > 0) {
         outputTextarea.value = tsvRows.join('\n');
         outputSection.style.display = 'block';
-        warningSection.style.display = 'none';
-    } else {
+    }
+
+    // Display warnings if there are any new codes.
+    if (newFoundCodes.size > 0) {
         displayWarnings();
-        outputSection.style.display = 'none';
+    } else {
+        warningSection.style.display = 'none';
     }
 }
 
@@ -421,15 +432,14 @@ function handleIgnoreClick(event) {
     ignoredCodes.add(String(codeToIgnore));
     updateIgnoredCodesInDb(ignoredCodes);
     
+    // We only need to remove the code from the 'newFoundCodes' map.
+    // The main 'payslipData' map remains untouched.
     newFoundCodes.delete(Number(codeToIgnore));
     
-    // Remove the warning from the UI
-    event.target.closest('.flex').remove();
-
-    if (newFoundCodes.size === 0) {
-        correlateAndGenerateOutput();
-    }
+    // Simply re-render the warnings and the TSV output with the updated ignored list.
+    correlateAndGenerateOutput();
 }
+
 
 /**
  * Creates and triggers a download for the generated TSV content.
@@ -451,8 +461,12 @@ function downloadTsv() {
 /**
  * Shows or hides the main loader element.
  * @param {boolean} show True to show, false to hide.
+ * @param {string} [message] The message to display in the loader.
  */
-function showLoader(show) {
+function showLoader(show, message = 'Processing...') {
+    if (loaderText) {
+        loaderText.textContent = message;
+    }
     loader.style.display = show ? 'flex' : 'none';
 }
 
