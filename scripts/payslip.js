@@ -206,7 +206,9 @@ async function handleProcessing() {
                 dataMap.forEach((value, key) => payslipData.set(key, value));
             } catch (pdfError) {
                  console.error(`Failed to process ${pdf.name}.`, pdfError);
-                 showError(`An error occurred while processing ${pdf.name}. It has been skipped.`);
+                 // Add an error entry to be displayed in the table
+                 const tempName = pdf.name.replace('.pdf', '').toUpperCase();
+                 payslipData.set(tempName, { status: 'error', error: pdfError.message, originalFile: { name: pdf.name } });
             }
             renderResults();
         }
@@ -229,27 +231,100 @@ async function processPdf(file) {
         reader.onerror = error => reject(error);
     });
 
+    // Step 1: Render PDF to a cropped PNG for analysis
     const imageBase64 = await renderPdfToImage(fileData.dataUrl);
 
-    const prompt = `
-        Analyze the provided IMAGE of a payslip table with 100% accuracy.
-        Your primary task is to correctly associate values from the 'Vencimentos' and 'Descontos' columns with their corresponding 'Descrição' on the same horizontal line. The visual layout is key.
+    // Step 2: High-Fidelity OCR with coordinates
+    const ocrResult = await performOcr(imageBase64);
+    
+    // Step 3: Local logic to assemble rows
+    const assembledRows = assembleRowsFromOcr(ocrResult.textAnnotations);
+
+    // Step 4: Targeted data extraction from assembled rows
+    const finalResult = await extractDataFromRows(assembledRows);
+
+    const normalizedMap = new Map();
+    if (finalResult.employeeName && finalResult.lineItems) {
+        const name = finalResult.employeeName.toUpperCase().trim();
+        normalizedMap.set(name, { ...finalResult, originalFile: fileData });
+    }
+    return normalizedMap;
+}
+
+async function performOcr(imageBase64) {
+    const prompt = "Perform OCR on this image of a table. For each piece of text, return its content and the x, y coordinates of its top-left corner.";
+    const payload = {
+        contents: [{ parts: [{ text: prompt }, { inlineData: { mimeType: "image/png", data: imageBase64 } }] }],
+        generationConfig: {
+            responseMimeType: "application/json",
+            responseSchema: {
+                type: "OBJECT",
+                properties: {
+                    textAnnotations: {
+                        type: "ARRAY",
+                        items: {
+                            type: "OBJECT",
+                            properties: {
+                                text: { type: "STRING" },
+                                x: { type: "NUMBER" },
+                                y: { type: "NUMBER" }
+                            },
+                            required: ["text", "x", "y"]
+                        }
+                    }
+                },
+                required: ["textAnnotations"]
+            }
+        }
+    };
+    const resultText = await makeApiCallWithRetry(payload);
+    return JSON.parse(resultText);
+}
+
+function assembleRowsFromOcr(annotations) {
+    if (!annotations || annotations.length === 0) return [];
+    // Sort annotations primarily by Y, then by X
+    annotations.sort((a, b) => {
+        if (Math.abs(a.y - b.y) > 10) { // 10px tolerance for same line
+            return a.y - b.y;
+        }
+        return a.x - b.x;
+    });
+
+    const rows = [];
+    let currentRow = [];
+    let lastY = -1;
+
+    annotations.forEach(ann => {
+        if (lastY === -1 || Math.abs(ann.y - lastY) > 10) {
+            if (currentRow.length > 0) {
+                rows.push(currentRow.map(c => c.text).join(' '));
+            }
+            currentRow = [ann];
+            lastY = ann.y;
+        } else {
+            currentRow.push(ann);
+        }
+    });
+    if (currentRow.length > 0) {
+        rows.push(currentRow.map(c => c.text).join(' '));
+    }
+    return rows;
+}
+
+async function extractDataFromRows(rows) {
+     const prompt = `
+        From the following lines of text extracted from a payslip, identify the employee's name and extract the line items.
+        The first few lines usually contain the name. The subsequent lines are table rows.
+        For each table row, extract the code, description, earnings, and deductions.
+        Return a single JSON object with "employeeName", "lineItems", and a confidence score.
         
-        Mandatory Steps:
-        1. Identify the employee's full name from the top of the original document (not necessarily in this image).
-        2. For every single row in the IMAGE, extract 'Código', 'Descrição', 'Vencimentos', and 'Descontos'.
-        3. If a value is empty, you MUST use 0.
-        4. Assign a confidence score from 0.0 to 1.0 for the entire table extraction.
-        5. Provide a brief reasoning for your confidence score.
-        
-        Return a single JSON object with "employeeName", "lineItems", and "confidence". Return ONLY the raw JSON object.
+        Text Lines:
+        ${rows.join('\n')}
     `;
 
     const payload = {
-        contents: [{ parts: [
-            { text: prompt }, 
-            { inlineData: { mimeType: "image/png", data: imageBase64 } }
-        ] }],
+        contents: [{ parts: [{ text: prompt }] }],
         generationConfig: {
             responseMimeType: "application/json",
             responseSchema: {
@@ -279,17 +354,10 @@ async function processPdf(file) {
             }
         }
     };
-
     const resultText = await makeApiCallWithRetry(payload);
-    const parsedResult = JSON.parse(resultText);
-    
-    const normalizedMap = new Map();
-    if (parsedResult.employeeName && parsedResult.lineItems) {
-        const name = parsedResult.employeeName.toUpperCase().trim();
-        normalizedMap.set(name, { ...parsedResult, originalFile: fileData });
-    }
-    return normalizedMap;
+    return JSON.parse(resultText);
 }
+
 
 async function makeApiCallWithRetry(payload, maxRetries = 3) {
     const model = "gemini-1.5-flash-latest";
@@ -357,13 +425,17 @@ function renderResults() {
         const actionCell = newRow.insertCell();
         actionCell.className = "px-6 py-4";
         if (data) {
-            const confidenceScore = data.confidence?.score ?? 0;
-            if (confidenceScore < 0.95) {
-                actionCell.innerHTML += `<span title="Confiança baixa: ${data.confidence?.reasoning}" class="text-yellow-500 font-bold mr-2">!</span>`;
+            if (data.status === 'error') {
+                 actionCell.innerHTML = `<span title="Erro: ${data.error}" class="text-red-500 font-bold">X</span>`;
+            } else {
+                const confidenceScore = data.confidence?.score ?? 0;
+                if (confidenceScore < 0.95) {
+                    actionCell.innerHTML += `<span title="Confiança baixa: ${data.confidence?.reasoning}" class="text-yellow-500 font-bold mr-2">!</span>`;
+                }
+                actionCell.innerHTML += `<button data-name="${name.toUpperCase().trim()}" class="view-pdf-btn text-blue-500 hover:text-blue-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg>
+                </button>`;
             }
-            actionCell.innerHTML += `<button data-name="${name.toUpperCase().trim()}" class="view-pdf-btn text-blue-500 hover:text-blue-700">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg>
-            </button>`;
         }
         
         newRow.insertCell().textContent = name;
@@ -378,17 +450,16 @@ function renderResults() {
     
     if (outputTableBody.querySelector('.hidden-row')) {
         let footer = outputTable.querySelector('tfoot');
-        if (!footer) {
-            footer = outputTable.createTFoot();
-            const row = footer.insertRow();
-            const cell = row.insertCell();
-            cell.colSpan = headers.length;
-            cell.innerHTML = `<button id="show-all-btn" class="dev-btn btn-secondary w-full mt-2">+ Mostrar nomes não processados</button>`;
-            document.getElementById('show-all-btn').addEventListener('click', () => {
-                outputTableBody.querySelectorAll('.hidden-row').forEach(r => r.classList.remove('hidden'));
-                footer.style.display = 'none';
-            });
-        }
+        if (footer) footer.remove(); // Clear previous footer
+        footer = outputTable.createTFoot();
+        const row = footer.insertRow();
+        const cell = row.insertCell();
+        cell.colSpan = headers.length;
+        cell.innerHTML = `<button id="show-all-btn" class="dev-btn btn-secondary w-full mt-2">+ Mostrar nomes não processados</button>`;
+        document.getElementById('show-all-btn').addEventListener('click', () => {
+            outputTableBody.querySelectorAll('.hidden-row').forEach(r => r.classList.remove('hidden'));
+            footer.style.display = 'none';
+        });
     }
 
     newFoundCodes = foundCodes;
@@ -398,10 +469,7 @@ function renderResults() {
 
 function displayWarnings() {
     warningList.innerHTML = '';
-    if (newFoundCodes.size === 0) {
-        warningSection.style.display = 'none';
-        return;
-    }
+    if (newFoundCodes.size === 0) return;
     newFoundCodes.forEach((desc, code) => {
         const warningEl = document.createElement('div');
         warningEl.className = 'flex items-center justify-between text-sm py-2 px-3 bg-gray-50 rounded-md shadow-sm';
@@ -531,8 +599,8 @@ async function renderPdfToImage(dataUrl) {
     const pdf = await pdfjsLib.getDocument(dataUrl).promise;
     const page = await pdf.getPage(1);
     
-    // FIX: Remove offsetX to capture the full width
-    const viewport = page.getViewport({ scale: 2.0, offsetY: -400, rotation: 0 });
+    // Corrected viewport to capture full width, only cropping vertically
+    const viewport = page.getViewport({ scale: 2.0, offsetY: -400 });
 
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
@@ -546,8 +614,7 @@ async function renderPdfToImage(dataUrl) {
 async function renderPdfSnippet(file, canvas) {
     const pdf = await pdfjsLib.getDocument(file.dataUrl).promise;
     const page = await pdf.getPage(1);
-    // FIX: Remove offsetX to capture the full width
-    const viewport = page.getViewport({ scale: 1.5, offsetY: -400, rotation: 0 });
+    const viewport = page.getViewport({ scale: 1.5, offsetY: -400 });
     
     const context = canvas.getContext('2d');
     canvas.height = viewport.height;
