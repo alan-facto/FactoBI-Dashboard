@@ -5,9 +5,18 @@ import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/fireb
 import { app } from './main.js';
 
 // --- IMPORTANT: PASTE YOUR GEMINI API KEY HERE FOR DEVELOPMENT ---
-// For production, it's highly recommended to move this logic to a secure backend (like a Cloud Function)
-// to protect your key.
-const GEMINI_API_KEY = "AIzaSyBaM10J2fS0Zxa3GoL-DrCxyLFXYpeVeig";
+const GEMINI_API_KEY = "PASTE_YOUR_GEMINI_API_KEY_HERE";
+
+// --- Hardcoded Rules based on the provided TSV ---
+const ruleMappings = {
+    comissao: [37, 853],
+    valeAdiantamento: [981],
+    vtDesconto: [48],
+    salarioFamilia: [995],
+    descontoEmprestimo: [9750],
+    horasExtrasValor: [250, 150],
+    descontoFaltas: [8069, 42, 40]
+};
 
 // --- Module State ---
 let db;
@@ -16,19 +25,21 @@ let pdfFiles = [];
 let nameList = [];
 let payslipData = new Map();
 let newFoundCodes = new Map();
-let ignoredCodes = new Set();
-const BATCH_SIZE = 10; // Process 10 PDFs at a time to respect API rate limits.
+let ignoredCodes = new Set([
+    // Pre-loaded ignored codes from the TSV file
+    1, 998, 8697, 8699, 5, 896, 931, 805, 806, 937, 812, 821, 848, 8504, 999, 4, 894, 100, 843
+].map(String)); // Ensure all codes are strings for consistent checking
 
+const BATCH_SIZE = 10; // Process 10 PDFs at a time to respect API rate limits.
 const IGNORED_CODES_DOC_PATH = "payslipProcessor/ignoredCodes";
 
 // --- DOM Elements ---
-let tsvInput, pdfInput, processBtn, tsvIndicator, pdfIndicator, loader, loaderText, outputSection, outputTextarea, warningSection, warningList, downloadBtn, tsvDropArea, pdfDropArea;
+let tsvInput, pdfInput, processBtn, resetBtn, tsvIndicator, pdfIndicator, loader, loaderText, outputSection, outputTextarea, warningSection, warningList, downloadBtn, tsvDropArea, pdfDropArea, progressBar;
 
 /**
  * Initializes the payslip processor module.
  */
 export function initPayslipProcessor() {
-    // This check helps prevent errors if the Firebase app from main.js isn't ready yet.
     if (!app) {
         console.error("Firebase app is not initialized. Payslip Processor cannot start.");
         showError("Critical Error: Firebase connection failed. Please refresh the page.");
@@ -40,10 +51,12 @@ export function initPayslipProcessor() {
     tsvInput = document.getElementById('payslip-tsv-upload');
     pdfInput = document.getElementById('payslip-pdf-upload');
     processBtn = document.getElementById('payslip-process-btn');
+    resetBtn = document.getElementById('payslip-reset-btn'); // New Reset Button
     tsvIndicator = document.getElementById('tsv-file-indicator');
     pdfIndicator = document.getElementById('pdf-file-indicator');
     loader = document.getElementById('payslip-loader');
-    loaderText = document.getElementById('payslip-loader-text'); // For showing progress
+    loaderText = document.getElementById('payslip-loader-text');
+    progressBar = document.getElementById('payslip-progress-bar'); // New Progress Bar
     outputSection = document.getElementById('payslip-output-section');
     outputTextarea = document.getElementById('payslip-output');
     warningSection = document.getElementById('payslip-warning-section');
@@ -57,12 +70,10 @@ export function initPayslipProcessor() {
     // --- Event Listeners ---
     tsvInput.addEventListener('change', (e) => handleTsvSelect(e.target.files));
     pdfInput.addEventListener('change', (e) => handlePdfSelect(e.target.files));
-    
-    // Drag and Drop Listeners
     setupDragDrop(tsvDropArea, handleTsvSelect);
     setupDragDrop(pdfDropArea, handlePdfSelect);
-
     processBtn.addEventListener('click', handleProcessing);
+    resetBtn.addEventListener('click', resetProcess); // New event listener
     warningSection.addEventListener('click', handleIgnoreClick);
     downloadBtn.addEventListener('click', downloadTsv);
 
@@ -71,14 +82,36 @@ export function initPayslipProcessor() {
 }
 
 /**
- * Sets up drag and drop event listeners for a given area.
- * @param {HTMLElement} area The drop area element.
- * @param {Function} fileHandler The function to call with the dropped files.
+ * Resets the entire process and UI to its initial state.
  */
+function resetProcess() {
+    // Reset file variables and inputs
+    tsvFile = null;
+    pdfFiles = [];
+    tsvInput.value = '';
+    pdfInput.value = '';
+
+    // Reset data maps
+    payslipData.clear();
+    newFoundCodes.clear();
+
+    // Reset UI elements
+    tsvIndicator.textContent = "Nenhum arquivo selecionado.";
+    pdfIndicator.textContent = "Nenhum arquivo selecionado.";
+    outputSection.style.display = 'none';
+    warningSection.style.display = 'none';
+    outputTextarea.value = '';
+    warningList.innerHTML = '';
+    showError('');
+    showLoader(false);
+    checkProcessButtonState();
+    console.log("Process has been reset.");
+}
+
 function setupDragDrop(area, fileHandler) {
     area.addEventListener('dragover', (e) => {
         e.preventDefault();
-        area.classList.add('bg-blue-100', 'border-blue-400'); // Visual feedback
+        area.classList.add('bg-blue-100', 'border-blue-400');
     });
     area.addEventListener('dragleave', () => area.classList.remove('bg-blue-100', 'border-blue-400'));
     area.addEventListener('drop', (e) => {
@@ -90,40 +123,22 @@ function setupDragDrop(area, fileHandler) {
     });
 }
 
-/**
- * Handles the selection of the TSV file.
- * @param {FileList} files The selected files.
- */
 function handleTsvSelect(files) {
     tsvFile = files[0] || null;
     tsvIndicator.textContent = tsvFile ? tsvFile.name : "Nenhum arquivo selecionado.";
     checkProcessButtonState();
 }
 
-/**
- * Handles the selection of PDF files.
- * @param {FileList} files The selected files.
- */
 function handlePdfSelect(files) {
     pdfFiles = Array.from(files);
-    if (pdfFiles.length > 0) {
-        pdfIndicator.textContent = `${pdfFiles.length} PDF(s) selecionado(s).`;
-    } else {
-        pdfIndicator.textContent = "Nenhum arquivo selecionado.";
-    }
+    pdfIndicator.textContent = pdfFiles.length > 0 ? `${pdfFiles.length} PDF(s) selecionado(s).` : "Nenhum arquivo selecionado.";
     checkProcessButtonState();
 }
 
-/**
- * Enables or disables the process button based on file selection.
- */
 function checkProcessButtonState() {
     processBtn.disabled = pdfFiles.length === 0;
 }
 
-/**
- * Fetches the list of ignored codes from Firestore.
- */
 async function fetchIgnoredCodes() {
     if (!db) return;
     try {
@@ -131,19 +146,16 @@ async function fetchIgnoredCodes() {
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
             const firestoreCodes = docSnap.data().codes || [];
-            ignoredCodes = new Set(firestoreCodes.map(String));
+            // Merge Firestore codes with the hardcoded ones
+            firestoreCodes.forEach(code => ignoredCodes.add(String(code)));
         }
-        console.log("Fetched ignored codes:", Array.from(ignoredCodes));
+        console.log("Fetched and merged ignored codes:", Array.from(ignoredCodes));
     } catch (err) {
         console.error("Error fetching ignored codes:", err);
         showError("Could not fetch ignored codes from Firebase.");
     }
 }
 
-/**
- * Updates the list of ignored codes in Firestore.
- * @param {Set<string>} updatedCodesSet The updated set of ignored codes.
- */
 async function updateIgnoredCodesInDb(updatedCodesSet) {
     if (!db) {
         console.error("Firestore DB not initialized.");
@@ -151,6 +163,7 @@ async function updateIgnoredCodesInDb(updatedCodesSet) {
     }
     try {
         const docRef = doc(db, IGNORED_CODES_DOC_PATH);
+        // We only save the full set, including the pre-loaded ones.
         const codesArray = Array.from(updatedCodesSet);
         await setDoc(docRef, { codes: codesArray });
         console.log("Successfully updated ignored codes in Firebase:", codesArray);
@@ -160,11 +173,7 @@ async function updateIgnoredCodesInDb(updatedCodesSet) {
     }
 }
 
-/**
- * Main handler for starting the PDF processing.
- */
 async function handleProcessing() {
-    // Added a check to ensure the user has replaced the placeholder API key.
     if (!GEMINI_API_KEY || GEMINI_API_KEY === "PASTE_YOUR_GEMINI_API_KEY_HERE") {
         showError("Please add your Gemini API Key to the payslip.js file on line 8.");
         return;
@@ -172,11 +181,12 @@ async function handleProcessing() {
 
     showLoader(true, `Starting processing...`);
     processBtn.disabled = true;
+    resetBtn.disabled = true; // Disable reset while processing
     showError('');
     outputSection.style.display = 'none';
     warningSection.style.display = 'none';
     newFoundCodes.clear();
-    payslipData.clear(); // Clear previous results before starting a new run
+    payslipData.clear();
 
     try {
         if (tsvFile) {
@@ -186,16 +196,17 @@ async function handleProcessing() {
             nameList = [];
         }
 
-        // --- BATCH PROCESSING & SAFETY SAVE IMPLEMENTATION ---
+        let processedCount = 0;
         for (let i = 0; i < pdfFiles.length; i += BATCH_SIZE) {
             const batch = pdfFiles.slice(i, i + BATCH_SIZE);
             const startNum = i + 1;
             const endNum = i + batch.length;
             
-            showLoader(true, `Processing files ${startNum}-${endNum} of ${pdfFiles.length}...`);
-
-            // Process the current batch sequentially
             for (const pdf of batch) {
+                processedCount++;
+                const progress = (processedCount / pdfFiles.length) * 100;
+                showLoader(true, `Processing file ${processedCount} of ${pdfFiles.length}...`, progress);
+                
                 if (pdf.size === 0) {
                     console.warn(`Skipping empty file: ${pdf.name}`);
                     continue;
@@ -209,9 +220,8 @@ async function handleProcessing() {
                 }
             }
             
-            // Generate and display the output after each batch as a safety save
             correlateAndGenerateOutput();
-            console.log(`Batch ${startNum}-${endNum} complete. TSV has been updated.`);
+            console.log(`Batch ending at file ${endNum} complete. TSV has been updated.`);
         }
         
     } catch (err) {
@@ -220,15 +230,11 @@ async function handleProcessing() {
     } finally {
         showLoader(false);
         checkProcessButtonState();
+        resetBtn.disabled = false; // Re-enable reset button
         console.log("All processing finished.");
     }
 }
 
-/**
- * Processes a single PDF file using the Gemini API.
- * @param {File} file The PDF file to process.
- * @returns {Promise<Map<string, any>>} A map of employee name to their payslip data.
- */
 async function processPdf(file) {
     const base64File = await new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -291,17 +297,11 @@ async function processPdf(file) {
     return normalizedMap;
 }
 
-/**
- * Makes an API call to Gemini with exponential backoff retry logic.
- * @param {object} payload The payload to send to the API.
- * @param {number} maxRetries The maximum number of retries.
- * @returns {Promise<string>} The text response from the API.
- */
 async function makeApiCallWithRetry(payload, maxRetries = 3) {
     const model = "gemini-1.5-flash-latest";
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
     
-    let delay = 1000; // Start with a 1-second delay
+    let delay = 1000;
 
     for (let i = 0; i < maxRetries; i++) {
         try {
@@ -337,10 +337,6 @@ async function makeApiCallWithRetry(payload, maxRetries = 3) {
     throw new Error("API call failed after multiple retries.");
 }
 
-
-/**
- * Correlates the processed data and generates the final TSV output.
- */
 function correlateAndGenerateOutput() {
     const tsvRows = [];
     const header = "Nome\tComissão\tVale Adiantamento\tVT Desconto\tSalário Família\tDesconto Empréstimo\tHoras Extras\tDesconto Faltas";
@@ -348,6 +344,14 @@ function correlateAndGenerateOutput() {
 
     const foundCodes = new Map();
     const namesToProcess = nameList.length > 0 ? nameList : Array.from(payslipData.keys()).sort();
+    
+    // Create a reverse map for quick lookup of a code to its category
+    const codeToCategory = new Map();
+    for (const category in ruleMappings) {
+        ruleMappings[category].forEach(code => {
+            codeToCategory.set(String(code), category);
+        });
+    }
 
     namesToProcess.forEach(name => {
         const personData = payslipData.get(name.toUpperCase().trim());
@@ -355,21 +359,19 @@ function correlateAndGenerateOutput() {
 
         if (personData) {
             personData.forEach(item => {
-                const desc = item.descricao.toUpperCase();
-                const codigo = item.codigo || 0;
-                let processed = false;
-
-                // Apply special rules
-                if (desc.includes('COMISS')) { rowData.comissao += item.vencimentos || 0; processed = true; }
-                if (desc.includes('EXTRAS')) { rowData.horasExtrasValor += item.vencimentos || 0; processed = true; }
-                if (desc.includes('FALTAS')) { rowData.descontoFaltas += item.descontos || 0; processed = true; }
-                if (desc.includes('VALE TRANSPORTE') || desc.includes('VT')) { rowData.vtDesconto += item.descontos || 0; processed = true; }
-                if (desc.includes('ADIANTAMENTO') || codigo === 981) { rowData.valeAdiantamento += item.descontos || 0; processed = true; }
-                if (desc.includes('SALARIO FAMILIA')) { rowData.salarioFamilia += item.vencimentos || 0; processed = true; }
-                if (desc.includes('EMPRESTIMO') || desc.includes('DESC. EMP')) { rowData.descontoEmprestimo += item.descontos || 0; processed = true; }
-
-                if (!processed && !ignoredCodes.has(String(codigo)) && (item.vencimentos > 0 || item.descontos > 0)) {
-                    if (!foundCodes.has(codigo)) foundCodes.set(codigo, item.descricao);
+                const codigoStr = String(item.codigo || 0);
+                const category = codeToCategory.get(codigoStr);
+                
+                if (category) {
+                    // This code is in our hardcoded rules
+                    if (item.vencimentos > 0) {
+                        rowData[category] += item.vencimentos;
+                    } else if (item.descontos > 0) {
+                        rowData[category] += item.descontos;
+                    }
+                } else if (!ignoredCodes.has(codigoStr) && (item.vencimentos > 0 || item.descontos > 0)) {
+                    // This is a new, unknown code
+                    if (!foundCodes.has(item.codigo)) foundCodes.set(item.codigo, item.descricao);
                 }
             });
         }
@@ -381,13 +383,11 @@ function correlateAndGenerateOutput() {
 
     newFoundCodes = foundCodes;
     
-    // Always show the output if there is data to show.
     if (payslipData.size > 0) {
         outputTextarea.value = tsvRows.join('\n');
         outputSection.style.display = 'block';
     }
 
-    // Display warnings if there are any new codes.
     if (newFoundCodes.size > 0) {
         displayWarnings();
     } else {
@@ -395,9 +395,6 @@ function correlateAndGenerateOutput() {
     }
 }
 
-/**
- * Displays warnings for any new, unrecognized codes found in the payslips.
- */
 function displayWarnings() {
     warningList.innerHTML = '';
     if (newFoundCodes.size === 0) {
@@ -421,29 +418,16 @@ function displayWarnings() {
     warningSection.style.display = 'block';
 }
 
-/**
- * Handles the click event for the 'ignore' button on a warning.
- * @param {MouseEvent} event The click event.
- */
 function handleIgnoreClick(event) {
     if (!event.target.classList.contains('ignore-btn')) return;
     const codeToIgnore = event.target.dataset.code;
     
     ignoredCodes.add(String(codeToIgnore));
     updateIgnoredCodesInDb(ignoredCodes);
-    
-    // We only need to remove the code from the 'newFoundCodes' map.
-    // The main 'payslipData' map remains untouched.
     newFoundCodes.delete(Number(codeToIgnore));
-    
-    // Simply re-render the warnings and the TSV output with the updated ignored list.
     correlateAndGenerateOutput();
 }
 
-
-/**
- * Creates and triggers a download for the generated TSV content.
- */
 function downloadTsv() {
     const tsvContent = outputTextarea.value;
     if (!tsvContent) return;
@@ -459,21 +443,21 @@ function downloadTsv() {
 }
 
 /**
- * Shows or hides the main loader element.
+ * Shows or hides the main loader element and updates progress.
  * @param {boolean} show True to show, false to hide.
  * @param {string} [message] The message to display in the loader.
+ * @param {number} [progress] The progress percentage (0-100).
  */
-function showLoader(show, message = 'Processing...') {
+function showLoader(show, message = 'Processing...', progress = 0) {
     if (loaderText) {
         loaderText.textContent = message;
+    }
+    if (progressBar) {
+        progressBar.style.width = `${progress}%`;
     }
     loader.style.display = show ? 'flex' : 'none';
 }
 
-/**
- * Displays an error message to the user.
- * @param {string} message The message to display.
- */
 function showError(message) {
     const errorEl = document.getElementById('payslip-error');
     errorEl.textContent = message;
