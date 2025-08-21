@@ -190,7 +190,7 @@ async function handleProcessing() {
 
     try {
         if (tsvFile) {
-            nameList = (await tsvFile.text()).split('\n').map(n => n.trim()).filter(Boolean);
+            nameList = (await tsvFile.text()).split('\n').map(n => n.trim().toUpperCase()).filter(Boolean);
         } else {
             nameList = [];
         }
@@ -228,75 +228,27 @@ async function processPdf(file) {
     const fileData = await new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
-        reader.onload = () => resolve({ name: file.name, dataUrl: reader.result });
+        reader.onload = () => resolve({ name: file.name, dataUrl: reader.result, base64: reader.result.split(',')[1] });
         reader.onerror = error => reject(error);
     });
 
-    const textContent = await extractTextWithCoordinates(fileData.dataUrl);
-    const assembledRows = assembleRowsFromOcr(textContent.items);
-    const finalResult = await extractDataFromRows(assembledRows);
-
-    const normalizedMap = new Map();
-    if (finalResult.employeeName && finalResult.lineItems) {
-        const name = finalResult.employeeName.toUpperCase().trim();
-        normalizedMap.set(name, { ...finalResult, originalFile: fileData });
-    }
-    return normalizedMap;
-}
-
-async function extractTextWithCoordinates(dataUrl) {
-    const pdf = await pdfjsLib.getDocument(dataUrl).promise;
-    const page = await pdf.getPage(1);
-    return await page.getTextContent();
-}
-
-function assembleRowsFromOcr(annotations) {
-    if (!annotations || annotations.length === 0) return [];
-    
-    const items = annotations.map(item => ({
-        text: item.str,
-        x: item.transform[4],
-        y: item.transform[5],
-        height: item.height
-    }));
-
-    items.sort((a, b) => {
-        if (Math.abs(a.y - b.y) > a.height / 2) {
-            return a.y - b.y;
-        }
-        return a.x - b.x;
-    });
-
-    const rows = [];
-    let currentRow = [];
-    let lastY = -1;
-
-    items.forEach(item => {
-        if (lastY === -1 || Math.abs(item.y - lastY) > item.height / 2) {
-            if (currentRow.length > 0) rows.push(currentRow.map(c => c.text).join(' '));
-            currentRow = [item];
-            lastY = item.y;
-        } else {
-            currentRow.push(item);
-        }
-    });
-    if (currentRow.length > 0) rows.push(currentRow.map(c => c.text).join(' '));
-    return rows;
-}
-
-async function extractDataFromRows(rows) {
-     const prompt = `
-        From the following lines of text extracted from a payslip, identify the employee's name and extract the line items.
-        The first few lines usually contain the name. The subsequent lines are table rows.
-        For each table row, extract the code, description, earnings (Vencimentos), and deductions (Descontos).
-        Return a single JSON object with "employeeName", "lineItems", and a confidence score.
+    const prompt = `
+        Your task is to extract data from a payslip PDF with 100% accuracy.
+        The document contains a main table with the headers: 'Código', 'Descrição', 'Referência', 'Vencimentos', and 'Descontos'.
         
-        Text Lines:
-        ${rows.join('\n')}
+        Your instructions are:
+        1.  First, identify the full name of the employee. It is usually at the top of the document.
+        2.  Next, analyze the main table row by row.
+        3.  For each row, you MUST correctly associate the text in the 'Descrição' column with the numeric values in the 'Vencimentos' (Earnings) and 'Descontos' (Deductions) columns that are on the exact same horizontal line.
+        4.  **CRITICAL**: You MUST IGNORE the 'Referência' column. Do not use its values for the final output. The correct values are ONLY in the 'Vencimentos' and 'Descontos' columns.
+        5.  If a value for 'Vencimentos' or 'Descontos' is empty on a given line, you MUST use the number 0.
+        6.  After extracting all line items, provide a confidence score from 0.0 to 1.0.
+        
+        Return a single JSON object with "employeeName", "lineItems", and "confidence". Return ONLY the raw JSON object.
     `;
 
     const payload = {
-        contents: [{ parts: [{ text: prompt }] }],
+        contents: [{ parts: [{ text: prompt }, { inlineData: { mimeType: "application/pdf", data: fileData.base64 } }] }],
         generationConfig: {
             responseMimeType: "application/json",
             responseSchema: {
@@ -326,15 +278,23 @@ async function extractDataFromRows(rows) {
             }
         }
     };
+
     const resultText = await makeApiCallWithRetry(payload);
-    return JSON.parse(resultText);
+    const parsedResult = JSON.parse(resultText);
+    
+    const normalizedMap = new Map();
+    if (parsedResult.employeeName && parsedResult.lineItems) {
+        const name = parsedResult.employeeName.toUpperCase().trim();
+        normalizedMap.set(name, { ...parsedResult, originalFile: fileData });
+    }
+    return normalizedMap;
 }
 
+
 async function makeApiCallWithRetry(payload, maxRetries = 3) {
-    // --- MODEL SWITCH: Using the fastest available model ---
-    const model = "gemini-2.5-flash-lite"; 
+    const model = "gemini-1.5-pro-latest"; // Reverted to Pro model for highest accuracy
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
-    let delay = 1000;
+    let delay = 2000;
     for (let i = 0; i < maxRetries; i++) {
         try {
             const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
@@ -372,7 +332,8 @@ function renderResults() {
     }
 
     namesToProcess.forEach(name => {
-        const data = payslipData.get(name.toUpperCase().trim());
+        const upperCaseName = name.toUpperCase().trim();
+        const data = payslipData.get(upperCaseName);
         let rowData = { comissao: 0, valeAdiantamento: 0, vtDesconto: 0, salarioFamilia: 0, descontoEmprestimo: 0, horasExtrasValor: 0, descontoFaltas: 0 };
 
         if (data && data.lineItems) {
@@ -404,7 +365,7 @@ function renderResults() {
                 if (confidenceScore < 0.95) {
                     actionCell.innerHTML += `<span title="Confiança baixa: ${data.confidence?.reasoning}" class="text-yellow-500 font-bold mr-2">!</span>`;
                 }
-                actionCell.innerHTML += `<button data-name="${name.toUpperCase().trim()}" class="view-pdf-btn text-blue-500 hover:text-blue-700">
+                actionCell.innerHTML += `<button data-name="${upperCaseName}" class="view-pdf-btn text-blue-500 hover:text-blue-700">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg>
                 </button>`;
             }
