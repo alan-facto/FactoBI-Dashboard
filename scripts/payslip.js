@@ -20,10 +20,10 @@ let ruleMappings = {
 
 // --- Module State ---
 let db;
-let tsvFile = null; // FIX: Re-declared tsvFile in the global scope
+let tsvFile = null;
 let pdfFiles = [];
 let nameList = [];
-let payslipData = new Map(); // Stores processed data, including file reference and confidence
+let payslipData = new Map();
 let newFoundCodes = new Map();
 let ignoredCodes = new Set([
     1, 998, 8697, 8699, 5, 896, 931, 805, 806, 937, 812, 821, 848, 8504, 999, 4, 894, 100, 843
@@ -91,12 +91,10 @@ function bindEventListeners() {
     if(addRuleBtn) addRuleBtn.addEventListener('click', addRule);
     if(saveRulesBtn) saveRulesBtn.addEventListener('click', saveConfigToDb);
     
-    // Modal listeners
     document.getElementById('open-settings-modal-btn')?.addEventListener('click', () => settingsModal.style.display = 'flex');
     document.getElementById('close-settings-modal-btn')?.addEventListener('click', () => settingsModal.style.display = 'none');
     document.getElementById('close-pdf-viewer-btn')?.addEventListener('click', () => pdfViewerModal.style.display = 'none');
     
-    // Listener for dynamic view PDF buttons
     if(outputTableBody) outputTableBody.addEventListener('click', handleTableClick);
 }
 
@@ -213,7 +211,7 @@ async function handleProcessing() {
                  console.error(`Failed to process ${pdf.name}.`, pdfError);
                  showError(`An error occurred while processing ${pdf.name}. It has been skipped.`);
             }
-            renderResults(); // Safety render after each file
+            renderResults();
         }
     } catch (err) {
         console.error("File processing error:", err);
@@ -292,7 +290,6 @@ async function processPdf(file) {
     const normalizedMap = new Map();
     if (parsedResult.employeeName && parsedResult.lineItems) {
         const name = parsedResult.employeeName.toUpperCase().trim();
-        // Store the full result, including the file data for the viewer
         normalizedMap.set(name, { ...parsedResult, originalFile: fileData });
     }
     return normalizedMap;
@@ -301,7 +298,7 @@ async function processPdf(file) {
 async function makeApiCallWithRetry(payload, maxRetries = 3) {
     const model = "gemini-1.5-flash-latest";
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
-    let delay = 2000; // Increased initial delay for rate-limiting
+    let delay = 2000;
     for (let i = 0; i < maxRetries; i++) {
         try {
             const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
@@ -358,7 +355,6 @@ function renderResults() {
         const newRow = outputTableBody.insertRow();
         newRow.className = "bg-white border-b";
         
-        // Confidence Indicator & View PDF Button Cell
         const actionCell = newRow.insertCell();
         actionCell.className = "px-6 py-4";
         if (data) {
@@ -369,15 +365,13 @@ function renderResults() {
             actionCell.innerHTML += `<button data-name="${name.toUpperCase().trim()}" class="view-pdf-btn ml-2 text-blue-500 hover:underline">Ver PDF</button>`;
         }
         
-        // Name Cell
         newRow.insertCell().textContent = name;
 
-        // Data Cells
         Object.keys(rowData).forEach(key => {
             const cell = newRow.insertCell();
             cell.textContent = (rowData[key] === 0 ? '0,00' : rowData[key].toFixed(2).replace('.', ','));
             cell.setAttribute('contenteditable', 'true');
-            cell.className = "px-6 py-4 text-center"; // Centered values
+            cell.className = "px-6 py-4 text-center";
         });
     });
 
@@ -416,7 +410,7 @@ function downloadTsv() {
     const headers = ["Nome", "Comissão", "Vale Adiantamento", "VT Desconto", "Salário Família", "Desconto Empréstimo", "Horas Extras", "Desconto Faltas"];
     let tsvContent = headers.join('\t') + '\n';
     outputTableBody.querySelectorAll('tr').forEach(row => {
-        const rowData = Array.from(row.querySelectorAll('td')).slice(1).map(td => td.textContent); // Slice to skip action cell
+        const rowData = Array.from(row.querySelectorAll('td')).slice(1).map(td => td.textContent);
         tsvContent += rowData.join('\t') + '\n';
     });
     
@@ -505,8 +499,6 @@ async function renderPdfSnippet(file, name) {
     const pdf = await loadingTask.promise;
     const page = await pdf.getPage(1);
     
-    // This viewport will attempt to crop to the main table area.
-    // You may need to adjust these values for different payslip layouts.
     const viewport = page.getViewport({ scale: 1.5, offsetY: -400, rotation: 0 });
 
     const context = pdfCanvas.getContext('2d');
