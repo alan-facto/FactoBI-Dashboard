@@ -7,8 +7,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <!-- Added Tailwind CSS for utility classes -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- PDF.js library for rendering PDF snippets -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
   <link rel="stylesheet" href="styles/style.css">
   <link rel="stylesheet" href="styles/login.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -33,17 +34,9 @@
       <button id="logout-btn" style="margin-left: auto; background-color: #E44D42;">Sair</button>
     </div>
 
-    <!-- Gastos (Expenses) View -->
-    <div id="charts-view" style="display: flex; flex-direction: column; gap: 20px;">
-      <!-- All expense chart rows go here -->
-    </div>
-
-    <!-- Faturamento (Earnings) View -->
-    <div id="earnings-view" style="display: none; flex-direction: column; gap: 20px;">
-        <!-- All earnings chart rows go here -->
-    </div>
-
-    <!-- Tabelas (Tables) View -->
+    <!-- Views (Gastos, Faturamento, Tabelas) -->
+    <div id="charts-view" style="display: flex; flex-direction: column; gap: 20px;"></div>
+    <div id="earnings-view" style="display: none; flex-direction: column; gap: 20px;"></div>
     <div id="tables-view" style="display: none; flex-direction: column; gap: 20px;">
       <div class="card">
         <div class="table-toggle-container">
@@ -53,7 +46,6 @@
           <button id="btn-detailed-department" class="table-toggle-btn">Detalhado por Departamento</button>
           <button id="btn-earnings-table" class="table-toggle-btn">Faturamento</button>
         </div>
-
         <div id="table-summary-month" style="display: block;"></div>
         <div id="table-summary-department" style="display: none;"></div>
         <div id="table-detailed-month" style="display: none;"></div>
@@ -64,150 +56,115 @@
     
     <!-- Dev View -->
     <div id="dev-view" style="display: none;">
-        <!-- EXISTING DEV TOOL FOR DATA UPLOAD -->
+        <!-- Data Management Tool (existing) -->
         <div class="theme-card dev-container">
-            <div class="dev-header">
-                <div>
-                    <h1 class="dev-h1">Gerenciamento de Dados</h1>
-                    <p class="dev-subheading">Faça upload, edite e exclua dados do Firestore para o painel.</p>
-                </div>
-                <div id="status-indicator" class="status-indicator">
-                    <span class="status-dot-wrapper"><span class="status-dot"></span></span>
-                    Sem alterações salvas
-                </div>
-            </div>
-            <div class="dev-tabs-container">
-                <nav class="dev-tabs-nav">
-                    <button onclick="showTab('upload')" id="tab-btn-upload" class="tab-btn active">Enviar Dados</button>
-                    <button onclick="showTab('edit')" id="tab-btn-edit" class="tab-btn">Visualizar & Editar</button>
-                    <button onclick="showTab('delete')" id="tab-btn-delete" class="tab-btn">Excluir Dados</button>
-                </nav>
-            </div>
-            <div id="tab-content">
-                <!-- Upload Tab -->
-                <div id="upload-tab">
-                    <div class="dev-card">
-                        <h3 class="dev-h3">Passo 1: Fornecer os Dados</h3>
-                        <div class="dev-input-methods-tabs">
-                            <nav>
-                                <button onclick="showInputMethod('file')" id="input-method-btn-file" class="tab-btn active">Arquivo TSV</button>
-                                <button onclick="showInputMethod('paste')" id="input-method-btn-paste" class="tab-btn">Colar Texto</button>
-                            </nav>
-                        </div>
-                        <div id="input-method-content">
-                            <div id="file-input-method">
-                                <div class="file-drop-zone"><div class="text-center"><svg class="mx-auto h-12 w-12 text-gray-300" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M1.5 6a2.25 2.25 0 012.25-2.25h16.5A2.25 2.25 0 0122.5 6v12a2.25 2.25 0 01-2.25 2.25H3.75A2.25 2.25 0 011.5 18V6zM3 16.06V18c0 .414.336.75.75.75h16.5A.75.75 0 0021 18v-1.94l-2.69-2.689a1.5 1.5 0 00-2.12 0l-.88.879.97.97a.75.75 0 11-1.06 1.06l-5.16-5.159a1.5 1.5 0 00-2.12 0L3 16.061zm10.125-7.81a1.125 1.125 0 112.25 0 1.125 1.125 0 01-2.25 0z" clip-rule="evenodd" /></svg><label for="file-upload" class="file-upload-label"><span>Selecione um arquivo</span><input id="file-upload" type="file" class="sr-only"></label><p class="inline">ou arraste e solte</p><p class="text-xs">TSV até 10MB</p></div></div>
-                            </div>
-                            <div id="paste-input-method" style="display: none;">
-                                <textarea rows="8" class="dev-textarea" placeholder="Cole aqui os dados separados por tabulação..."></textarea>
-                            </div>
-                        </div>
-                        <button onclick="openModal('validation-modal')" class="dev-btn btn-primary w-full">Processar e Validar Dados</button>
-                    </div>
-                </div>
-                <!-- Edit / Delete Tabs -->
-            </div>
+            <!-- ... existing data management tool ... -->
         </div>
 
-        <!-- NEW PAYSLIP PROCESSOR TOOL -->
+        <!-- PAYSLIP PROCESSOR TOOL -->
         <div class="theme-card dev-container" style="margin-top: 2rem;">
             <div class="dev-header">
                 <div>
                     <h1 class="dev-h1">Processador de Folhas de Pagamento</h1>
                     <p class="dev-subheading">Faça upload dos PDFs das folhas e da lista de nomes para gerar um TSV consolidado.</p>
                 </div>
+                 <!-- NEW: Settings Gear Icon -->
+                <button id="open-settings-modal-btn" class="p-2 rounded-full hover:bg-gray-200 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311a1.464 1.464 0 0 1-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413-1.4-2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872l-.1-.34zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z"/>
+                    </svg>
+                </button>
             </div>
             <div class="dev-card">
                 <div class="payslip-upload-grid">
-                    <!-- TSV Upload -->
                     <div id="tsv-drop-area" class="payslip-upload-area">
-                        <label for="payslip-tsv-upload" class="dev-btn btn-secondary w-full cursor-pointer">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="inline-block mr-2"><path d="M14 4.5V14a2 2 0 0 1-2 2h-1v-1h1a1 1 0 0 0 1-1V4.5h-2A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v9H2V2a2 2 0 0 1 2-2h5.5L14 4.5zM3 12h2v1h1v1h1v1H6v-1H5v-1H4v-1H3v-1zm10-2h-3v3h-1v-3h-3v-1h3V7h1v3h3v1z"/></svg>
-                            Carregar Lista TSV
-                        </label>
+                        <label for="payslip-tsv-upload" class="dev-btn btn-secondary w-full cursor-pointer">Carregar Lista TSV</label>
                         <input id="payslip-tsv-upload" type="file" class="sr-only" accept=".tsv">
                         <div id="tsv-file-indicator" class="file-indicator">Arraste um arquivo aqui</div>
                     </div>
-                    <!-- PDF Upload -->
                     <div id="pdf-drop-area" class="payslip-upload-area">
-                        <label for="payslip-pdf-upload" class="dev-btn btn-secondary w-full cursor-pointer">
-                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="inline-block mr-2"><path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 1.5L13 5h-2.5a1 1 0 0 1-1-1V1.5zM4.354 11.354a.5.5 0 0 1 0-.708L5.293 9.707a.5.5 0 0 1 .707 0L7 10.646l1.293-1.293a.5.5 0 0 1 .707 0L10 10.293l.646-.647a.5.5 0 0 1 .708 0L12 9.793a.5.5 0 0 1 0 .707l-.647.647a.5.5 0 0 1-.708 0L10 10.293 8.707 11.5a.5.5 0 0 1-.707 0L7 10.646 5.707 11.95a.5.5 0 0 1-.707 0l-.646-.647z"/></svg>
-                            Carregar PDFs
-                        </label>
+                        <label for="payslip-pdf-upload" class="dev-btn btn-secondary w-full cursor-pointer">Carregar PDFs</label>
                         <input id="payslip-pdf-upload" type="file" class="sr-only" accept=".pdf" multiple>
                         <div id="pdf-file-indicator" class="file-indicator">Arraste um ou mais arquivos</div>
                     </div>
                 </div>
                 
-                <!-- Action Buttons -->
                 <div class="flex items-center space-x-2 mt-4">
                     <button id="payslip-process-btn" class="dev-btn btn-primary w-full" disabled>Processar Arquivos</button>
                     <button id="payslip-reset-btn" class="dev-btn btn-tertiary">Resetar</button>
                 </div>
 
-                <!-- Loader with Progress Bar -->
                 <div id="payslip-loader" style="display: none; flex-direction: column; align-items: center; margin-top: 1.5rem;">
                     <div class="flex items-center">
                         <div class="loader-spinner"></div>
                         <span id="payslip-loader-text" class="ml-2">Processando...</span>
                     </div>
-                    <div class="w-full bg-gray-200 rounded-full h-2.5 mt-4">
-                        <div id="payslip-progress-bar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
-                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5 mt-4"><div id="payslip-progress-bar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div></div>
                 </div>
 
                 <div id="payslip-error" style="display: none;" class="dev-alert-warning mt-4"></div>
 
-                <!-- NEW: Dynamic Rule Configuration -->
-                <div id="rule-config-section" class="mt-6">
-                    <h3 class="dev-h3">Configuração de Regras</h3>
-                    <div id="rule-config-list" class="space-y-2 mb-4"></div>
-                    <div class="flex items-center space-x-2 p-2 border rounded-md">
-                        <select id="rule-category-select" class="dev-input flex-grow">
-                            <option value="comissao">Comissão</option>
-                            <option value="valeAdiantamento">Vale Adiantamento</option>
-                            <option value="vtDesconto">VT Desconto</option>
-                            <option value="salarioFamilia">Salário Família</option>
-                            <option value="descontoEmprestimo">Desconto Empréstimo</option>
-                            <option value="horasExtrasValor">Horas Extras</option>
-                            <option value="descontoFaltas">Desconto Faltas</option>
-                        </select>
-                        <input type="number" id="rule-code-input" placeholder="Código" class="dev-input w-24">
-                        <button id="add-rule-btn" class="dev-btn btn-secondary">Adicionar</button>
-                    </div>
-                     <button id="save-rules-btn" class="dev-btn btn-success w-full mt-2">Salvar Regras no Banco</button>
-                </div>
-
-
                 <div id="payslip-warning-section" style="display: none;" class="mt-6">
                     <div class="dev-alert-warning">
                         <h3 class="dev-h3" style="color: #ca8a04;">Revisar Novos Códigos</h3>
-                        <p class="dev-subheading" style="margin-top: -1rem; color: #ca8a04;">Os códigos abaixo não foram reconhecidos. Ignore-os para gerar o arquivo final.</p>
+                        <p class="dev-subheading" style="margin-top: -1rem; color: #ca8a04;">Os códigos abaixo não foram reconhecidos. Adicione-os a uma regra ou ignore-os.</p>
                         <div id="payslip-warning-list" class="mt-4 space-y-2"></div>
                     </div>
                 </div>
                 
-                <!-- NEW: Editable Table Output -->
                 <div id="payslip-output-section" style="display: none;" class="mt-6">
                     <h3 class="dev-h3">Resultado Gerado (Editável)</h3>
-                    <div class="overflow-x-auto">
-                        <table id="payslip-output-table" class="w-full text-sm text-left text-gray-500">
-                            <thead class="text-xs text-gray-700 uppercase bg-gray-50">
-                                <!-- Headers will be inserted by JS -->
-                            </thead>
-                            <tbody id="payslip-output-table-body">
-                                <!-- Rows will be inserted by JS -->
-                            </tbody>
-                        </table>
-                    </div>
+                    <div class="overflow-x-auto"><table id="payslip-output-table" class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50"></thead><tbody id="payslip-output-table-body"></tbody></table></div>
                     <button id="payslip-download-btn" class="dev-btn btn-success w-full mt-4">Baixar Arquivo TSV</button>
                 </div>
             </div>
         </div>
     </div>
+  </div>
 
-    <!-- Modals -->
-    <!-- ... existing modals ... -->
+  <!-- NEW: Settings Modal -->
+  <div id="settings-modal" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center p-4" style="display: none;">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+        <div class="flex justify-between items-center p-4 border-b">
+            <h2 class="text-xl font-semibold">Gerenciamento de Regras</h2>
+            <button id="close-settings-modal-btn" class="p-2 rounded-full hover:bg-gray-200">&times;</button>
+        </div>
+        <div class="p-4 overflow-y-auto">
+            <h3 class="dev-h3">Adicionar Nova Regra</h3>
+            <div class="flex items-center space-x-2 p-2 border rounded-md mb-4">
+                <select id="rule-category-select" class="dev-input flex-grow">
+                    <option value="comissao">Comissão</option>
+                    <option value="valeAdiantamento">Vale Adiantamento</option>
+                    <option value="vtDesconto">VT Desconto</option>
+                    <option value="salarioFamilia">Salário Família</option>
+                    <option value="descontoEmprestimo">Desconto Empréstimo</option>
+                    <option value="horasExtrasValor">Horas Extras</option>
+                    <option value="descontoFaltas">Desconto Faltas</option>
+                    <option value="ignored">Ignorar Código</option>
+                </select>
+                <input type="number" id="rule-code-input" placeholder="Código" class="dev-input w-24">
+                <button id="add-rule-btn" class="dev-btn btn-secondary">Adicionar</button>
+            </div>
+            <h3 class="dev-h3">Regras Atuais</h3>
+            <div id="rule-config-table-container" class="grid grid-cols-4 gap-4"></div>
+        </div>
+        <div class="p-4 border-t mt-auto">
+            <button id="save-rules-btn" class="dev-btn btn-success w-full">Salvar Regras no Banco de Dados</button>
+        </div>
+    </div>
+  </div>
+
+  <!-- NEW: PDF Snippet Viewer Modal -->
+  <div id="pdf-viewer-modal" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center p-4" style="display: none;">
+      <div class="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col">
+          <div class="flex justify-between items-center p-4 border-b">
+              <h2 id="pdf-viewer-title" class="text-xl font-semibold">Visualizador de Holerite</h2>
+              <button id="close-pdf-viewer-btn" class="p-2 rounded-full hover:bg-gray-200">&times;</button>
+          </div>
+          <div class="p-4 overflow-auto flex-grow flex items-center justify-center">
+              <canvas id="pdf-canvas"></canvas>
+          </div>
+      </div>
   </div>
 
   <script type="module" src="scripts/main.js"></script>
