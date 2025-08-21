@@ -229,7 +229,6 @@ async function processPdf(file) {
         reader.onerror = error => reject(error);
     });
 
-    // Step 1: Render PDF to a cropped PNG for analysis
     const imageBase64 = await renderPdfToImage(fileData.dataUrl);
 
     const prompt = `
@@ -377,7 +376,6 @@ function renderResults() {
         });
     });
     
-    // Add "Show All" button if there are hidden rows
     if (outputTableBody.querySelector('.hidden-row')) {
         let footer = outputTable.querySelector('tfoot');
         if (!footer) {
@@ -428,7 +426,6 @@ function downloadTsv() {
     const headers = ["Nome", "Comissão", "Vale Adiantamento", "VT Desconto", "Salário Família", "Desconto Empréstimo", "Horas Extras", "Desconto Faltas"];
     let tsvContent = headers.join('\t') + '\n';
     
-    // Ensure all names from the original list are included in the correct order
     const namesToExport = nameList.length > 0 ? nameList : Array.from(payslipData.keys()).sort();
     
     namesToExport.forEach(name => {
@@ -438,7 +435,6 @@ function downloadTsv() {
             const rowData = Array.from(row.querySelectorAll('td')).slice(1).map(td => td.textContent);
             tsvContent += rowData.join('\t') + '\n';
         } else {
-             // Add empty row for names that were not in the processed data
             tsvContent += `${name}\t0,00\t0,00\t0,00\t0,00\t0,00\t0,00\t0,00\n`;
         }
     });
@@ -519,9 +515,9 @@ async function handleTableClick(event) {
 
         let snippetRow = row.nextElementSibling;
         if (snippetRow && snippetRow.classList.contains('snippet-row')) {
-            snippetRow.remove(); // Hide if already open
+            snippetRow.remove();
         } else if (data && data.originalFile) {
-            snippetRow = outputTableBody.insertRow(row.rowIndex);
+            snippetRow = outputTableBody.insertRow(row.rowIndex + 1);
             snippetRow.className = 'snippet-row';
             const cell = snippetRow.insertCell();
             cell.colSpan = outputTable.rows[0].cells.length;
@@ -535,8 +531,8 @@ async function renderPdfToImage(dataUrl) {
     const pdf = await pdfjsLib.getDocument(dataUrl).promise;
     const page = await pdf.getPage(1);
     
-    // Crop viewport to the table area. Adjust values if needed.
-    const viewport = page.getViewport({ scale: 2.0, offsetX: -50, offsetY: -400, rotation: 0 });
+    // FIX: Remove offsetX to capture the full width
+    const viewport = page.getViewport({ scale: 2.0, offsetY: -400, rotation: 0 });
 
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
@@ -550,7 +546,8 @@ async function renderPdfToImage(dataUrl) {
 async function renderPdfSnippet(file, canvas) {
     const pdf = await pdfjsLib.getDocument(file.dataUrl).promise;
     const page = await pdf.getPage(1);
-    const viewport = page.getViewport({ scale: 1.5, offsetX: -50, offsetY: -400, rotation: 0 });
+    // FIX: Remove offsetX to capture the full width
+    const viewport = page.getViewport({ scale: 1.5, offsetY: -400, rotation: 0 });
     
     const context = canvas.getContext('2d');
     canvas.height = viewport.height;
