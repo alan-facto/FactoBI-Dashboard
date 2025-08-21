@@ -29,6 +29,8 @@ let ignoredCodes = new Set([
     1, 998, 8697, 8699, 5, 896, 931, 805, 806, 937, 812, 821, 848, 8504, 999, 4, 894, 100, 843
 ].map(String));
 
+// --- CONFIGURATION ---
+const BATCH_SIZE = 2; // Reduced batch size for the more powerful (and rate-limited) Pro model.
 const DB_CONFIG_PATH = "payslipProcessor/config";
 
 // --- DOM Elements ---
@@ -232,14 +234,8 @@ async function processPdf(file) {
 
     const imageBase64 = await renderPdfToImage(fileData.dataUrl);
 
-    // NEW 3-STEP PROCESS FOR HIGH ACCURACY
-    // 1. High-fidelity OCR with coordinates
     const ocrResult = await performOcr(imageBase64);
-    
-    // 2. Local logic to assemble rows based on coordinates
     const assembledRows = assembleRowsFromOcr(ocrResult.textAnnotations);
-
-    // 3. Targeted data extraction from the clean, assembled rows
     const finalResult = await extractDataFromRows(assembledRows);
 
     const normalizedMap = new Map();
@@ -283,7 +279,7 @@ async function performOcr(imageBase64) {
 function assembleRowsFromOcr(annotations) {
     if (!annotations || annotations.length === 0) return [];
     annotations.sort((a, b) => {
-        if (Math.abs(a.y - b.y) > 10) { // 10px tolerance for same line
+        if (Math.abs(a.y - b.y) > 10) {
             return a.y - b.y;
         }
         return a.x - b.x;
@@ -353,7 +349,8 @@ async function extractDataFromRows(rows) {
 }
 
 async function makeApiCallWithRetry(payload, maxRetries = 3) {
-    const model = "gemini-1.5-flash-latest";
+    // --- MODEL UPGRADE ---
+    const model = "gemini-1.5-pro-latest";
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
     let delay = 2000;
     for (let i = 0; i < maxRetries; i++) {
@@ -385,7 +382,7 @@ function renderResults() {
     if(outputTableBody) outputTableBody.innerHTML = '';
 
     const foundCodes = new Map();
-    const namesToProcess = nameList.length > 0 ? nameList : Array.from(new Set([...nameList, ...payslipData.keys()])).sort();
+    const namesToProcess = nameList.length > 0 ? Array.from(new Set([...nameList, ...Array.from(payslipData.keys())])) : Array.from(payslipData.keys()).sort();
     
     const codeToCategory = new Map();
     for (const category in ruleMappings) {
@@ -592,7 +589,6 @@ async function renderPdfToImage(dataUrl) {
     const pdf = await pdfjsLib.getDocument(dataUrl).promise;
     const page = await pdf.getPage(1);
     
-    // Corrected viewport to capture full width, only cropping vertically
     const viewport = page.getViewport({ scale: 2.0, offsetY: -400 });
 
     const canvas = document.createElement('canvas');
