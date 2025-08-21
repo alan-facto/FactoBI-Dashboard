@@ -7,6 +7,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Added Tailwind CSS for utility classes -->
+  <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="styles/style.css">
   <link rel="stylesheet" href="styles/login.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -107,71 +109,77 @@
             </div>
         </div>
 
-<!-- NEW PAYSLIP PROCESSOR TOOL -->
-<div class="theme-card dev-container" style="margin-top: 2rem;">
-    <div class="dev-header">
-        <div>
-            <h1 class="dev-h1">Processador de Folhas de Pagamento</h1>
-            <p class="dev-subheading">Faça upload dos PDFs das folhas e da lista de nomes para gerar um TSV consolidado.</p>
+        <!-- NEW PAYSLIP PROCESSOR TOOL -->
+        <div class="theme-card dev-container" style="margin-top: 2rem;">
+            <div class="dev-header">
+                <div>
+                    <h1 class="dev-h1">Processador de Folhas de Pagamento</h1>
+                    <p class="dev-subheading">Faça upload dos PDFs das folhas e da lista de nomes para gerar um TSV consolidado.</p>
+                </div>
+            </div>
+            <div class="dev-card">
+                <div class="payslip-upload-grid">
+                    <!-- TSV Upload -->
+                    <div id="tsv-drop-area" class="payslip-upload-area">
+                        <label for="payslip-tsv-upload" class="dev-btn btn-secondary w-full cursor-pointer">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="inline-block mr-2"><path d="M14 4.5V14a2 2 0 0 1-2 2h-1v-1h1a1 1 0 0 0 1-1V4.5h-2A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v9H2V2a2 2 0 0 1 2-2h5.5L14 4.5zM3 12h2v1h1v1h1v1H6v-1H5v-1H4v-1H3v-1zm10-2h-3v3h-1v-3h-3v-1h3V7h1v3h3v1z"/></svg>
+                            Carregar Lista TSV
+                        </label>
+                        <input id="payslip-tsv-upload" type="file" class="sr-only" accept=".tsv">
+                        <div id="tsv-file-indicator" class="file-indicator">Arraste um arquivo aqui</div>
+                    </div>
+                    <!-- PDF Upload -->
+                    <div id="pdf-drop-area" class="payslip-upload-area">
+                        <label for="payslip-pdf-upload" class="dev-btn btn-secondary w-full cursor-pointer">
+                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="inline-block mr-2"><path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 1.5L13 5h-2.5a1 1 0 0 1-1-1V1.5zM4.354 11.354a.5.5 0 0 1 0-.708L5.293 9.707a.5.5 0 0 1 .707 0L7 10.646l1.293-1.293a.5.5 0 0 1 .707 0L10 10.293l.646-.647a.5.5 0 0 1 .708 0L12 9.793a.5.5 0 0 1 0 .707l-.647.647a.5.5 0 0 1-.708 0L10 10.293 8.707 11.5a.5.5 0 0 1-.707 0L7 10.646 5.707 11.95a.5.5 0 0 1-.707 0l-.646-.647z"/></svg>
+                            Carregar PDFs
+                        </label>
+                        <input id="payslip-pdf-upload" type="file" class="sr-only" accept=".pdf" multiple>
+                        <div id="pdf-file-indicator" class="file-indicator">Arraste um ou mais arquivos</div>
+                    </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="flex items-center space-x-2 mt-4">
+                    <button id="payslip-process-btn" class="dev-btn btn-primary w-full" disabled>Processar Arquivos</button>
+                    <!-- NEW: Reset Button -->
+                    <button id="payslip-reset-btn" class="dev-btn btn-tertiary">Resetar</button>
+                </div>
+
+                <!-- NEW: Updated Loader with Progress Bar -->
+                <div id="payslip-loader" style="display: none; flex-direction: column; align-items: center; margin-top: 1.5rem;">
+                    <div class="flex items-center">
+                        <div class="loader-spinner"></div>
+                        <span id="payslip-loader-text" class="ml-2">Processando...</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5 mt-4">
+                        <div id="payslip-progress-bar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div id="payslip-error" style="display: none;" class="dev-alert-warning mt-4"></div>
+
+                <div id="payslip-warning-section" style="display: none;" class="mt-6">
+                    <div class="dev-alert-warning">
+                        <h3 class="dev-h3" style="color: #ca8a04;">Revisar Novos Códigos</h3>
+                        <p class="dev-subheading" style="margin-top: -1rem; color: #ca8a04;">Os códigos abaixo não foram reconhecidos. Ignore-os para gerar o arquivo final.</p>
+                        <div id="payslip-warning-list" class="mt-4 space-y-2"></div>
+                    </div>
+                </div>
+                
+                <div id="payslip-output-section" style="display: none;" class="mt-6">
+                    <h3 class="dev-h3">Resultado Gerado</h3>
+                    <textarea id="payslip-output" readonly rows="8" class="dev-textarea"></textarea>
+                    <button id="payslip-download-btn" class="dev-btn btn-success w-full">Baixar Arquivo TSV</button>
+                </div>
+            </div>
         </div>
     </div>
-    <div class="dev-card">
-        <div class="payslip-upload-grid">
-            <!-- TSV Upload -->
-            <div id="tsv-drop-area" class="payslip-upload-area">
-                <label for="payslip-tsv-upload" class="dev-btn btn-secondary w-full cursor-pointer">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="inline-block mr-2"><path d="M14 4.5V14a2 2 0 0 1-2 2h-1v-1h1a1 1 0 0 0 1-1V4.5h-2A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v9H2V2a2 2 0 0 1 2-2h5.5L14 4.5zM3 12h2v1h1v1h1v1H6v-1H5v-1H4v-1H3v-1zm10-2h-3v3h-1v-3h-3v-1h3V7h1v3h3v1z"/></svg>
-                    Carregar Lista TSV
-                </label>
-                <input id="payslip-tsv-upload" type="file" class="sr-only" accept=".tsv">
-                <div id="tsv-file-indicator" class="file-indicator">Arraste um arquivo aqui</div>
-            </div>
-            <!-- PDF Upload -->
-            <div id="pdf-drop-area" class="payslip-upload-area">
-                <label for="payslip-pdf-upload" class="dev-btn btn-secondary w-full cursor-pointer">
-                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="inline-block mr-2"><path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 1.5L13 5h-2.5a1 1 0 0 1-1-1V1.5zM4.354 11.354a.5.5 0 0 1 0-.708L5.293 9.707a.5.5 0 0 1 .707 0L7 10.646l1.293-1.293a.5.5 0 0 1 .707 0L10 10.293l.646-.647a.5.5 0 0 1 .708 0L12 9.793a.5.5 0 0 1 0 .707l-.647.647a.5.5 0 0 1-.708 0L10 10.293 8.707 11.5a.5.5 0 0 1-.707 0L7 10.646 5.707 11.95a.5.5 0 0 1-.707 0l-.646-.647z"/></svg>
-                    Carregar PDFs
-                </label>
-                <input id="payslip-pdf-upload" type="file" class="sr-only" accept=".pdf" multiple>
-                <div id="pdf-file-indicator" class="file-indicator">Arraste um ou mais arquivos</div>
-            </div>
-        </div>
-        
-        <button id="payslip-process-btn" class="dev-btn btn-primary w-full" disabled>Processar Arquivos</button>
 
-        <div id="payslip-loader" style="display: none; justify-content: center; align-items: center; margin-top: 1.5rem;">
-            <div class="loader-spinner"></div>
-            <span class="ml-2">Processando... Isso pode levar um momento.</span>
-        </div>
-
-        <div id="payslip-error" style="display: none;" class="dev-alert-warning mt-4"></div>
-
-        <div id="payslip-warning-section" style="display: none;" class="mt-6">
-            <div class="dev-alert-warning">
-                <h3 class="dev-h3" style="color: #ca8a04;">Revisar Novos Códigos</h3>
-                <p class="dev-subheading" style="margin-top: -1rem; color: #ca8a04;">Os códigos abaixo não foram reconhecidos. Ignore-os para gerar o arquivo final.</p>
-                <div id="payslip-warning-list" class="mt-4 space-y-2"></div>
-            </div>
-        </div>
-        
-        <div id="payslip-output-section" style="display: none;" class="mt-6">
-            <h3 class="dev-h3">Resultado Gerado</h3>
-            <textarea id="payslip-output" readonly rows="8" class="dev-textarea"></textarea>
-            <button id="payslip-download-btn" class="dev-btn btn-success w-full">Baixar Arquivo TSV</button>
-        </div>
-    </div>
-</div>
-
-
-
-        <!-- Modals -->
-        <!-- ... existing modals ... -->
-    </div>
+    <!-- Modals -->
+    <!-- ... existing modals ... -->
   </div>
 
   <script type="module" src="scripts/main.js"></script>
 </body>
 </html>
-
-
-
