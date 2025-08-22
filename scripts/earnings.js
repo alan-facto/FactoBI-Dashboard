@@ -151,21 +151,22 @@ function createEarningsVsCostsChart(chartData, months) {
             const mode = button.dataset.costMode;
             const datasets = chart.data.datasets;
 
+            // Reset visibility state before applying new view
+            datasets[1].hidden = false;
+            datasets[2].hidden = false;
+
             if (mode === 'total') {
-                datasets[1].hidden = false;
-                datasets[2].hidden = true;
+                datasets[2].hidden = true; // Hide 'Operação'
                 setBubbleVisibility(true);
                 chart.options.plugins.costVarianceBubbles.targetDatasetIndex = 1;
                 chart.options.plugins.costEfficiencyBubbles.targetDatasetIndex = 1;
             } else if (mode === 'operations') {
-                datasets[1].hidden = true;
-                datasets[2].hidden = false;
+                datasets[1].hidden = true; // Hide 'Geral'
                 setBubbleVisibility(true);
                 chart.options.plugins.costVarianceBubbles.targetDatasetIndex = 2;
                 chart.options.plugins.costEfficiencyBubbles.targetDatasetIndex = 2;
             } else if (mode === 'both') {
-                datasets[1].hidden = false;
-                datasets[2].hidden = false;
+                // Both are already visible from the reset step
                 setBubbleVisibility(false);
             }
             chart.update();
