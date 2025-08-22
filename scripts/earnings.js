@@ -113,7 +113,7 @@ function createEarningsVsCostsChart(chartData, months) {
         plugins: [costVariancePlugin, costEfficiencyPlugin],
         options: { 
             ...globalChartOptions,
-            layout: { padding: { top: 30, bottom: 10, right: 40 } },
+            layout: { padding: { top: 35, bottom: 10, right: 40 } },
             animation: { y: { from: 500 } }, 
             plugins: { 
                 legend: { position: 'top' }, 
@@ -122,7 +122,7 @@ function createEarningsVsCostsChart(chartData, months) {
                 costEfficiencyBubbles: { show: false, targetDatasetIndex: 1 }
             }, 
             scales: { 
-                y: { grace: '15%', ticks: { callback: (value) => formatCurrencyBRL(value) } } 
+                y: { grace: '10%', ticks: { callback: (value) => formatCurrencyBRL(value) } } 
             } 
         }
     });
@@ -149,24 +149,22 @@ function createEarningsVsCostsChart(chartData, months) {
             button.classList.add('active');
             
             const mode = button.dataset.costMode;
-            const datasets = chart.data.datasets;
-
-            // Reset visibility state before applying new view
-            datasets[1].hidden = false;
-            datasets[2].hidden = false;
 
             if (mode === 'total') {
-                datasets[2].hidden = true; // Hide 'Operação'
+                chart.setDatasetVisibility(1, true);
+                chart.setDatasetVisibility(2, false);
                 setBubbleVisibility(true);
                 chart.options.plugins.costVarianceBubbles.targetDatasetIndex = 1;
                 chart.options.plugins.costEfficiencyBubbles.targetDatasetIndex = 1;
             } else if (mode === 'operations') {
-                datasets[1].hidden = true; // Hide 'Geral'
+                chart.setDatasetVisibility(1, false);
+                chart.setDatasetVisibility(2, true);
                 setBubbleVisibility(true);
                 chart.options.plugins.costVarianceBubbles.targetDatasetIndex = 2;
                 chart.options.plugins.costEfficiencyBubbles.targetDatasetIndex = 2;
             } else if (mode === 'both') {
-                // Both are already visible from the reset step
+                chart.setDatasetVisibility(1, true);
+                chart.setDatasetVisibility(2, true);
                 setBubbleVisibility(false);
             }
             chart.update();
