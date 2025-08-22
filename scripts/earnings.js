@@ -13,19 +13,120 @@ export function initEarningsView() {
 
 function createEarningsVsCostsChart(chartData, months) {
     const ctx = document.getElementById('earnings-vs-costs-chart');
-    if (!ctx) return null;
-    new Chart(ctx.getContext('2d'), {
+    if (!ctx) return;
+
+    // Custom plugin for drawing cost variance bubbles
+    const costVarianceBubbles = {
+        id: 'costVarianceBubbles',
+        afterDatasetsDraw(chart) {
+            // Only draw if the 'show' flag in options is true
+            if (!chart.options.plugins.costVarianceBubbles.show) {
+                return;
+            }
+
+            const { ctx, data, _metasets } = chart;
+            // Dataset at index 1 is 'Gastos com Pessoal'
+            const meta = _metasets[1]; 
+            if (!meta) return;
+
+            const points = meta.data;
+            const costsData = data.datasets[1].data;
+
+            ctx.save();
+            for (let i = 1; i < points.length; i++) {
+                const currentCost = costsData[i];
+                const prevCost = costsData[i - 1];
+
+                if (prevCost === 0 || isNaN(currentCost) || isNaN(prevCost)) continue;
+
+                const change = ((currentCost - prevCost) / prevCost) * 100;
+                const text = `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`;
+                
+                // An increase in cost is a negative event (red).
+                // A decrease in cost is a positive event (green).
+                const isNegativeEvent = change >= 0; 
+
+                const x = points[i].x;
+                // Position bubble above or below the point to avoid the line
+                const yOffset = (points[i].y < points[i-1].y) ? 30 : -30;
+                const y = points[i].y + yOffset;
+
+                // Set styles based on whether the change is a negative event
+                ctx.fillStyle = isNegativeEvent ? 'rgba(220, 53, 69, 0.85)' : 'rgba(25, 135, 84, 0.85)'; // red : green
+                ctx.strokeStyle = isNegativeEvent ? '#dc3545' : '#198754';
+                ctx.lineWidth = 1;
+                ctx.font = 'bold 12px "Plus Jakarta Sans"';
+
+                const textMetrics = ctx.measureText(text);
+                const bubbleWidth = textMetrics.width + 16;
+                const bubbleHeight = 24;
+                const borderRadius = 12;
+
+                // Draw the bubble shape
+                ctx.beginPath();
+                ctx.moveTo(x - bubbleWidth / 2 + borderRadius, y - bubbleHeight / 2);
+                ctx.lineTo(x + bubbleWidth / 2 - borderRadius, y - bubbleHeight / 2);
+                ctx.quadraticCurveTo(x + bubbleWidth / 2, y - bubbleHeight / 2, x + bubbleWidth / 2, y - bubbleHeight / 2 + borderRadius);
+                ctx.lineTo(x + bubbleWidth / 2, y + bubbleHeight / 2 - borderRadius);
+                ctx.quadraticCurveTo(x + bubbleWidth / 2, y + bubbleHeight / 2, x + bubbleWidth / 2 - borderRadius, y + bubbleHeight / 2);
+                ctx.lineTo(x - bubbleWidth / 2 + borderRadius, y + bubbleHeight / 2);
+                ctx.quadraticCurveTo(x - bubbleWidth / 2, y + bubbleHeight / 2, x - bubbleWidth / 2, y + bubbleHeight / 2 - borderRadius);
+                ctx.lineTo(x - bubbleWidth / 2, y - bubbleHeight / 2 + borderRadius);
+                ctx.quadraticCurveTo(x - bubbleWidth / 2, y - bubbleHeight / 2, x - bubbleWidth / 2 + borderRadius, y - bubbleHeight / 2);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                // Draw the text inside the bubble
+                ctx.fillStyle = '#fff';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(text, x, y);
+            }
+            ctx.restore();
+        }
+    };
+
+    const chart = new Chart(ctx.getContext('2d'), {
         type: 'line',
         data: {
             labels: months.map(formatMonthShort),
             datasets: [
-                { label: 'Faturamento', data: months.map(m => chartData[m]?.earnings || 0), borderColor: '#024B59', tension: 0.4, borderWidth: 2, fill: true, backgroundColor: hexToRGBA('#024B59', 0.1) },
-                { label: 'Gastos com Pessoal', data: months.map(m => chartData[m]?.total || 0), borderColor: '#E44D42', tension: 0.4, borderWidth: 2, fill: true, backgroundColor: hexToRGBA('#E44D42', 0.1) }
+                { label: 'Faturamento', data: months.map(m => chartData[m]?.earnings || 0), borderColor: '#024B59', tension: 0.4, borderWidth: 2, fill: true, backgroundColor: hexToRGBA('#024B59', 0.1), pointRadius: 4, pointHoverRadius: 6 },
+                { label: 'Gastos com Pessoal', data: months.map(m => chartData[m]?.total || 0), borderColor: '#E44D42', tension: 0.4, borderWidth: 2, fill: true, backgroundColor: hexToRGBA('#E44D42', 0.1), pointRadius: 4, pointHoverRadius: 6 }
             ]
         },
-        options: { ...globalChartOptions, animation: { y: { from: 500 } }, plugins: { legend: { position: 'top' }, tooltip: { callbacks: { label: (context) => `${context.dataset.label}: ${formatCurrencyBRL(context.parsed.y)}` } } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
+        plugins: [costVarianceBubbles], // Register the custom plugin
+        options: { 
+            ...globalChartOptions,
+            layout: {
+                padding: { top: 40, bottom: 10 } // Add padding to prevent bubbles from being cut off
+            },
+            animation: { y: { from: 500 } }, 
+            plugins: { 
+                legend: { position: 'top' }, 
+                tooltip: { callbacks: { label: (context) => `${context.dataset.label}: ${formatCurrencyBRL(context.parsed.y)}` } },
+                // Custom options namespace for our plugin
+                costVarianceBubbles: {
+                    show: false // Initially hidden
+                }
+            }, 
+            scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } 
+        }
     });
+
+    // Event listener for the toggle button
+    const toggleBtn = document.getElementById('toggle-cost-variance');
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', () => {
+            toggleBtn.classList.toggle('active');
+            // Toggle the 'show' flag in the chart's options
+            chart.options.plugins.costVarianceBubbles.show = !chart.options.plugins.costVarianceBubbles.show;
+            chart.update(); // Redraw the chart
+        });
+    }
 }
+
 
 function createNetProfitLossChart(chartData, months) {
     const ctx = document.getElementById('net-profit-loss-chart');
