@@ -1,0 +1,54 @@
+/* ====== INFO ICON & TOOLTIP STYLES ====== */
+.chart-info-container {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    z-index: 10;
+}
+
+.info-icon {
+    width: 24px;
+    height: 24px;
+    color: #024B59;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.3s ease;
+}
+
+.chart-info-container:hover .info-icon {
+    opacity: 1;
+}
+
+.info-tooltip {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    width: 300px;
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+    padding: 15px;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #333;
+    pointer-events: none; /* Prevents the tooltip from interfering with other hovers */
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.chart-info-container:hover .info-tooltip {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.info-tooltip p {
+    margin: 0 0 10px 0;
+}
+
+.info-tooltip p:last-child {
+    margin-bottom: 0;
+}
