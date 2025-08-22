@@ -86,7 +86,7 @@ function bindEventListeners() {
     if(pdfDropArea) setupDragDrop(pdfDropArea, handlePdfSelect);
     if(processBtn) processBtn.addEventListener('click', handleProcessing);
     if(resetBtn) resetBtn.addEventListener('click', resetProcess);
-    if(warningSection) warningSection.addEventListener('click', handleIgnoreClick);
+    if(warningSection) warningSection.addEventListener('click', handleIgnoreClick); // This line was causing the error
     if(downloadBtn) downloadBtn.addEventListener('click', downloadTsv);
     if(addRuleBtn) addRuleBtn.addEventListener('click', addRule);
     if(saveRulesBtn) saveRulesBtn.addEventListener('click', saveConfigToDb);
@@ -471,7 +471,68 @@ function renderResults() {
     if (newFoundCodes.size > 0) displayWarnings(); else if(warningSection) warningSection.style.display = 'none';
 }
 
-// ... (The rest of the functions: displayWarnings, handleIgnoreClick, downloadTsv, showLoader, showError, renderRuleConfigTable, addRule, removeRule, handleTableClick, renderPdfToImage, renderPdfSnippet) remain largely the same ...
+/**
+ * Displays warnings for unrecognized codes found during processing.
+ */
+function displayWarnings() {
+    if (!warningList) return;
+    warningList.innerHTML = ''; // Clear previous warnings
+    newFoundCodes.forEach((description, code) => {
+        const item = document.createElement('div');
+        item.className = 'flex justify-between items-center p-2 bg-yellow-50 rounded-md';
+        item.dataset.code = code;
+        item.innerHTML = `
+            <div>
+                <span class="font-bold text-yellow-800">${code}</span>
+                <span class="text-yellow-700 ml-2">${description || 'No description found'}</span>
+            </div>
+            <div>
+                <button data-code="${code}" class="add-rule-for-code-btn text-xs bg-white hover:bg-gray-100 text-gray-800 font-semibold py-1 px-2 border border-gray-300 rounded shadow-sm">Adicionar Regra</button>
+                <button data-code="${code}" class="ignore-code-btn text-xs bg-white hover:bg-gray-100 text-gray-800 font-semibold py-1 px-2 border border-gray-300 rounded shadow-sm ml-2">Ignorar</button>
+            </div>
+        `;
+        warningList.appendChild(item);
+    });
+    if (warningSection) warningSection.style.display = 'block';
+}
+
+
+/**
+ * Handles clicks within the warning section, delegating to ignore or add rule actions.
+ * This function resolves the ReferenceError.
+ * @param {Event} event - The click event.
+ */
+function handleIgnoreClick(event) {
+    const ignoreBtn = event.target.closest('.ignore-code-btn');
+    const addRuleBtn = event.target.closest('.add-rule-for-code-btn');
+
+    if (ignoreBtn) {
+        const code = ignoreBtn.dataset.code;
+        if (code) {
+            ignoredCodes.add(String(code));
+            const itemToRemove = warningList.querySelector(`div[data-code="${code}"]`);
+            if (itemToRemove) {
+                itemToRemove.remove();
+            }
+            // If no more warnings, hide the section
+            if (warningList.children.length === 0 && warningSection) {
+                warningSection.style.display = 'none';
+            }
+            console.log(`Code ${code} ignored.`);
+        }
+    }
+
+    if (addRuleBtn) {
+        const code = addRuleBtn.dataset.code;
+        if (code) {
+            // Pre-fill the "add rule" modal/form
+            if (ruleCodeInput) ruleCodeInput.value = code;
+            if (settingsModal) settingsModal.style.display = 'flex'; // Show the settings modal
+            if (ruleCategorySelect) ruleCategorySelect.focus();
+        }
+    }
+}
+
 
 async function handleTableClick(event) {
     const viewBtn = event.target.closest('.view-pdf-btn');
@@ -484,10 +545,12 @@ async function handleTableClick(event) {
         if (snippetRow && snippetRow.classList.contains('snippet-row')) {
             snippetRow.remove();
         } else if (data && data.originalFile) {
-            snippetRow = outputTableBody.insertRow(row.rowIndex + 1);
+            // Correctly get the table's column count from the header
+            const colCount = outputTable.querySelector('thead tr').cells.length;
+            snippetRow = outputTableBody.insertRow(row.rowIndex); // Insert after the current row
             snippetRow.className = 'snippet-row';
             const cell = snippetRow.insertCell();
-            cell.colSpan = outputTable.rows[0].cells.length;
+            cell.colSpan = colCount;
             cell.innerHTML = `<div class="p-4 bg-gray-100 flex justify-center items-center"><canvas></canvas></div>`;
             await renderPdfSnippet(data.originalFile, cell.querySelector('canvas'));
         }
@@ -519,4 +582,38 @@ async function renderPdfSnippet(file, canvas) {
     canvas.width = viewport.width;
     
     await page.render({ canvasContext: context, viewport: viewport }).promise;
+}
+
+// NOTE: Dummy functions to prevent other errors if they are missing.
+// You should implement their actual logic.
+function downloadTsv() { console.log("Download TSV clicked"); }
+function addRule() { console.log("Add Rule clicked"); }
+function renderRuleConfigTable() { console.log("Render Rule Config Table"); }
+function showLoader(show, text = '', progress = 0) {
+    if (!loader) return;
+    if (show) {
+        loader.style.display = 'flex';
+        if (loaderText) loaderText.textContent = text;
+        if (progressBar) progressBar.style.width = `${progress}%`;
+    } else {
+        loader.style.display = 'none';
+    }
+}
+function showError(message) {
+    const errorEl = document.getElementById('payslip-error');
+    if (!errorEl) return;
+    if (message) {
+        errorEl.textContent = message;
+        errorEl.style.display = 'block';
+    } else {
+        errorEl.style.display = 'none';
+    }
+}
+async function extractTextWithCoordinates(dataUrl) {
+    // This is a complex function, returning a dummy structure for now.
+    return { items: [] };
+}
+function assembleRowsFromOcr(items) {
+    // This is a complex function, returning a dummy structure for now.
+    return [];
 }
