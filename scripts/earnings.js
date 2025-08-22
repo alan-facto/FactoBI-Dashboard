@@ -69,7 +69,7 @@ function createEarningsVsCostsChart(chartData, months) {
                 const change = ((currentCost - prevCost) / prevCost) * 100;
                 const text = `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`;
                 const isNegativeEvent = change >= 0; // Cost increase is negative
-                const yOffset = -20; // Reduced offset to decrease white space
+                const yOffset = -25;
                 drawBubble(ctx, text, points[i].x, points[i].y + yOffset, isNegativeEvent);
             }
         }
@@ -95,12 +95,20 @@ function createEarningsVsCostsChart(chartData, months) {
                 
                 const ratio = (cost / earning) * 100;
                 const text = `${ratio.toFixed(1)}%`;
-                // Higher ratio is a negative event (less efficient)
-                const isNegativeEvent = ratio > 50; // Example threshold
-                const yOffset = -20; // Reduced offset to decrease white space
+                const isNegativeEvent = ratio > 50;
+                const yOffset = -25;
                 drawBubble(ctx, text, points[i].x, points[i].y + yOffset, isNegativeEvent);
             }
         }
+    };
+    
+    // --- Data retrieval function ---
+    const getCostData = (mode) => {
+        if (mode === 'operations') {
+            return months.map(m => chartData[m]?.departments?.['Operação']?.geral || 0);
+        }
+        // Default to total
+        return months.map(m => chartData[m]?.total || 0);
     };
 
     const chart = new Chart(ctx.getContext('2d'), {
@@ -109,13 +117,13 @@ function createEarningsVsCostsChart(chartData, months) {
             labels: months.map(formatMonthShort),
             datasets: [
                 { label: 'Faturamento', data: months.map(m => chartData[m]?.earnings || 0), borderColor: '#024B59', tension: 0.4, borderWidth: 2, fill: true, backgroundColor: hexToRGBA('#024B59', 0.1), pointRadius: 4, pointHoverRadius: 6, clip: false },
-                { label: 'Gastos com Pessoal', data: months.map(m => chartData[m]?.total || 0), borderColor: '#E44D42', tension: 0.4, borderWidth: 2, fill: true, backgroundColor: hexToRGBA('#E44D42', 0.1), pointRadius: 4, pointHoverRadius: 6, clip: false }
+                { label: 'Gastos com Pessoal (Geral)', data: getCostData('total'), borderColor: '#E44D42', tension: 0.4, borderWidth: 2, fill: true, backgroundColor: hexToRGBA('#E44D42', 0.1), pointRadius: 4, pointHoverRadius: 6, clip: false }
             ]
         },
         plugins: [costVariancePlugin, costEfficiencyPlugin],
         options: { 
             ...globalChartOptions,
-            layout: { padding: { top: 30, bottom: 10, right: 35 } }, // Increased right padding
+            layout: { padding: { top: 40, bottom: 10, right: 40 } },
             animation: { y: { from: 500 } }, 
             plugins: { 
                 legend: { position: 'top' }, 
@@ -123,20 +131,36 @@ function createEarningsVsCostsChart(chartData, months) {
                 costVarianceBubbles: { show: false },
                 costEfficiencyBubbles: { show: false }
             }, 
-            scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } 
+            scales: { 
+                y: { 
+                    ticks: { callback: (value) => formatCurrencyBRL(value) },
+                    grace: '10%' // Adds padding above the max data point
+                } 
+            } 
         }
     });
 
     // --- Event Listeners for Toggles ---
+    const costModeButtons = document.querySelectorAll('[data-cost-mode]');
     const varianceBtn = document.getElementById('toggle-cost-variance');
     const efficiencyBtn = document.getElementById('toggle-cost-efficiency');
+
+    costModeButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            costModeButtons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            
+            const mode = button.dataset.costMode;
+            chart.data.datasets[1].data = getCostData(mode);
+            chart.data.datasets[1].label = mode === 'operations' ? 'Gastos com Pessoal (Operação)' : 'Gastos com Pessoal (Geral)';
+            chart.update();
+        });
+    });
 
     if (varianceBtn) {
         varianceBtn.addEventListener('click', () => {
             const isActive = varianceBtn.classList.toggle('active');
             chart.options.plugins.costVarianceBubbles.show = isActive;
-            
-            // Deactivate the other toggle if this one is activated
             if (isActive && efficiencyBtn && efficiencyBtn.classList.contains('active')) {
                 efficiencyBtn.classList.remove('active');
                 chart.options.plugins.costEfficiencyBubbles.show = false;
@@ -149,8 +173,6 @@ function createEarningsVsCostsChart(chartData, months) {
         efficiencyBtn.addEventListener('click', () => {
             const isActive = efficiencyBtn.classList.toggle('active');
             chart.options.plugins.costEfficiencyBubbles.show = isActive;
-
-            // Deactivate the other toggle if this one is activated
             if (isActive && varianceBtn && varianceBtn.classList.contains('active')) {
                 varianceBtn.classList.remove('active');
                 chart.options.plugins.costVarianceBubbles.show = false;
