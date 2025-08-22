@@ -41,6 +41,7 @@
     font-size: 14px;
     line-height: 1.5;
     color: #333;
+    font-weight: normal; /* Resets font weight for the tooltip container */
     pointer-events: none;
     opacity: 0;
     transition: opacity 0.3s ease, transform 0.3s ease;
@@ -72,4 +73,8 @@
 
 .info-tooltip p:last-child {
     margin-bottom: 0;
+}
+
+.info-tooltip strong {
+    font-weight: bold; /* Ensures that only <strong> tags are bold */
 }
