@@ -69,7 +69,7 @@ function createEarningsVsCostsChart(chartData, months) {
                 const change = ((currentCost - prevCost) / prevCost) * 100;
                 const text = `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`;
                 const isNegativeEvent = change >= 0; // Cost increase is negative
-                const yOffset = (points[i].y < points[i-1].y) ? 30 : -30;
+                const yOffset = -25; // Position bubbles consistently above the line
                 drawBubble(ctx, text, points[i].x, points[i].y + yOffset, isNegativeEvent);
             }
         }
@@ -97,7 +97,7 @@ function createEarningsVsCostsChart(chartData, months) {
                 const text = `${ratio.toFixed(1)}%`;
                 // Higher ratio is a negative event (less efficient)
                 const isNegativeEvent = ratio > 50; // Example threshold
-                const yOffset = -30; // Consistently above the point
+                const yOffset = -25; // Position bubbles consistently above the line
                 drawBubble(ctx, text, points[i].x, points[i].y + yOffset, isNegativeEvent);
             }
         }
@@ -108,14 +108,14 @@ function createEarningsVsCostsChart(chartData, months) {
         data: {
             labels: months.map(formatMonthShort),
             datasets: [
-                { label: 'Faturamento', data: months.map(m => chartData[m]?.earnings || 0), borderColor: '#024B59', tension: 0.4, borderWidth: 2, fill: true, backgroundColor: hexToRGBA('#024B59', 0.1), pointRadius: 4, pointHoverRadius: 6 },
-                { label: 'Gastos com Pessoal', data: months.map(m => chartData[m]?.total || 0), borderColor: '#E44D42', tension: 0.4, borderWidth: 2, fill: true, backgroundColor: hexToRGBA('#E44D42', 0.1), pointRadius: 4, pointHoverRadius: 6 }
+                { label: 'Faturamento', data: months.map(m => chartData[m]?.earnings || 0), borderColor: '#024B59', tension: 0.4, borderWidth: 2, fill: true, backgroundColor: hexToRGBA('#024B59', 0.1), pointRadius: 4, pointHoverRadius: 6, clip: false },
+                { label: 'Gastos com Pessoal', data: months.map(m => chartData[m]?.total || 0), borderColor: '#E44D42', tension: 0.4, borderWidth: 2, fill: true, backgroundColor: hexToRGBA('#E44D42', 0.1), pointRadius: 4, pointHoverRadius: 6, clip: false }
             ]
         },
         plugins: [costVariancePlugin, costEfficiencyPlugin],
         options: { 
             ...globalChartOptions,
-            layout: { padding: { top: 40, bottom: 10 } },
+            layout: { padding: { top: 30, bottom: 10, right: 20 } }, // Adjusted padding
             animation: { y: { from: 500 } }, 
             plugins: { 
                 legend: { position: 'top' }, 
