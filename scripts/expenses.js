@@ -8,6 +8,47 @@ let pieChartState = {
     previousState: null
 };
 
+// --- Helper to setup info tooltips ---
+function setupInfoTooltips() {
+    const tooltips = {
+        'total-expenditures-wrapper': `
+            <p>Este gráfico mostra a <strong>evolução dos gastos totais</strong> com pessoal ao longo do tempo. Você pode filtrar por departamento para uma análise mais específica.</p>
+            <p>Uma linha ascendente indica aumento nos custos, enquanto uma descendente mostra uma redução.</p>
+        `,
+        'department-trends-wrapper': `
+            <p>Compara os <strong>gastos entre diferentes departamentos</strong>. Cada linha representa um departamento, permitindo identificar quais áreas têm maior impacto nos custos.</p>
+            <p>Linhas que se destacam podem indicar departamentos com custos mais elevados ou que tiveram variações significativas.</p>
+        `,
+        'avg-expenditure-card-wrapper': `
+            <p>Calcula o <strong>custo médio por funcionário</strong> (Gasto Total / Número de Funcionários). É um indicador de eficiência.</p>
+            <p>Uma linha estável ou descendente é geralmente positiva, indicando controle sobre os custos por pessoa.</p>
+        `,
+        'employees-card-wrapper': `
+            <p>Apresenta a <strong>variação no número total de funcionários</strong> na empresa a cada mês.</p>
+            <p>Este gráfico ajuda a contextualizar os outros, mostrando se um aumento nos gastos está relacionado a um crescimento no quadro de funcionários.</p>
+        `,
+        'percentage-stacked-card-wrapper': `
+            <p>Mostra a <strong>participação percentual</strong> de cada departamento no gasto total. A soma de todas as áreas coloridas em um mês é sempre 100%.</p>
+            <p>Permite visualizar rapidamente quais departamentos são responsáveis pela maior fatia dos custos com pessoal.</p>
+        `,
+         'department-breakdown-wrapper': `
+            <p>Visualiza a <strong>distribuição dos gastos</strong> entre os departamentos em um ou mais meses específicos através de gráficos de pizza.</p>
+            <p>Ideal para entender a composição dos custos em um determinado período e comparar a estrutura de gastos entre meses.</p>
+        `
+    };
+
+    for (const [cardId, content] of Object.entries(tooltips)) {
+        const card = document.getElementById(cardId);
+        if (card) {
+            const tooltipElement = card.querySelector('.info-tooltip');
+            if (tooltipElement) {
+                tooltipElement.innerHTML = content;
+            }
+        }
+    }
+}
+
+
 export function initExpensesView() {
     pieChartState.selectedDepartments = [...data.departments];
     const last12Months = data.months.slice(-12);
@@ -22,6 +63,7 @@ export function initExpensesView() {
     // Setup event listeners
     setupTimeFilters();
     setupDepartmentBreakdown();
+    setupInfoTooltips();
 }
 
 // --- Chart and Filter Setup ---
@@ -230,7 +272,12 @@ function setupDepartmentBreakdown() {
     if (!wrapper) return;
     
     wrapper.innerHTML = `
-        <h2>Distribuição de Gastos por Departamento</h2>
+        <h2>Distribuição de Gastos por Departamento
+            <div class="chart-info-container">
+                <svg class="info-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                <div class="info-tooltip"></div>
+            </div>
+        </h2>
         <div class="centered-toggle">
             <div class="time-filters toggle-switch-group">
                 <button class="filter-btn pie-time-btn" data-months="1">1 Mês</button>
