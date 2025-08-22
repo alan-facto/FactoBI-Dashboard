@@ -359,3 +359,4 @@ function createEarningsPerEmployeeChart(chartData, months) {
         });
     });
 }
+
