@@ -49,67 +49,56 @@ function createEarningsVsCostsChart(chartData, months) {
         chartCtx.restore();
     };
 
-    // --- Plugin for Cost Variance (%) ---
-    const costVariancePlugin = {
-        id: 'costVarianceBubbles',
+    // --- Generic Bubble Plugin ---
+    const createBubblePlugin = (id, logic) => ({
+        id,
         afterDatasetsDraw(chart) {
-            if (!chart.options.plugins.costVarianceBubbles.show) return;
+            if (!chart.options.plugins[id] || !chart.options.plugins[id].show) return;
+
             const { ctx, data, _metasets } = chart;
-            const meta = _metasets[1]; // Dataset 1: Costs
-            if (!meta) return;
-
-            const points = meta.data;
-            const costsData = data.datasets[1].data;
-
-            for (let i = 1; i < points.length; i++) {
-                const currentCost = costsData[i];
-                const prevCost = costsData[i - 1];
-                if (prevCost === 0 || isNaN(currentCost) || isNaN(prevCost)) continue;
-
-                const change = ((currentCost - prevCost) / prevCost) * 100;
-                const text = `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`;
-                const isNegativeEvent = change >= 0; // Cost increase is negative
-                const yOffset = -25;
-                drawBubble(ctx, text, points[i].x, points[i].y + yOffset, isNegativeEvent);
+            const targetDatasetIndex = chart.options.plugins[id].targetDatasetIndex;
+            
+            if (chart.isDatasetVisible(targetDatasetIndex)) {
+                const meta = _metasets.find(m => m.index === targetDatasetIndex);
+                if (meta) {
+                    logic(chart, ctx, data, meta);
+                }
             }
         }
-    };
+    });
 
-    // --- Plugin for Cost Efficiency (%) ---
-    const costEfficiencyPlugin = {
-        id: 'costEfficiencyBubbles',
-        afterDatasetsDraw(chart) {
-            if (!chart.options.plugins.costEfficiencyBubbles.show) return;
-            const { ctx, data, _metasets } = chart;
-            const meta = _metasets[1]; // Dataset 1: Costs
-            if (!meta) return;
-
-            const points = meta.data;
-            const costsData = data.datasets[1].data;
-            const earningsData = data.datasets[0].data; // Dataset 0: Earnings
-
-            for (let i = 0; i < points.length; i++) {
-                const cost = costsData[i];
-                const earning = earningsData[i];
-                if (earning === 0 || isNaN(cost) || isNaN(earning)) continue;
-                
-                const ratio = (cost / earning) * 100;
-                const text = `${ratio.toFixed(1)}%`;
-                const isNegativeEvent = ratio > 50;
-                const yOffset = -25;
-                drawBubble(ctx, text, points[i].x, points[i].y + yOffset, isNegativeEvent);
-            }
+    // --- Plugin Logic ---
+    const varianceLogic = (chart, ctx, data, meta) => {
+        const points = meta.data;
+        const costsData = data.datasets[meta.index].data;
+        for (let i = 1; i < points.length; i++) {
+            const currentCost = costsData[i];
+            const prevCost = costsData[i - 1];
+            if (prevCost === 0 || isNaN(currentCost) || isNaN(prevCost)) continue;
+            const change = ((currentCost - prevCost) / prevCost) * 100;
+            const text = `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`;
+            const isNegativeEvent = change >= 0;
+            drawBubble(ctx, text, points[i].x, points[i].y - 22, isNegativeEvent);
         }
     };
-    
-    // --- Data retrieval function ---
-    const getCostData = (mode) => {
-        if (mode === 'operations') {
-            return months.map(m => chartData[m]?.departments?.['Operação']?.geral || 0);
+
+    const efficiencyLogic = (chart, ctx, data, meta) => {
+        const points = meta.data;
+        const costsData = data.datasets[meta.index].data;
+        const earningsData = data.datasets[0].data;
+        for (let i = 0; i < points.length; i++) {
+            const cost = costsData[i];
+            const earning = earningsData[i];
+            if (earning === 0 || isNaN(cost) || isNaN(earning)) continue;
+            const ratio = (cost / earning) * 100;
+            const text = `${ratio.toFixed(1)}%`;
+            const isNegativeEvent = ratio > 50;
+            drawBubble(ctx, text, points[i].x, points[i].y - 22, isNegativeEvent);
         }
-        // Default to total
-        return months.map(m => chartData[m]?.total || 0);
     };
+
+    const costVariancePlugin = createBubblePlugin('costVarianceBubbles', varianceLogic);
+    const costEfficiencyPlugin = createBubblePlugin('costEfficiencyBubbles', efficiencyLogic);
 
     const chart = new Chart(ctx.getContext('2d'), {
         type: 'line',
@@ -117,25 +106,23 @@ function createEarningsVsCostsChart(chartData, months) {
             labels: months.map(formatMonthShort),
             datasets: [
                 { label: 'Faturamento', data: months.map(m => chartData[m]?.earnings || 0), borderColor: '#024B59', tension: 0.4, borderWidth: 2, fill: true, backgroundColor: hexToRGBA('#024B59', 0.1), pointRadius: 4, pointHoverRadius: 6, clip: false },
-                { label: 'Gastos com Pessoal (Geral)', data: getCostData('total'), borderColor: '#E44D42', tension: 0.4, borderWidth: 2, fill: true, backgroundColor: hexToRGBA('#E44D42', 0.1), pointRadius: 4, pointHoverRadius: 6, clip: false }
+                { label: 'Gastos com Pessoal (Geral)', data: months.map(m => chartData[m]?.total || 0), borderColor: '#E44D42', tension: 0.4, borderWidth: 2, fill: true, backgroundColor: hexToRGBA('#E44D42', 0.1), pointRadius: 4, pointHoverRadius: 6, clip: false },
+                { label: 'Gastos com Pessoal (Operação)', data: months.map(m => chartData[m]?.departments?.['Operação']?.geral || 0), borderColor: '#FFA500', tension: 0.4, borderWidth: 2, fill: true, backgroundColor: hexToRGBA('#FFA500', 0.1), pointRadius: 4, pointHoverRadius: 6, clip: false, hidden: true }
             ]
         },
         plugins: [costVariancePlugin, costEfficiencyPlugin],
         options: { 
             ...globalChartOptions,
-            layout: { padding: { top: 40, bottom: 10, right: 40 } },
+            layout: { padding: { top: 30, bottom: 10, right: 40 } },
             animation: { y: { from: 500 } }, 
             plugins: { 
                 legend: { position: 'top' }, 
                 tooltip: { callbacks: { label: (context) => `${context.dataset.label}: ${formatCurrencyBRL(context.parsed.y)}` } },
-                costVarianceBubbles: { show: false },
-                costEfficiencyBubbles: { show: false }
+                costVarianceBubbles: { show: false, targetDatasetIndex: 1 },
+                costEfficiencyBubbles: { show: false, targetDatasetIndex: 1 }
             }, 
             scales: { 
-                y: { 
-                    ticks: { callback: (value) => formatCurrencyBRL(value) },
-                    grace: '10%' // Adds padding above the max data point
-                } 
+                y: { grace: '15%', ticks: { callback: (value) => formatCurrencyBRL(value) } } 
             } 
         }
     });
@@ -145,14 +132,42 @@ function createEarningsVsCostsChart(chartData, months) {
     const varianceBtn = document.getElementById('toggle-cost-variance');
     const efficiencyBtn = document.getElementById('toggle-cost-efficiency');
 
+    const setBubbleVisibility = (shouldShow) => {
+        varianceBtn.disabled = !shouldShow;
+        efficiencyBtn.disabled = !shouldShow;
+        if (!shouldShow) {
+            varianceBtn.classList.remove('active');
+            efficiencyBtn.classList.remove('active');
+            chart.options.plugins.costVarianceBubbles.show = false;
+            chart.options.plugins.costEfficiencyBubbles.show = false;
+        }
+    };
+
     costModeButtons.forEach(button => {
         button.addEventListener('click', () => {
             costModeButtons.forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
             
             const mode = button.dataset.costMode;
-            chart.data.datasets[1].data = getCostData(mode);
-            chart.data.datasets[1].label = mode === 'operations' ? 'Gastos com Pessoal (Operação)' : 'Gastos com Pessoal (Geral)';
+            const datasets = chart.data.datasets;
+
+            if (mode === 'total') {
+                datasets[1].hidden = false;
+                datasets[2].hidden = true;
+                setBubbleVisibility(true);
+                chart.options.plugins.costVarianceBubbles.targetDatasetIndex = 1;
+                chart.options.plugins.costEfficiencyBubbles.targetDatasetIndex = 1;
+            } else if (mode === 'operations') {
+                datasets[1].hidden = true;
+                datasets[2].hidden = false;
+                setBubbleVisibility(true);
+                chart.options.plugins.costVarianceBubbles.targetDatasetIndex = 2;
+                chart.options.plugins.costEfficiencyBubbles.targetDatasetIndex = 2;
+            } else if (mode === 'both') {
+                datasets[1].hidden = false;
+                datasets[2].hidden = false;
+                setBubbleVisibility(false);
+            }
             chart.update();
         });
     });
