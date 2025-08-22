@@ -36,7 +36,12 @@
       <!-- Row 1: Total Expenditures -->
       <div class="chart-row single" id="total-expenditures-wrapper">
         <div class="card">
-          <h2>Gastos Totais ao Longo do Tempo</h2>
+          <h2>Gastos Totais ao Longo do Tempo
+            <div class="chart-info-container">
+                <svg class="info-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                <div class="info-tooltip"></div>
+            </div>
+          </h2>
           <div class="centered-toggle">
             <div class="time-filters toggle-switch-group">
               <button class="filter-btn time-btn" data-months="3">3 Meses</button>
@@ -56,7 +61,12 @@
       <!-- Row 2: Department Trends -->
       <div class="chart-row single" id="department-trends-wrapper">
         <div class="card">
-          <h2>Gastos por Departamento</h2>
+          <h2>Gastos por Departamento
+             <div class="chart-info-container">
+                <svg class="info-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                <div class="info-tooltip"></div>
+            </div>
+          </h2>
           <div class="centered-toggle">
             <div class="time-filters toggle-switch-group">
               <button class="filter-btn time-btn" data-months="3">3 Meses</button>
@@ -79,14 +89,24 @@
 
       <!-- Row 3: Average Expenditure & Employees -->
       <div class="chart-row double">
-        <div class="card">
-          <h2>Média de Gastos por Funcionário</h2>
+        <div class="card" id="avg-expenditure-card-wrapper">
+          <h2>Média de Gastos por Funcionário
+             <div class="chart-info-container">
+                <svg class="info-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                <div class="info-tooltip"></div>
+            </div>
+          </h2>
           <div class="chart-container">
             <canvas id="avg-expenditure-chart"></canvas>
           </div>
         </div>
-        <div class="card">
-          <h2>Total de Funcionários</h2>
+        <div class="card" id="employees-card-wrapper">
+          <h2>Total de Funcionários
+             <div class="chart-info-container">
+                <svg class="info-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                <div class="info-tooltip"></div>
+            </div>
+          </h2>
           <div class="chart-container">
             <canvas id="employees-chart"></canvas>
           </div>
@@ -102,8 +122,13 @@
 
       <!-- Row 5: Percentage Stacked -->
       <div class="chart-row single">
-        <div class="card">
-          <h2>Participação por Departamento</h2>
+        <div class="card" id="percentage-stacked-card-wrapper">
+          <h2>Participação por Departamento
+             <div class="chart-info-container">
+                <svg class="info-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                <div class="info-tooltip"></div>
+            </div>
+          </h2>
           <div class="chart-container">
             <canvas id="percentage-stacked-chart"></canvas>
           </div>
@@ -116,11 +141,12 @@
         <!-- Row 1: Earnings vs Total Costs -->
         <div class="chart-row single">
             <div class="card" id="earnings-vs-costs-card-wrapper">
-                <div class="chart-info-container">
-                    <svg class="info-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                    <div class="info-tooltip"></div>
-                </div>
-                <h2>Faturamento vs. Gastos com Pessoal</h2>
+                <h2>Faturamento vs. Gastos com Pessoal
+                    <div class="chart-info-container">
+                        <svg class="info-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                        <div class="info-tooltip"></div>
+                    </div>
+                </h2>
                 <div class="filter-grid">
                     <div class="filter-row">
                         <div class="toggle-switch-group">
@@ -145,11 +171,12 @@
         <!-- Row 2: Net Difference -->
         <div class="chart-row single">
             <div class="card" id="net-profit-loss-card-wrapper">
-                <div class="chart-info-container">
-                    <svg class="info-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                    <div class="info-tooltip"></div>
-                </div>
-                <h2>Diferença Líquida Mensal</h2>
+                <h2>Diferença Líquida Mensal
+                    <div class="chart-info-container">
+                        <svg class="info-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                        <div class="info-tooltip"></div>
+                    </div>
+                </h2>
                 <div class="chart-container">
                     <canvas id="net-profit-loss-chart"></canvas>
                 </div>
@@ -159,11 +186,12 @@
         <!-- Row 3: Profit Margin Percentage -->
         <div class="chart-row single">
             <div class="card" id="profit-margin-card-wrapper">
-                <div class="chart-info-container">
-                    <svg class="info-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                    <div class="info-tooltip"></div>
-                </div>
-                <h2>Custo/Faturamento Percentual</h2>
+                <h2>Custo/Faturamento Percentual
+                    <div class="chart-info-container">
+                        <svg class="info-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                        <div class="info-tooltip"></div>
+                    </div>
+                </h2>
                 <div class="chart-container">
                     <canvas id="profit-margin-chart"></canvas>
                 </div>
@@ -173,11 +201,12 @@
         <!-- Row 4: Earnings Allocation -->
         <div class="chart-row single">
             <div class="card" id="earnings-allocation-card">
-                 <div class="chart-info-container">
-                    <svg class="info-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                    <div class="info-tooltip"></div>
-                </div>
-                <h2>Alocação de Faturamento</h2>
+                <h2>Alocação de Faturamento
+                     <div class="chart-info-container">
+                        <svg class="info-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                        <div class="info-tooltip"></div>
+                    </div>
+                </h2>
                 <div class="centered-toggle">
                     <div class="toggle-switch-group">
                         <button class="filter-btn active" data-mode="headcount">Headcount</button>
@@ -193,11 +222,12 @@
         <!-- Row 5: Earnings per Employee -->
         <div class="chart-row single">
             <div class="card" id="earnings-per-employee-card">
-                 <div class="chart-info-container">
-                    <svg class="info-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                    <div class="info-tooltip"></div>
-                </div>
-                <h2>Faturamento por Funcionário</h2>
+                <h2>Faturamento por Funcionário
+                     <div class="chart-info-container">
+                        <svg class="info-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                        <div class="info-tooltip"></div>
+                    </div>
+                </h2>
                 <div class="centered-toggle">
                     <div class="filter-buttons toggle-switch-group">
                         <button class="filter-btn active" data-mode="company">Geral</button>
