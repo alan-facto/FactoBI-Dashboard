@@ -1,14 +1,21 @@
 /* ====== INFO ICON & TOOLTIP STYLES ====== */
+.card h2 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .chart-info-container {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    z-index: 10;
+    display: inline-flex; /* Changed to inline-flex */
+    align-items: center;
+    position: relative; /* Keep relative for tooltip positioning */
+    margin-left: 10px; /* Space between title and icon */
+    vertical-align: middle; /* Align with the text */
 }
 
 .info-icon {
-    width: 24px;
-    height: 24px;
+    width: 20px; /* Slightly smaller */
+    height: 20px;
     color: #024B59;
     cursor: pointer;
     opacity: 0.6;
@@ -22,8 +29,9 @@
 .info-tooltip {
     display: none;
     position: absolute;
-    top: 100%;
-    right: 0;
+    bottom: 125%; /* Position above the icon */
+    left: 50%;
+    transform: translateX(-50%); /* Center the tooltip */
     width: 300px;
     background-color: #ffffff;
     border: 1px solid #e0e0e0;
@@ -33,16 +41,29 @@
     font-size: 14px;
     line-height: 1.5;
     color: #333;
-    pointer-events: none; /* Prevents the tooltip from interfering with other hovers */
+    pointer-events: none;
     opacity: 0;
-    transform: translateY(10px);
     transition: opacity 0.3s ease, transform 0.3s ease;
+    z-index: 20; /* Ensure it's on top */
 }
+
+/* Arrow for the tooltip */
+.info-tooltip::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: #ffffff transparent transparent transparent;
+}
+
 
 .chart-info-container:hover .info-tooltip {
     display: block;
     opacity: 1;
-    transform: translateY(0);
+    transform: translateX(-50%) translateY(-5px); /* Animate upwards */
 }
 
 .info-tooltip p {
