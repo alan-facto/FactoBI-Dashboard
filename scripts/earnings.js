@@ -230,12 +230,16 @@ function createProfitMarginChart(chartData, months) {
                 const change = currentPoint - prevPoint;
                 if (isNaN(change)) continue;
                 const text = `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`;
-                const isPositive = change >= 0;
+                
+                // An increase in the expense ratio is a NEGATIVE event.
+                const isNegativeEvent = change >= 0;
+                
                 const x = points[i].x;
                 const yOffset = (points[i].y < points[i-1].y) ? -25 : 25;
                 const y = points[i].y + yOffset;
-                ctx.fillStyle = isPositive ? 'rgba(25, 135, 84, 0.85)' : 'rgba(220, 53, 69, 0.85)';
-                ctx.strokeStyle = isPositive ? '#198754' : '#dc3545';
+                
+                ctx.fillStyle = isNegativeEvent ? 'rgba(220, 53, 69, 0.85)' : 'rgba(25, 135, 84, 0.85)'; // red : green
+                ctx.strokeStyle = isNegativeEvent ? '#dc3545' : '#198754';
                 ctx.lineWidth = 1;
                 ctx.font = 'bold 12px "Plus Jakarta Sans"';
                 const textMetrics = ctx.measureText(text);
@@ -263,18 +267,22 @@ function createProfitMarginChart(chartData, months) {
             ctx.restore();
         }
     };
-    const profitMargins = months.map(m => {
+    
+    // Calculate Expense Ratio (Cost / Earnings)
+    const expenseRatios = months.map(m => {
         const monthInfo = chartData[m];
         if (!monthInfo) return 0;
         const earnings = monthInfo.earnings || 0;
-        return earnings > 0 ? ((earnings - (monthInfo.total || 0)) / earnings) * 100 : 0;
+        const total = monthInfo.total || 0;
+        return earnings > 0 ? (total / earnings) * 100 : 0;
     });
+
     new Chart(ctx.getContext('2d'), {
         type: 'line',
         data: {
             labels: months.map(formatMonthShort),
             datasets: [{
-                label: 'Margem', data: profitMargins,
+                label: 'Custo/Faturamento', data: expenseRatios,
                 borderColor: '#024B59', backgroundColor: 'rgba(2, 75, 89, 0.1)',
                 tension: 0.4, fill: true, pointRadius: 5, pointBackgroundColor: '#024B59', pointHoverRadius: 7,
                 clip: false
@@ -285,7 +293,10 @@ function createProfitMarginChart(chartData, months) {
             ...globalChartOptions,
             animation: { y: { from: 500 } },
             layout: { padding: { top: 30, bottom: 30, right: 40, left: 10 } },
-            plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `Margem: ${context.parsed.y.toFixed(2)}%` } } },
+            plugins: { 
+                legend: { display: false }, 
+                tooltip: { callbacks: { label: (context) => `Custo/Faturamento: ${context.parsed.y.toFixed(2)}%` } } 
+            },
             scales: { y: { ticks: { callback: (value) => value.toFixed(0) + "%" }, grace: '10%' } }
         }
     });
