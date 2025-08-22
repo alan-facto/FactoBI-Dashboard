@@ -29,7 +29,7 @@
 .info-tooltip {
     display: none;
     position: absolute;
-    bottom: 125%; /* Position above the icon */
+    top: 125%; /* Position below the icon */
     left: 50%;
     transform: translateX(-50%); /* Center the tooltip */
     width: 300px;
@@ -51,19 +51,19 @@
 .info-tooltip::after {
     content: "";
     position: absolute;
-    top: 100%;
+    bottom: 100%; /* At the top of the tooltip */
     left: 50%;
     margin-left: -5px;
     border-width: 5px;
     border-style: solid;
-    border-color: #ffffff transparent transparent transparent;
+    border-color: transparent transparent #ffffff transparent; /* Pointing up */
 }
 
 
 .chart-info-container:hover .info-tooltip {
     display: block;
     opacity: 1;
-    transform: translateX(-50%) translateY(-5px); /* Animate upwards */
+    transform: translateX(-50%) translateY(5px); /* Animate downwards */
 }
 
 .info-tooltip p {
