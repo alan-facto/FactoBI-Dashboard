@@ -69,7 +69,7 @@ function createEarningsVsCostsChart(chartData, months) {
                 const change = ((currentCost - prevCost) / prevCost) * 100;
                 const text = `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`;
                 const isNegativeEvent = change >= 0; // Cost increase is negative
-                const yOffset = -25; // Position bubbles consistently above the line
+                const yOffset = -20; // Reduced offset to decrease white space
                 drawBubble(ctx, text, points[i].x, points[i].y + yOffset, isNegativeEvent);
             }
         }
@@ -97,7 +97,7 @@ function createEarningsVsCostsChart(chartData, months) {
                 const text = `${ratio.toFixed(1)}%`;
                 // Higher ratio is a negative event (less efficient)
                 const isNegativeEvent = ratio > 50; // Example threshold
-                const yOffset = -25; // Position bubbles consistently above the line
+                const yOffset = -20; // Reduced offset to decrease white space
                 drawBubble(ctx, text, points[i].x, points[i].y + yOffset, isNegativeEvent);
             }
         }
@@ -115,7 +115,7 @@ function createEarningsVsCostsChart(chartData, months) {
         plugins: [costVariancePlugin, costEfficiencyPlugin],
         options: { 
             ...globalChartOptions,
-            layout: { padding: { top: 30, bottom: 10, right: 20 } }, // Adjusted padding
+            layout: { padding: { top: 30, bottom: 10, right: 35 } }, // Increased right padding
             animation: { y: { from: 500 } }, 
             plugins: { 
                 legend: { position: 'top' }, 
