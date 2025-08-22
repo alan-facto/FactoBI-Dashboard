@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles/style.css">
   <link rel="stylesheet" href="styles/login.css">
+  <link rel="stylesheet" href="styles/info-tooltips.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="icon" href="data:,">
 </head>
@@ -114,7 +115,11 @@
     <div id="earnings-view" style="display: none;">
         <!-- Row 1: Earnings vs Total Costs -->
         <div class="chart-row single">
-            <div class="card">
+            <div class="card" id="earnings-vs-costs-card-wrapper">
+                <div class="chart-info-container">
+                    <svg class="info-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                    <div class="info-tooltip"></div>
+                </div>
                 <h2>Faturamento vs. Gastos com Pessoal</h2>
                 <div class="filter-grid">
                     <div class="filter-row">
@@ -139,7 +144,11 @@
 
         <!-- Row 2: Net Difference -->
         <div class="chart-row single">
-            <div class="card">
+            <div class="card" id="net-profit-loss-card-wrapper">
+                <div class="chart-info-container">
+                    <svg class="info-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                    <div class="info-tooltip"></div>
+                </div>
                 <h2>Diferença Líquida Mensal</h2>
                 <div class="chart-container">
                     <canvas id="net-profit-loss-chart"></canvas>
@@ -149,8 +158,12 @@
 
         <!-- Row 3: Profit Margin Percentage -->
         <div class="chart-row single">
-            <div class="card">
-                <h2>Margem de Diferença Percentual</h2>
+            <div class="card" id="profit-margin-card-wrapper">
+                <div class="chart-info-container">
+                    <svg class="info-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                    <div class="info-tooltip"></div>
+                </div>
+                <h2>Custo/Faturamento Percentual</h2>
                 <div class="chart-container">
                     <canvas id="profit-margin-chart"></canvas>
                 </div>
@@ -160,6 +173,10 @@
         <!-- Row 4: Earnings Allocation -->
         <div class="chart-row single">
             <div class="card" id="earnings-allocation-card">
+                 <div class="chart-info-container">
+                    <svg class="info-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                    <div class="info-tooltip"></div>
+                </div>
                 <h2>Alocação de Faturamento</h2>
                 <div class="centered-toggle">
                     <div class="toggle-switch-group">
@@ -176,6 +193,10 @@
         <!-- Row 5: Earnings per Employee -->
         <div class="chart-row single">
             <div class="card" id="earnings-per-employee-card">
+                 <div class="chart-info-container">
+                    <svg class="info-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                    <div class="info-tooltip"></div>
+                </div>
                 <h2>Faturamento por Funcionário</h2>
                 <div class="centered-toggle">
                     <div class="filter-buttons toggle-switch-group">
