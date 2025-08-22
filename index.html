@@ -115,7 +115,13 @@
         <!-- Row 1: Earnings vs Total Costs -->
         <div class="chart-row single">
             <div class="card">
-                <h2>Faturamento vs. Gastos Totais</h2>
+                <h2>Faturamento vs. Gastos com Pessoal</h2>
+                <div class="centered-toggle">
+                    <div class="toggle-switch-group">
+                        <button class="filter-btn" id="toggle-cost-variance">Variação (%)</button>
+                        <button class="filter-btn" id="toggle-cost-efficiency">Eficiência (%)</button>
+                    </div>
+                </div>
                 <div class="chart-container">
                     <canvas id="earnings-vs-costs-chart"></canvas>
                 </div>
