@@ -116,10 +116,18 @@
         <div class="chart-row single">
             <div class="card">
                 <h2>Faturamento vs. Gastos com Pessoal</h2>
-                <div class="centered-toggle">
-                    <div class="toggle-switch-group">
-                        <button class="filter-btn" id="toggle-cost-variance">Variação (%)</button>
-                        <button class="filter-btn" id="toggle-cost-efficiency">Eficiência (%)</button>
+                <div class="filter-grid">
+                    <div class="filter-row">
+                        <div class="toggle-switch-group">
+                            <button class="filter-btn active" data-cost-mode="total">Geral</button>
+                            <button class="filter-btn" data-cost-mode="operations">Operação</button>
+                        </div>
+                    </div>
+                    <div class="filter-row">
+                        <div class="toggle-switch-group">
+                            <button class="filter-btn" id="toggle-cost-variance">Variação (%)</button>
+                            <button class="filter-btn" id="toggle-cost-efficiency">Eficiência (%)</button>
+                        </div>
                     </div>
                 </div>
                 <div class="chart-container">
