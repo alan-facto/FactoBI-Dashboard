@@ -1,5 +1,41 @@
 import { data, colorsByDepartment, globalChartOptions, hexToRGBA, formatMonthShort, formatCurrencyBRL } from './main.js';
 
+// --- Helper to setup info tooltips ---
+function setupInfoTooltips() {
+    const tooltips = {
+        'earnings-vs-costs-card-wrapper': `
+            <p>Este gráfico compara o <strong>Faturamento</strong> (quanto a empresa ganhou) com os <strong>Gastos com Pessoal</strong> (quanto foi gasto com salários e benefícios).</p>
+            <p>Linhas que se afastam indicam maior lucratividade, enquanto linhas que se aproximam podem sinalizar uma redução na margem.</p>
+        `,
+        'net-profit-loss-card-wrapper': `
+            <p>Mostra o resultado final de cada mês: <strong>Faturamento - Gastos com Pessoal</strong>.</p>
+            <p>Barras acima de zero representam um superávit (sobra de dinheiro), enquanto barras abaixo de zero indicam um déficit (falta de dinheiro).</p>
+        `,
+        'profit-margin-card-wrapper': `
+            <p>Mede a <strong>eficiência operacional</strong>. A linha representa qual porcentagem do faturamento foi usada para cobrir os gastos com pessoal.</p>
+            <p>Uma linha descendente indica melhora na eficiência, enquanto uma ascendente sugere que os custos estão crescendo mais rápido que as receitas.</p>
+        `,
+        'earnings-allocation-card': `
+            <p>Este gráfico distribui o faturamento total entre os departamentos. A alocação pode ser baseada no <strong>número de funcionários (Headcount)</strong> ou no <strong>custo total (Custos)</strong> de cada departamento, mostrando para onde o dinheiro 'simbolicamente' vai.</p>
+        `,
+        'earnings-per-employee-card': `
+            <p>Calcula a média de faturamento gerado por cada funcionário. É um indicador de <strong>produtividade</strong>.</p>
+            <p>Uma linha ascendente sugere que a empresa está gerando mais receita por pessoa, o que é um sinal de otimização.</p>
+        `
+    };
+
+    for (const [cardId, content] of Object.entries(tooltips)) {
+        const card = document.getElementById(cardId);
+        if (card) {
+            const tooltipElement = card.querySelector('.info-tooltip');
+            if (tooltipElement) {
+                tooltipElement.innerHTML = content;
+            }
+        }
+    }
+}
+
+
 export function initEarningsView() {
     const last12Months = data.months.slice(-12);
 
@@ -9,6 +45,9 @@ export function initEarningsView() {
     createProfitMarginChart(data.data, last12Months);
     createEarningsAllocationChart(data.data, last12Months, data.departments);
     createEarningsPerEmployeeChart(data.data, last12Months);
+    
+    // Initialize tooltips
+    setupInfoTooltips();
 }
 
 function createEarningsVsCostsChart(chartData, months) {
