@@ -131,29 +131,33 @@ function createEarningsVsCostsChart(chartData, months) {
     const varianceBtn = document.getElementById('toggle-cost-variance');
     const efficiencyBtn = document.getElementById('toggle-cost-efficiency');
 
-    varianceBtn.addEventListener('click', () => {
-        const isActive = varianceBtn.classList.toggle('active');
-        chart.options.plugins.costVarianceBubbles.show = isActive;
-        
-        // Deactivate the other toggle if this one is activated
-        if (isActive && efficiencyBtn.classList.contains('active')) {
-            efficiencyBtn.classList.remove('active');
-            chart.options.plugins.costEfficiencyBubbles.show = false;
-        }
-        chart.update();
-    });
+    if (varianceBtn) {
+        varianceBtn.addEventListener('click', () => {
+            const isActive = varianceBtn.classList.toggle('active');
+            chart.options.plugins.costVarianceBubbles.show = isActive;
+            
+            // Deactivate the other toggle if this one is activated
+            if (isActive && efficiencyBtn && efficiencyBtn.classList.contains('active')) {
+                efficiencyBtn.classList.remove('active');
+                chart.options.plugins.costEfficiencyBubbles.show = false;
+            }
+            chart.update();
+        });
+    }
 
-    efficiencyBtn.addEventListener('click', () => {
-        const isActive = efficiencyBtn.classList.toggle('active');
-        chart.options.plugins.costEfficiencyBubbles.show = isActive;
+    if (efficiencyBtn) {
+        efficiencyBtn.addEventListener('click', () => {
+            const isActive = efficiencyBtn.classList.toggle('active');
+            chart.options.plugins.costEfficiencyBubbles.show = isActive;
 
-        // Deactivate the other toggle if this one is activated
-        if (isActive && varianceBtn.classList.contains('active')) {
-            varianceBtn.classList.remove('active');
-            chart.options.plugins.costVarianceBubbles.show = false;
-        }
-        chart.update();
-    });
+            // Deactivate the other toggle if this one is activated
+            if (isActive && varianceBtn && varianceBtn.classList.contains('active')) {
+                varianceBtn.classList.remove('active');
+                chart.options.plugins.costVarianceBubbles.show = false;
+            }
+            chart.update();
+        });
+    }
 }
 
 
