@@ -275,6 +275,7 @@ body {
 .dark .user-name { color: var(--text-dark); }
 .dark .user-role { color: #a0aec0; }
 .dark .theme-toggle { background-color: rgba(255, 255, 255, 0.1); }
+.dark #moon-icon { color: #a0aec0; }
 .dark .card {
     background-color: #2d3748;
     box-shadow: var(--shadow-dark);
@@ -456,6 +457,12 @@ body {
     justify-content: center;
     cursor: pointer;
     transition: transform 0.2s ease;
+    opacity: 0;
+    animation: fadeIn 0.5s ease forwards;
+}
+
+@keyframes fadeIn {
+    to { opacity: 1; }
 }
 
 .pie-item:hover {
