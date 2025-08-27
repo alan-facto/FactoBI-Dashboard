@@ -1,4 +1,4 @@
-import { data, charts, colorsByDepartment, globalChartOptions, hexToRGBA, formatMonthShort, formatCurrencyBRL } from './main.js';
+import { data, charts, colorsByDepartment, darkModeColors, globalChartOptions, hexToRGBA, formatMonthShort, formatCurrencyBRL } from './main.js';
 
 export function initEarningsView() {
     const last12Months = data.months.slice(-12);
@@ -13,22 +13,28 @@ export function initEarningsView() {
 function createEarningsVsCostsChart(chartData, months) {
     const ctx = document.getElementById('earnings-vs-costs-chart');
     if (!ctx) return;
+    const isDarkMode = document.body.classList.contains('dark');
+    const mainColor = isDarkMode ? darkModeColors.main : '#024B59';
+
     charts.earningsVsCosts = new Chart(ctx.getContext('2d'), {
         type: 'line',
         data: {
             labels: months.map(formatMonthShort),
             datasets: [
-                { label: 'Faturamento', data: months.map(m => chartData[m]?.earnings || 0), borderColor: '#024B59', tension: 0.4, borderWidth: 2, fill: true, backgroundColor: hexToRGBA('#024B59', 0.1) },
+                { label: 'Faturamento', data: months.map(m => chartData[m]?.earnings || 0), borderColor: mainColor, tension: 0.4, borderWidth: 2, fill: true, backgroundColor: hexToRGBA(mainColor, 0.1) },
                 { label: 'Gastos com Pessoal', data: months.map(m => chartData[m]?.total || 0), borderColor: '#E44D42', tension: 0.4, borderWidth: 2, fill: true, backgroundColor: hexToRGBA('#E44D42', 0.1) }
             ]
         },
-        options: { ...globalChartOptions, animation: { y: { from: 500 } }, plugins: { legend: { position: 'top' }, tooltip: { callbacks: { label: (context) => `${context.dataset.label}: ${formatCurrencyBRL(context.parsed.y)}` } } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
+        options: { ...globalChartOptions, plugins: { legend: { position: 'top' }, tooltip: { callbacks: { label: (context) => `${context.dataset.label}: ${formatCurrencyBRL(context.parsed.y)}` } } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
     });
 }
 
 function createNetProfitLossChart(chartData, months) {
     const ctx = document.getElementById('net-profit-loss-chart');
     if (!ctx) return;
+    const isDarkMode = document.body.classList.contains('dark');
+    const mainColor = isDarkMode ? darkModeColors.main : '#024B59';
+
     charts.netProfitLoss = new Chart(ctx.getContext('2d'), {
         type: 'bar',
         data: {
@@ -36,16 +42,19 @@ function createNetProfitLossChart(chartData, months) {
             datasets: [{
                 label: 'Diferença',
                 data: months.map(m => (chartData[m]?.earnings || 0) - (chartData[m]?.total || 0)),
-                backgroundColor: months.map(m => ((chartData[m]?.earnings || 0) - (chartData[m]?.total || 0)) >= 0 ? '#024B59' : '#E44D42')
+                backgroundColor: months.map(m => ((chartData[m]?.earnings || 0) - (chartData[m]?.total || 0)) >= 0 ? mainColor : '#E44D42')
             }]
         },
-        options: { ...globalChartOptions, animation: { y: { from: 500 } }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `Diferença: ${formatCurrencyBRL(context.parsed.y)}` } } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
+        options: { ...globalChartOptions, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `Diferença: ${formatCurrencyBRL(context.parsed.y)}` } } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
     });
 }
 
 function createProfitMarginChart(chartData, months) {
     const ctx = document.getElementById('profit-margin-chart');
     if (!ctx) return;
+    const isDarkMode = document.body.classList.contains('dark');
+    const mainColor = isDarkMode ? darkModeColors.main : '#024B59';
+
     const percentageChangeBubbles = {
         id: 'percentageChangeBubbles',
         afterDatasetsDraw(chart) {
@@ -104,15 +113,14 @@ function createProfitMarginChart(chartData, months) {
             labels: months.map(formatMonthShort),
             datasets: [{
                 label: 'Margem', data: profitMargins,
-                borderColor: '#024B59', backgroundColor: 'rgba(2, 75, 89, 0.1)',
-                tension: 0.4, fill: true, pointRadius: 5, pointBackgroundColor: '#024B59', pointHoverRadius: 7,
+                borderColor: mainColor, backgroundColor: hexToRGBA(mainColor, 0.1),
+                tension: 0.4, fill: true, pointRadius: 5, pointBackgroundColor: mainColor, pointHoverRadius: 7,
                 clip: false
             }]
         },
         plugins: [percentageChangeBubbles],
         options: {
             ...globalChartOptions,
-            animation: { y: { from: 500 } },
             layout: { padding: { top: 30, bottom: 30, right: 40, left: 10 } },
             plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `Margem: ${context.parsed.y.toFixed(2)}%` } } },
             scales: { y: { ticks: { callback: (value) => value.toFixed(0) + "%" }, grace: '10%' } }
@@ -215,6 +223,8 @@ function createEarningsPerEmployeeChart(chartData, months) {
     const container = document.getElementById('earnings-per-employee-card');
     const canvas = document.getElementById('earnings-per-employee-chart');
     if (!container || !canvas) return;
+    const isDarkMode = document.body.classList.contains('dark');
+    const mainColor = isDarkMode ? darkModeColors.main : '#024B59';
     
     const getChartData = (month, mode) => {
         const monthInfo = chartData[month];
@@ -233,13 +243,12 @@ function createEarningsPerEmployeeChart(chartData, months) {
             labels: months.map(formatMonthShort),
             datasets: [{
                 label: 'Faturamento por Funcionário', data: months.map(m => getChartData(m, 'company')),
-                borderColor: '#024B59', backgroundColor: 'rgba(2, 75, 89, 0.1)',
+                borderColor: mainColor, backgroundColor: hexToRGBA(mainColor, 0.1),
                 tension: 0.4, fill: true, borderWidth: 2
             }]
         },
         options: {
             ...globalChartOptions,
-            animation: { y: { from: 500 } },
             plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `Valor: ${formatCurrencyBRL(context.parsed.y)}` } } },
             scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) }, grace: '10%' } }
         }
