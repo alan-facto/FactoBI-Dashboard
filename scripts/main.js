@@ -1,6 +1,6 @@
 // Import necessary functions from the Firebase SDK
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, getDocs, query, where, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, getDocs, query, where, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 // Import view-specific modules
@@ -27,7 +27,7 @@ const auth = getAuth(app);
 // --- Global Variables & Shared State ---
 export let data = { months: [], departments: [], data: {} };
 export let charts = {};
-let currentUser = null;
+let currentUserDocRef = null; // To store the reference to the authorized user's document
 
 export const colorsByDepartment = {
     "Administrativo": "#6B5B95", "Apoio": "#FF6F61", "Comercial": "#E44D42",
@@ -122,21 +122,23 @@ const moonIcon = document.getElementById('moon-icon');
 
 onAuthStateChanged(auth, async (user) => {
     if (user) {
-        currentUser = user;
         await checkAuthorization(user);
     } else {
-        currentUser = null;
+        currentUserDocRef = null;
         window.location.href = '/login.html';
     }
 });
 
 async function checkAuthorization(user) {
     try {
-        const userDocRef = doc(db, "authorizedUsers", user.uid);
-        const userDoc = await getDoc(userDocRef);
+        const q = query(collection(db, "authorizedUsers"), where("email", "==", user.email));
+        const querySnapshot = await getDocs(q);
 
-        if (userDoc.exists()) {
+        if (!querySnapshot.empty) {
+            const userDoc = querySnapshot.docs[0];
+            currentUserDocRef = userDoc.ref; // Store the correct document reference
             const userData = userDoc.data();
+
             const userAvatar = document.getElementById('user-avatar-img');
             const userNameDisplay = document.getElementById('user-name-display');
             userNameDisplay.textContent = user.displayName || 'Usuário';
@@ -148,6 +150,10 @@ async function checkAuthorization(user) {
                 document.body.classList.add('dark');
                 sunIcon.classList.add('hidden');
                 moonIcon.classList.remove('hidden');
+            } else {
+                document.body.classList.remove('dark');
+                sunIcon.classList.remove('hidden');
+                moonIcon.classList.add('hidden');
             }
             
             await loadDashboardData();
@@ -349,11 +355,10 @@ function setupSidebar() {
         moonIcon.classList.toggle('hidden');
         updateChartTheme();
 
-        if (currentUser) {
-            const userDocRef = doc(db, "authorizedUsers", currentUser.uid);
+        if (currentUserDocRef) {
             const newTheme = document.body.classList.contains('dark') ? 'dark' : 'light';
             try {
-                await setDoc(userDocRef, { theme: newTheme }, { merge: true });
+                await setDoc(currentUserDocRef, { theme: newTheme }, { merge: true });
             } catch (error) {
                 console.error("Error saving theme preference:", error);
             }
