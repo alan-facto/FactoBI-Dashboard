@@ -21,7 +21,7 @@ function createEarningsVsCostsChart(chartData, months) {
         data: {
             labels: months.map(formatMonthShort),
             datasets: [
-                { label: 'Faturamento', data: months.map(m => chartData[m]?.earnings || 0), borderColor: mainColor, tension: 0.4, borderWidth: 2, fill: true, backgroundColor: hexToRGBA(mainColor, 0.1) },
+                { label: 'Faturamento', data: months.map(m => chartData[m]?.earnings || 0), borderColor: mainColor, tension: 0.4, borderWidth: 2, fill: true, backgroundColor: hexToRGBA(mainColor, 0.1), isMainLine: true },
                 { label: 'Gastos com Pessoal', data: months.map(m => chartData[m]?.total || 0), borderColor: '#E44D42', tension: 0.4, borderWidth: 2, fill: true, backgroundColor: hexToRGBA('#E44D42', 0.1) }
             ]
         },
@@ -42,7 +42,8 @@ function createNetProfitLossChart(chartData, months) {
             datasets: [{
                 label: 'Diferença',
                 data: months.map(m => (chartData[m]?.earnings || 0) - (chartData[m]?.total || 0)),
-                backgroundColor: months.map(m => ((chartData[m]?.earnings || 0) - (chartData[m]?.total || 0)) >= 0 ? mainColor : '#E44D42')
+                backgroundColor: months.map(m => ((chartData[m]?.earnings || 0) - (chartData[m]?.total || 0)) >= 0 ? mainColor : '#E44D42'),
+                isNetProfit: true
             }]
         },
         options: { ...globalChartOptions, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `Diferença: ${formatCurrencyBRL(context.parsed.y)}` } } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
@@ -115,7 +116,7 @@ function createProfitMarginChart(chartData, months) {
                 label: 'Margem', data: profitMargins,
                 borderColor: mainColor, backgroundColor: hexToRGBA(mainColor, 0.1),
                 tension: 0.4, fill: true, pointRadius: 5, pointBackgroundColor: mainColor, pointHoverRadius: 7,
-                clip: false
+                clip: false, isMainLine: true
             }]
         },
         plugins: [percentageChangeBubbles],
@@ -244,7 +245,7 @@ function createEarningsPerEmployeeChart(chartData, months) {
             datasets: [{
                 label: 'Faturamento por Funcionário', data: months.map(m => getChartData(m, 'company')),
                 borderColor: mainColor, backgroundColor: hexToRGBA(mainColor, 0.1),
-                tension: 0.4, fill: true, borderWidth: 2
+                tension: 0.4, fill: true, borderWidth: 2, isMainLine: true
             }]
         },
         options: {
