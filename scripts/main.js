@@ -133,6 +133,13 @@ async function checkAuthorization(user) {
         const querySnapshot = await getDocs(q);
 
         if (!querySnapshot.empty) {
+            const userAvatar = document.getElementById('user-avatar-img');
+            const userNameDisplay = document.getElementById('user-name-display');
+            userNameDisplay.textContent = user.displayName || 'Usuário';
+            if (user.photoURL) {
+                userAvatar.src = user.photoURL;
+            }
+            
             await loadDashboardData();
             loadingView.style.display = 'none';
             dashboardWrapper.style.display = 'flex';
@@ -243,7 +250,6 @@ function updateChartTheme() {
             if (chartInstance.options.plugins && chartInstance.options.plugins.legend) {
                 chartInstance.options.plugins.legend.labels.color = fontColor;
             }
-            // Update line colors for specific charts
             chartInstance.data.datasets.forEach(dataset => {
                 if (dataset.isMainLine) {
                     dataset.borderColor = mainLineColor;
