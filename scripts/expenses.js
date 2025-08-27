@@ -453,3 +453,4 @@ function renderCustomLegend(container, chartData) {
     });
     container.appendChild(column);
 }
+ 
