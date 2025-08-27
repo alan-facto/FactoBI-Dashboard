@@ -34,7 +34,6 @@ export const colorsByDepartment = {
     "NEC": "#9370DB", "Operação": "#00A86B", "RH": "#FF69B4",
     "Planejamento Estratégico": "#D95F02"
 };
-// Add a bright green for dark mode charts
 export const darkModeColors = {
     main: '#0DEB89'
 };
@@ -229,6 +228,7 @@ function updateChartTheme() {
     const isDarkMode = document.body.classList.contains('dark');
     const fontColor = isDarkMode ? 'rgba(255, 255, 255, 0.8)' : '#333';
     const gridColor = isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+    const mainLineColor = isDarkMode ? darkModeColors.main : '#024B59';
 
     Chart.defaults.color = fontColor;
     
@@ -243,6 +243,17 @@ function updateChartTheme() {
             if (chartInstance.options.plugins && chartInstance.options.plugins.legend) {
                 chartInstance.options.plugins.legend.labels.color = fontColor;
             }
+            // Update line colors for specific charts
+            chartInstance.data.datasets.forEach(dataset => {
+                if (dataset.isMainLine) {
+                    dataset.borderColor = mainLineColor;
+                    dataset.backgroundColor = hexToRGBA(mainLineColor, 0.1);
+                    dataset.pointBackgroundColor = mainLineColor;
+                }
+                 if (dataset.isNetProfit) {
+                    dataset.backgroundColor = dataset.data.map(val => val >= 0 ? mainLineColor : '#E44D42');
+                }
+            });
             chartInstance.update();
         }
     });
