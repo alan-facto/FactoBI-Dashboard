@@ -181,12 +181,15 @@ body {
 
 
 .user-info-wrapper {
-    border-top: 1px solid rgba(0,0,0,0.1);
-    padding-top: 20px;
+    background-color: var(--bg-dark);
+    color: var(--text-dark);
+    padding: 15px;
+    border-radius: 10px;
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 .sidebar-nav.collapsed .user-info-wrapper {
-    border-top: none;
-    padding-top: 0;
+    background-color: transparent;
+    padding: 0;
 }
 
 .user-info {
@@ -225,6 +228,9 @@ body {
     height: 1.25rem;
     flex-shrink: 0;
 }
+.sidebar-nav.collapsed .logout-btn {
+    margin-top: 10px;
+}
 .sidebar-nav.collapsed .logout-btn .nav-text {
     display: none;
 }
@@ -237,6 +243,9 @@ body {
     margin-bottom: 20px;
     display: flex;
     justify-content: center;
+}
+.sidebar-nav.collapsed .theme-toggle-wrapper {
+    margin-bottom: 10px;
 }
 .theme-toggle {
     display: flex;
@@ -271,9 +280,10 @@ body {
 .dark .sidebar-nav .nav-link.active { background-color: rgba(255, 255, 255, 0.15); }
 .dark .sidebar-nav .hamburger-btn { color: var(--text-dark); }
 .dark .sidebar-nav .hamburger-btn:hover { background-color: rgba(255, 255, 255, 0.08); }
-.dark .sidebar-footer, .dark .user-info-wrapper { border-color: rgba(255, 255, 255, 0.2); }
-.dark .user-name { color: var(--text-dark); }
-.dark .user-role { color: #a0aec0; }
+.dark .sidebar-footer { border-color: rgba(255, 255, 255, 0.2); }
+.dark .user-info-wrapper { background-color: var(--bg-light); color: var(--text-light); }
+.dark .user-name { color: var(--text-light); }
+.dark .user-role { color: #5a7a81; }
 .dark .theme-toggle { background-color: rgba(255, 255, 255, 0.1); }
 .dark #moon-icon { color: #a0aec0; }
 .dark .card {
