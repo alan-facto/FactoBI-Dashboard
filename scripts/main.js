@@ -222,14 +222,24 @@ async function loadDashboardData() {
 
 function updateChartTheme() {
     const isDarkMode = document.body.classList.contains('dark');
-    const fontColor = isDarkMode ? 'rgba(255, 255, 255, 0.7)' : '#666';
+    const fontColor = isDarkMode ? 'rgba(255, 255, 255, 0.8)' : '#333';
     const gridColor = isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
 
     Chart.defaults.color = fontColor;
-    Chart.defaults.borderColor = gridColor;
-
+    
     Object.values(charts).forEach(chartInstance => {
-        if (chartInstance && chartInstance.update) {
+        if (chartInstance && chartInstance.options) {
+            // Update scales
+            if (chartInstance.options.scales) {
+                Object.values(chartInstance.options.scales).forEach(scale => {
+                    if (scale.ticks) scale.ticks.color = fontColor;
+                    if (scale.grid) scale.grid.color = gridColor;
+                });
+            }
+            // Update legend
+            if (chartInstance.options.plugins && chartInstance.options.plugins.legend) {
+                chartInstance.options.plugins.legend.labels.color = fontColor;
+            }
             chartInstance.update();
         }
     });
@@ -238,11 +248,12 @@ function updateChartTheme() {
 
 function initDashboard() {
     setupSidebar();
-    updateChartTheme(); // Set initial theme for charts
     
     initExpensesView();
     initEarningsView();
     initTablesView();
+    
+    updateChartTheme(); // Set initial theme for charts
 
     document.querySelector('#nav-list .nav-link')?.click();
 }
@@ -281,14 +292,22 @@ function setupSidebar() {
             views.forEach(view => view.style.display = view.id === viewId ? 'flex' : 'none');
             
             if (linkConfig) viewTitle.textContent = linkConfig.text;
+
+            if (viewId === 'tables-view') {
+                const activeTableButton = document.querySelector('.table-toggle-btn.active');
+                if (!activeTableButton) {
+                    document.getElementById('btn-summary-month')?.click();
+                }
+            }
         });
     });
 
     hamburgerBtn.addEventListener('click', () => {
         sidebar.classList.toggle('collapsed');
+        // Give the sidebar transition time to finish before resizing charts
         setTimeout(() => {
             Object.values(charts).forEach(chartInstance => {
-                if (chartInstance && chartInstance.update) {
+                if (chartInstance && typeof chartInstance.resize === 'function') {
                     chartInstance.resize();
                 }
             });
@@ -299,7 +318,7 @@ function setupSidebar() {
         document.body.classList.toggle('dark');
         sunIcon.classList.toggle('hidden');
         moonIcon.classList.toggle('hidden');
-        updateChartTheme(); // Update charts when theme changes
+        updateChartTheme();
     });
 }
 
