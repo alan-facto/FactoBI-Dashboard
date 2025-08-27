@@ -105,17 +105,20 @@ function convertMonthToYYYYMM(monthStr) {
 
 // --- DOM Elements ---
 const loadingView = document.getElementById('loading-view');
-const dashboardContainer = document.querySelector('.container');
+const dashboardWrapper = document.getElementById('dashboard-wrapper');
 const logoutBtn = document.getElementById("logout-btn");
+const hamburgerBtn = document.getElementById('hamburger-btn');
+const sidebar = document.getElementById('sidebar-nav');
+const themeToggle = document.getElementById('theme-toggle');
+const sunIcon = document.getElementById('sun-icon');
+const moonIcon = document.getElementById('moon-icon');
 
 // --- Main Application Flow ---
 
 onAuthStateChanged(auth, async (user) => {
     if (user) {
-        // User is signed in, check if they are authorized.
         await checkAuthorization(user);
     } else {
-        // No user is signed in. Redirect to the login page.
         window.location.href = '/login.html';
     }
 });
@@ -129,12 +132,10 @@ async function checkAuthorization(user) {
             // User is authorized, load the dashboard.
             await loadDashboardData();
             loadingView.style.display = 'none';
-            dashboardContainer.style.display = 'block';
+            dashboardWrapper.style.display = 'flex';
         } else {
-            // User is not authorized. Sign them out and redirect to login.
             alert(`A conta ${user.email} não tem permissão de acesso.`);
             await signOut(auth);
-            // The onAuthStateChanged listener will catch the sign-out and redirect.
         }
     } catch (error) {
         console.error("Authorization check error:", error);
@@ -221,49 +222,97 @@ async function loadDashboardData() {
 }
 
 function initDashboard() {
-    setupViewToggle();
+    setupSidebar();
     
     initExpensesView();
     initEarningsView();
     initTablesView();
 
-    document.getElementById('btn-summary-month')?.click();
+    // Trigger click on the first nav link to show the default view
+    document.querySelector('#nav-list .nav-link')?.click();
 }
 
-function setupViewToggle() {
-    const container = document.querySelector('.view-toggle');
-    const buttons = container.querySelectorAll('button:not(#logout-btn)');
-    const views = {
-        'btn-expenses-main': 'charts-view',
-        'btn-earnings-main': 'earnings-view',
-        'btn-tables-main': 'tables-view'
-    };
+function setupSidebar() {
+    const navList = document.getElementById('nav-list');
+    const viewTitle = document.getElementById('view-title');
+    const views = document.querySelectorAll('#views-container > div');
 
-    buttons.forEach(button => {
-        button.addEventListener('click', () => {
-            buttons.forEach(btn => btn.classList.remove('active'));
-            button.classList.add('active');
-            const viewId = views[button.id];
+    // --- CONFIGURATION ---
+    const navLinksConfig = [
+        { id: 'btn-expenses-main', text: 'Gastos', viewId: 'charts-view', icon: `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V7a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>`, roles: ['admin', 'finance'] },
+        { id: 'btn-earnings-main', text: 'Faturamento', viewId: 'earnings-view', icon: `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>`, roles: ['admin', 'finance'] },
+        { id: 'btn-tables-main', text: 'Tabelas', viewId: 'tables-view', icon: `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>`, roles: ['admin'] },
+        { id: 'btn-calendar-main', text: 'Eventos', viewId: 'calendar-view', icon: `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>`, roles: ['admin', 'hr', 'finance'] }
+    ];
+    let currentUserRole = 'admin'; // This can be fetched from user data later
 
-            Object.values(views).forEach(id => document.getElementById(id).style.display = 'none');
-            const viewEl = document.getElementById(viewId);
-            viewEl.style.display = 'flex';
+    // --- Render Navigation ---
+    navList.innerHTML = ''; 
+    const filteredLinks = navLinksConfig.filter(link => link.roles.includes(currentUserRole));
+    filteredLinks.forEach(link => {
+        const li = document.createElement('li');
+        li.innerHTML = `<a href="#" id="${link.id}" data-view="${link.viewId}" class="nav-link">${link.icon}<span class="nav-text">${link.text}</span></a>`;
+        navList.appendChild(li);
+    });
 
+    // --- Event Listeners ---
+    const navLinks = document.querySelectorAll('.nav-link');
+    navLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            navLinks.forEach(l => l.classList.remove('active'));
+            link.classList.add('active');
+            
+            const viewId = link.dataset.view;
+            const linkConfig = navLinksConfig.find(c => c.viewId === viewId);
+            
+            views.forEach(view => view.style.display = view.id === viewId ? 'flex' : 'none');
+            
+            if (linkConfig) viewTitle.textContent = linkConfig.text;
+            
+            // Special handling for tables view
             if (viewId === 'tables-view' && !document.querySelector('.table-toggle-btn.active')) {
-                 document.getElementById('btn-summary-month')?.click();
+                document.getElementById('btn-summary-month')?.click();
             }
         });
+    });
+
+    hamburgerBtn.addEventListener('click', () => {
+        const isMobile = window.innerWidth <= 1024;
+        if (isMobile) {
+            sidebar.classList.toggle('expanded');
+        } else {
+            sidebar.classList.toggle('collapsed');
+        }
+        // We need to tell Chart.js to resize after the transition
+        setTimeout(() => {
+            Object.values(charts).forEach(chartInstance => {
+                if (chartInstance && typeof chartInstance.chart?.resize === 'function') {
+                    chartInstance.chart.resize();
+                } else if (chartInstance && typeof chartInstance.resize === 'function') {
+                    chartInstance.resize();
+                }
+            });
+        }, 350); // a bit longer than the CSS transition
+    });
+
+    themeToggle.addEventListener('click', () => {
+        document.body.classList.toggle('dark');
+        sunIcon.classList.toggle('hidden');
+        moonIcon.classList.toggle('hidden');
     });
 }
 
 function showError(message) {
-    dashboardContainer.innerHTML = `<div class="error-message"><h2>Erro</h2><p>${message}</p><button onclick="window.location.reload()">Recarregar Página</button></div>`;
-    dashboardContainer.style.display = 'block';
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent) {
+        mainContent.innerHTML = `<div class="error-message"><h2>Erro</h2><p>${message}</p><button onclick="window.location.reload()">Recarregar Página</button></div>`;
+    }
     loadingView.style.display = 'none';
+    dashboardWrapper.style.display = 'flex'; // Show wrapper to display error inside layout
 }
 
-// Event Listeners
+// Logout Event Listener
 logoutBtn.addEventListener('click', async () => {
     await signOut(auth);
-    // onAuthStateChanged will handle the redirect to login.html
 });
