@@ -48,8 +48,8 @@ function generateSummaryByMonth() {
             <thead><tr><th>Departamento</th><th>Total</th></tr></thead>
             <tbody>
                 ${Object.entries(monthData.departments).map(([dept, d]) => `<tr><td>${dept}</td><td>${formatCurrencyBRL(d.geral)}</td></tr>`).join('')}
-                <tr style="font-weight: bold; background-color: #e0e0e0;"><td>Total Geral Mensal</td><td>${formatCurrencyBRL(monthData.total)}</td></tr>
-                <tr style="font-weight: bold; background-color: #f0f0f0;"><td>Faturamento Mensal</td><td>${formatCurrencyBRL(monthData.earnings)}</td></tr>
+                <tr class="summary-row-1"><td>Total Geral Mensal</td><td>${formatCurrencyBRL(monthData.total)}</td></tr>
+                <tr class="summary-row-2"><td>Faturamento Mensal</td><td>${formatCurrencyBRL(monthData.earnings)}</td></tr>
             </tbody>`;
         section.appendChild(table);
         container.appendChild(section);
@@ -102,7 +102,7 @@ function generateDetailedByMonth() {
                     </tr>` : '';
                 }).join('')}
             </tbody>
-            <tfoot><tr style="font-weight: bold; background-color: #f0f0f0;">
+            <tfoot><tr class="summary-row-2">
                 <td>Total Mensal</td><td>${monthData.totalEmployees}</td><td>${formatCurrencyBRL(totalSimples)}</td>
                 <td>${formatVA(totalVA, month)}</td><td>${formatCurrencyBRL(totalBonificacao)}</td><td>${formatCurrencyBRL(totalGeral)}</td>
             </tr></tfoot>`;
@@ -140,7 +140,7 @@ function generateDetailedByDepartment() {
                     </tr>` : '';
                 }).join('')}
             </tbody>
-            <tfoot><tr style="font-weight: bold; background-color: #f0f0f0;">
+            <tfoot><tr class="summary-row-2">
                 <td>Total / Média</td><td>${avgEmployees} (Média)</td><td>${formatCurrencyBRL(totalSimples)}</td>
                 <td>${formatVA(totalVA, lastMonthWithVA)}</td><td>${formatCurrencyBRL(totalBonificacao)}</td><td>${formatCurrencyBRL(totalGeral)}</td>
             </tr></tfoot>`;
