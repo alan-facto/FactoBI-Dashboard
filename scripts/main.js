@@ -34,6 +34,11 @@ export const colorsByDepartment = {
     "NEC": "#9370DB", "Operação": "#00A86B", "RH": "#FF69B4",
     "Planejamento Estratégico": "#D95F02"
 };
+// Add a bright green for dark mode charts
+export const darkModeColors = {
+    main: '#0DEB89'
+};
+
 export const globalChartOptions = {
     responsive: true,
     maintainAspectRatio: false,
@@ -229,14 +234,12 @@ function updateChartTheme() {
     
     Object.values(charts).forEach(chartInstance => {
         if (chartInstance && chartInstance.options) {
-            // Update scales
             if (chartInstance.options.scales) {
-                Object.values(chartInstance.options.scales).forEach(scale => {
-                    if (scale.ticks) scale.ticks.color = fontColor;
-                    if (scale.grid) scale.grid.color = gridColor;
+                Object.keys(chartInstance.options.scales).forEach(axis => {
+                    chartInstance.options.scales[axis].ticks.color = fontColor;
+                    chartInstance.options.scales[axis].grid.color = gridColor;
                 });
             }
-            // Update legend
             if (chartInstance.options.plugins && chartInstance.options.plugins.legend) {
                 chartInstance.options.plugins.legend.labels.color = fontColor;
             }
@@ -253,7 +256,7 @@ function initDashboard() {
     initEarningsView();
     initTablesView();
     
-    updateChartTheme(); // Set initial theme for charts
+    updateChartTheme();
 
     document.querySelector('#nav-list .nav-link')?.click();
 }
@@ -304,7 +307,6 @@ function setupSidebar() {
 
     hamburgerBtn.addEventListener('click', () => {
         sidebar.classList.toggle('collapsed');
-        // Give the sidebar transition time to finish before resizing charts
         setTimeout(() => {
             Object.values(charts).forEach(chartInstance => {
                 if (chartInstance && typeof chartInstance.resize === 'function') {
