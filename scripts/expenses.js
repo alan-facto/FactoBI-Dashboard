@@ -12,19 +12,16 @@ export function initExpensesView() {
     pieChartState.selectedDepartments = [...data.departments];
     const last12Months = data.months.slice(-12);
 
-    // Create charts
-    charts.totalExpenditures = createTotalExpendituresChart(data.data, last12Months);
-    charts.departmentTrends = createDepartmentTrendsChart(data.data, last12Months, data.departments);
+    createTotalExpendituresChart(data.data, last12Months);
+    createDepartmentTrendsChart(data.data, last12Months, data.departments);
     createAvgExpenditureChart(data.data, last12Months);
     createEmployeesChart(data.data, last12Months);
     createPercentageStackedChart(data.data, last12Months, data.departments);
 
-    // Setup event listeners
     setupTimeFilters();
     setupDepartmentBreakdown();
 }
 
-// --- Chart and Filter Setup ---
 function setupTimeFilters() {
     const trendsWrapper = document.getElementById('department-trends-wrapper');
     const tryParseJSON = (jsonString) => {
@@ -106,10 +103,9 @@ function setupTimeFilters() {
     }
 }
 
-// --- Chart Creation Functions ---
 function createTotalExpendituresChart(chartData, months) {
     const canvas = document.getElementById('total-expenditures-chart');
-    if (!canvas) return null;
+    if (!canvas) return;
     const ctx = canvas.getContext('2d');
     const chart = new Chart(ctx, {
         type: 'line',
@@ -123,30 +119,12 @@ function createTotalExpendituresChart(chartData, months) {
         },
         options: { ...globalChartOptions, animation: { y: { from: 500 } }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `${context.dataset.label}: ${formatCurrencyBRL(context.parsed.y)}` } } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) }, grace: '10%' } } }
     });
-    return {
-        update: function(newData, monthsToShow, selectedDepartment = 'all') {
-            if (!monthsToShow) return;
-            chart.data.labels = monthsToShow.map(formatMonthShort);
-            const dataset = { borderColor: '#024B59', backgroundColor: hexToRGBA('#024B59', 0.1), borderWidth: 2, fill: true, tension: 0.4 };
-            if (selectedDepartment === 'all') {
-                dataset.label = 'Gastos Totais';
-                dataset.data = monthsToShow.map(month => newData[month]?.total || 0);
-            } else {
-                const color = colorsByDepartment[selectedDepartment] || '#cccccc';
-                dataset.label = `Gastos - ${selectedDepartment}`;
-                dataset.data = monthsToShow.map(m => newData[m]?.departments?.[selectedDepartment]?.geral || 0);
-                dataset.borderColor = color;
-                dataset.backgroundColor = hexToRGBA(color, 0.12);
-            }
-            chart.data.datasets = [dataset];
-            chart.update();
-        }
-    };
+    charts.totalExpenditures = chart; // Store chart instance
 }
 
 function createDepartmentTrendsChart(chartData, months, departments) {
     const ctx = document.getElementById('department-trends-chart');
-    if (!ctx) return null;
+    if (!ctx) return;
     const chart = new Chart(ctx.getContext('2d'), {
         type: 'line',
         data: {
@@ -158,23 +136,13 @@ function createDepartmentTrendsChart(chartData, months, departments) {
         },
         options: { ...globalChartOptions, animation: { y: { from: 500 } }, plugins: { legend: { position: 'bottom' }, tooltip: { callbacks: { label: (context) => `${context.dataset.label}: ${formatCurrencyBRL(context.parsed.y)}` } } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
     });
-    return {
-        update: function(monthsToShow = months, filteredDepartments = departments) {
-            if (!monthsToShow) return;
-            chart.data.labels = monthsToShow.map(formatMonthShort);
-            chart.data.datasets = filteredDepartments.map(dept => ({
-                label: dept, data: monthsToShow.map(month => data.data[month]?.departments[dept]?.geral || 0),
-                borderColor: colorsByDepartment[dept] || "#ccc", borderWidth: 2, fill: false, tension: 0.3
-            }));
-            chart.update();
-        }
-    };
+    charts.departmentTrends = chart; // Store chart instance
 }
 
 function createAvgExpenditureChart(chartData, months) {
     const ctx = document.getElementById('avg-expenditure-chart');
-    if (!ctx) return null;
-    new Chart(ctx.getContext('2d'), {
+    if (!ctx) return;
+    charts.avgExpenditure = new Chart(ctx.getContext('2d'), {
         type: 'line',
         data: {
             labels: months.map(formatMonthShort),
@@ -190,8 +158,8 @@ function createAvgExpenditureChart(chartData, months) {
 
 function createEmployeesChart(chartData, months) {
     const ctx = document.getElementById('employees-chart');
-    if (!ctx) return null;
-    new Chart(ctx.getContext('2d'), {
+    if (!ctx) return;
+    charts.employees = new Chart(ctx.getContext('2d'), {
         type: 'line',
         data: {
             labels: months.map(formatMonthShort),
@@ -206,8 +174,8 @@ function createEmployeesChart(chartData, months) {
 
 function createPercentageStackedChart(chartData, months, departments) {
     const ctx = document.getElementById('percentage-stacked-chart');
-    if (!ctx) return null;
-    new Chart(ctx.getContext('2d'), {
+    if (!ctx) return;
+    charts.percentageStacked = new Chart(ctx.getContext('2d'), {
         type: 'bar',
         data: {
             labels: months.map(formatMonthShort),
@@ -224,7 +192,6 @@ function createPercentageStackedChart(chartData, months, departments) {
     });
 }
 
-// --- Pie Chart Section Functions ---
 function setupDepartmentBreakdown() {
     const wrapper = document.getElementById('department-breakdown-wrapper');
     if (!wrapper) return;
@@ -236,7 +203,7 @@ function setupDepartmentBreakdown() {
                 <button class="filter-btn pie-time-btn" data-months="1">1 Mês</button>
                 <button class="filter-btn pie-time-btn" data-months="3">3 Meses</button>
                 <button class="filter-btn pie-time-btn active" data-months="6">6 Meses</button>
-                <button class="filter-btn pie-time-btn" data-months="12">12 Meses</button>
+                <button class.="filter-btn pie-time-btn" data-months="12">12 Meses</button>
             </div>
         </div>
         <div class="pie-chart-main-content">
