@@ -267,3 +267,4 @@ function createEarningsPerEmployeeChart(chartData, months) {
         });
     });
 }
+ 
