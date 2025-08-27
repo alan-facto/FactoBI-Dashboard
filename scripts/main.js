@@ -1,6 +1,6 @@
 // Import necessary functions from the Firebase SDK
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, getDocs, query, where, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, getDocs, query, where, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 // Import view-specific modules
@@ -27,7 +27,7 @@ const auth = getAuth(app);
 // --- Global Variables & Shared State ---
 export let data = { months: [], departments: [], data: {} };
 export let charts = {};
-let currentUserDocRef = null; // To store the reference to the authorized user's document
+let currentUserDocRef = null;
 
 export const colorsByDepartment = {
     "Administrativo": "#6B5B95", "Apoio": "#FF6F61", "Comercial": "#E44D42",
@@ -136,14 +136,22 @@ async function checkAuthorization(user) {
 
         if (!querySnapshot.empty) {
             const userDoc = querySnapshot.docs[0];
-            currentUserDocRef = userDoc.ref; // Store the correct document reference
+            currentUserDocRef = userDoc.ref;
             const userData = userDoc.data();
 
             const userAvatar = document.getElementById('user-avatar-img');
             const userNameDisplay = document.getElementById('user-name-display');
+            const userRoleDisplay = document.getElementById('user-role-display');
+            
             userNameDisplay.textContent = user.displayName || 'Usuário';
             if (user.photoURL) {
                 userAvatar.src = user.photoURL;
+            }
+            if (userData.role) {
+                userRoleDisplay.textContent = userData.role;
+                userRoleDisplay.style.display = 'block';
+            } else {
+                 userNameDisplay.style.lineHeight = '2.5rem'; // Center name vertically if no role
             }
 
             if (userData.theme === 'dark') {
