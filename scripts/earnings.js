@@ -1,9 +1,8 @@
-import { data, colorsByDepartment, globalChartOptions, hexToRGBA, formatMonthShort, formatCurrencyBRL } from './main.js';
+import { data, charts, colorsByDepartment, globalChartOptions, hexToRGBA, formatMonthShort, formatCurrencyBRL } from './main.js';
 
 export function initEarningsView() {
     const last12Months = data.months.slice(-12);
 
-    // Create charts
     createEarningsVsCostsChart(data.data, last12Months);
     createNetProfitLossChart(data.data, last12Months);
     createProfitMarginChart(data.data, last12Months);
@@ -13,8 +12,8 @@ export function initEarningsView() {
 
 function createEarningsVsCostsChart(chartData, months) {
     const ctx = document.getElementById('earnings-vs-costs-chart');
-    if (!ctx) return null;
-    new Chart(ctx.getContext('2d'), {
+    if (!ctx) return;
+    charts.earningsVsCosts = new Chart(ctx.getContext('2d'), {
         type: 'line',
         data: {
             labels: months.map(formatMonthShort),
@@ -29,8 +28,8 @@ function createEarningsVsCostsChart(chartData, months) {
 
 function createNetProfitLossChart(chartData, months) {
     const ctx = document.getElementById('net-profit-loss-chart');
-    if (!ctx) return null;
-    new Chart(ctx.getContext('2d'), {
+    if (!ctx) return;
+    charts.netProfitLoss = new Chart(ctx.getContext('2d'), {
         type: 'bar',
         data: {
             labels: months.map(formatMonthShort),
@@ -46,7 +45,7 @@ function createNetProfitLossChart(chartData, months) {
 
 function createProfitMarginChart(chartData, months) {
     const ctx = document.getElementById('profit-margin-chart');
-    if (!ctx) return null;
+    if (!ctx) return;
     const percentageChangeBubbles = {
         id: 'percentageChangeBubbles',
         afterDatasetsDraw(chart) {
@@ -99,7 +98,7 @@ function createProfitMarginChart(chartData, months) {
         const earnings = monthInfo.earnings || 0;
         return earnings > 0 ? ((earnings - (monthInfo.total || 0)) / earnings) * 100 : 0;
     });
-    new Chart(ctx.getContext('2d'), {
+    charts.profitMargin = new Chart(ctx.getContext('2d'), {
         type: 'line',
         data: {
             labels: months.map(formatMonthShort),
@@ -160,7 +159,7 @@ function createEarningsAllocationChart(chartData, months, departments) {
 
     const initialData = calculateAllocation('headcount');
     
-    const chart = new Chart(ctx, {
+    charts.earningsAllocation = new Chart(ctx, {
         type: 'bar',
         data: {
             labels: months.map(formatMonthShort),
@@ -203,10 +202,10 @@ function createEarningsAllocationChart(chartData, months, departments) {
             button.classList.add('active');
             const mode = button.dataset.mode;
             const newData = calculateAllocation(mode);
-            chart.data.datasets.forEach(dataset => {
+            charts.earningsAllocation.data.datasets.forEach(dataset => {
                 dataset.data = newData[dataset.label];
             });
-            chart.update();
+            charts.earningsAllocation.update();
         });
     });
 }
@@ -228,7 +227,7 @@ function createEarningsPerEmployeeChart(chartData, months) {
         const totalEmployees = monthInfo.totalEmployees || 0;
         return totalEmployees > 0 ? earnings / totalEmployees : 0;
     };
-    const chart = new Chart(canvas.getContext('2d'), {
+    charts.earningsPerEmployee = new Chart(canvas.getContext('2d'), {
         type: 'line',
         data: {
             labels: months.map(formatMonthShort),
@@ -253,8 +252,8 @@ function createEarningsPerEmployeeChart(chartData, months) {
             toggleButtons.forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
             const mode = button.dataset.mode;
-            chart.data.datasets[0].data = months.map(m => getChartData(m, mode));
-            chart.update();
+            charts.earningsPerEmployee.data.datasets[0].data = months.map(m => getChartData(m, mode));
+            charts.earningsPerEmployee.update();
         });
     });
 }
