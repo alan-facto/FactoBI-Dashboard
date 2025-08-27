@@ -23,7 +23,6 @@ function setupTableToggle() {
             const tableEl = document.getElementById(tableId);
             tableEl.style.display = 'block';
             
-            // Only generate if it's not the pre-rendered one or if it's empty
             if (tableEl.innerHTML.trim() === '') {
                 if (button.id === 'btn-summary-month') generateSummaryByMonth();
                 if (button.id === 'btn-summary-department') generateSummaryByDepartment();
@@ -166,9 +165,11 @@ function generateEarningsTable() {
                 const earnings = monthData.earnings || 0, totalCosts = monthData.total || 0, netProfit = earnings - totalCosts;
                 const profitMargin = (earnings > 0) ? (netProfit / earnings) * 100 : 0;
                 return `<tr>
-                    <td>${formatMonthLabel(month)}</td><td>${formatCurrencyBRL(earnings)}</td><td>${formatCurrencyBRL(totalCosts)}</td>
-                    <td style="color: ${netProfit >= 0 ? '#024B59' : '#E44D42'}; font-weight: bold;">${formatCurrencyBRL(netProfit)}</td>
-                    <td style="color: ${profitMargin >= 0 ? '#024B59' : '#E44D42'}; font-weight: bold;">${profitMargin.toFixed(2)}%</td>
+                    <td>${formatMonthLabel(month)}</td>
+                    <td>${formatCurrencyBRL(earnings)}</td>
+                    <td>${formatCurrencyBRL(totalCosts)}</td>
+                    <td class="${netProfit >= 0 ? 'positive' : 'negative'}">${formatCurrencyBRL(netProfit)}</td>
+                    <td class="${profitMargin >= 0 ? 'positive' : 'negative'}">${profitMargin.toFixed(2)}%</td>
                 </tr>`;
             }).join('')}
         </tbody>`;
