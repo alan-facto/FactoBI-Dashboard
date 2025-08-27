@@ -2,6 +2,7 @@ import { data, colorsByDepartment, formatMonthLabel, formatCurrencyBRL, formatVA
 
 export function initTablesView() {
     setupTableToggle();
+    generateSummaryByMonth(); // Pre-render the default table
 }
 
 function setupTableToggle() {
@@ -21,13 +22,15 @@ function setupTableToggle() {
             Object.values(tables).forEach(id => document.getElementById(id).style.display = 'none');
             const tableEl = document.getElementById(tableId);
             tableEl.style.display = 'block';
-            tableEl.innerHTML = '';
-
-            if (button.id === 'btn-summary-month') generateSummaryByMonth();
-            if (button.id === 'btn-summary-department') generateSummaryByDepartment();
-            if (button.id === 'btn-detailed-month') generateDetailedByMonth();
-            if (button.id === 'btn-detailed-department') generateDetailedByDepartment();
-            if (button.id === 'btn-earnings-table') generateEarningsTable();
+            
+            // Only generate if it's not the pre-rendered one or if it's empty
+            if (tableEl.innerHTML.trim() === '') {
+                if (button.id === 'btn-summary-month') generateSummaryByMonth();
+                if (button.id === 'btn-summary-department') generateSummaryByDepartment();
+                if (button.id === 'btn-detailed-month') generateDetailedByMonth();
+                if (button.id === 'btn-detailed-department') generateDetailedByDepartment();
+                if (button.id === 'btn-earnings-table') generateEarningsTable();
+            }
         });
     });
 }
@@ -35,7 +38,7 @@ function setupTableToggle() {
 function generateSummaryByMonth() {
     const container = document.getElementById('table-summary-month');
     if (!container) return;
-    container.innerHTML = ''; // Clear previous content
+    container.innerHTML = ''; 
     data.months.forEach(month => {
         const monthData = data.data[month];
         if (!monthData) return;
@@ -57,7 +60,7 @@ function generateSummaryByMonth() {
 function generateSummaryByDepartment() {
     const container = document.getElementById('table-summary-department');
     if (!container) return;
-    container.innerHTML = ''; // Clear previous content
+    container.innerHTML = ''; 
     data.departments.forEach(dept => {
         const section = document.createElement('div');
         section.innerHTML = `<h3>${dept}</h3>`;
@@ -78,7 +81,7 @@ function generateSummaryByDepartment() {
 function generateDetailedByMonth() {
     const container = document.getElementById('table-detailed-month');
     if (!container) return;
-    container.innerHTML = ''; // Clear previous content
+    container.innerHTML = ''; 
     data.months.forEach(month => {
         const monthData = data.data[month];
         if (!monthData) return;
@@ -112,7 +115,7 @@ function generateDetailedByMonth() {
 function generateDetailedByDepartment() {
     const container = document.getElementById('table-detailed-department');
     if (!container) return;
-    container.innerHTML = ''; // Clear previous content
+    container.innerHTML = '';
     data.departments.forEach(dept => {
         let totalSimples = 0, totalVA = 0, totalBonificacao = 0, totalGeral = 0, employeeSum = 0, monthCount = 0, lastMonthWithVA = '0000-00';
         data.months.forEach(month => {
@@ -150,7 +153,7 @@ function generateDetailedByDepartment() {
 function generateEarningsTable() {
     const container = document.getElementById('table-earnings');
     if (!container) return;
-    container.innerHTML = ''; // Clear previous content
+    container.innerHTML = '';
     const section = document.createElement('div');
     section.innerHTML = `<h3>Faturamento Mensal</h3>`;
     const table = document.createElement('table');
