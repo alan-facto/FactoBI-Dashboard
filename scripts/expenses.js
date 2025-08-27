@@ -32,8 +32,7 @@ function setupTimeFilters() {
         try { return JSON.parse(jsonString); } catch (e) { return []; }
     };
     
-    // Create department filter buttons for the first chart
-    const filterGrid = totalExpWrapper.querySelector('.filter-buttons-wrapper .filter-grid');
+    const filterGrid = totalExpWrapper.querySelector('.filter-grid');
     if (!filterGrid) {
         const container = totalExpWrapper.querySelector('.filter-buttons-wrapper');
         container.innerHTML = '<div class="filter-grid"></div>';
@@ -69,7 +68,6 @@ function setupTimeFilters() {
         if (otherDepts.length > 0) newGrid.appendChild(row2);
     }
 
-    // Unified event listener for Total Expenditures chart
     totalExpWrapper.addEventListener('click', function(event) {
         if (!event.target.classList.contains('filter-btn')) return;
 
@@ -78,7 +76,7 @@ function setupTimeFilters() {
         
         if (isTimeFilter) {
             totalExpWrapper.querySelectorAll('.time-filters .filter-btn').forEach(btn => btn.classList.remove('active'));
-        } else {
+        } else if (button.closest('.filter-grid')) {
             totalExpWrapper.querySelectorAll('.filter-grid .filter-btn').forEach(btn => btn.classList.remove('active'));
         }
         button.classList.add('active');
@@ -110,7 +108,6 @@ function setupTimeFilters() {
         chart.update();
     });
 
-    // Event listeners for Department Trends chart
     if (trendsWrapper) {
         trendsWrapper.querySelectorAll('.toggle-switch-group .filter-btn').forEach(button => {
             button.addEventListener('click', function() {
@@ -347,6 +344,7 @@ function updateDepartmentBreakdownCharts() {
 
         const pieItem = document.createElement('div');
         pieItem.className = 'pie-item';
+        pieItem.style.animationDelay = `${index * 100}ms`;
         
         const canvas = document.createElement('canvas');
         const label = document.createElement('div');
@@ -377,48 +375,46 @@ function updateDepartmentBreakdownCharts() {
             .filter(d => d.value > 0)
             .sort((a, b) => b.value - a.value);
         
-        setTimeout(() => {
-            const chart = new Chart(canvas, {
-                type: 'pie',
-                data: {
-                    labels: filteredDeptData.map(d => d.name),
-                    datasets: [{
-                        data: filteredDeptData.map(d => d.value),
-                        backgroundColor: filteredDeptData.map(d => colorsByDepartment[d.name] || "#ccc"),
-                        borderWidth: 0
-                    }]
+        const chart = new Chart(canvas, {
+            type: 'pie',
+            data: {
+                labels: filteredDeptData.map(d => d.name),
+                datasets: [{
+                    data: filteredDeptData.map(d => d.value),
+                    backgroundColor: filteredDeptData.map(d => colorsByDepartment[d.name] || "#ccc"),
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                animation: {
+                    duration: 800,
+                    easing: 'easeOutQuart',
+                    animateScale: true
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    animation: {
-                        duration: 800,
-                        easing: 'easeOutQuart',
-                        animateScale: true
-                    },
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const label = context.label || '';
-                                    const value = context.parsed;
-                                    const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
-                                    const percentage = total > 0 ? (value / total * 100).toFixed(2) : 0;
-                                    return `${label}: ${formatCurrencyBRL(value)} (${percentage}%)`;
-                                }
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed;
+                                const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                const percentage = total > 0 ? (value / total * 100).toFixed(2) : 0;
+                                return `${label}: ${formatCurrencyBRL(value)} (${percentage}%)`;
                             }
                         }
                     }
                 }
-            });
-            
-            if (pieChartState.range === 1) {
-                renderCustomLegend(pieItem.querySelector('.custom-legend-container'), filteredDeptData);
             }
-    
-            pieChartState.chartInstances.push(chart);
-        }, index * 75);
+        });
+        
+        if (pieChartState.range === 1) {
+            renderCustomLegend(pieItem.querySelector('.custom-legend-container'), filteredDeptData);
+        }
+
+        pieChartState.chartInstances.push(chart);
     });
 }
 
