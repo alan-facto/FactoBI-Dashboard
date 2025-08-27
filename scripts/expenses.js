@@ -1,4 +1,4 @@
-import { data, charts, colorsByDepartment, globalChartOptions, hexToRGBA, formatMonthLabel, formatMonthShort, formatCurrencyBRL } from './main.js';
+import { data, charts, colorsByDepartment, darkModeColors, globalChartOptions, hexToRGBA, formatMonthLabel, formatMonthShort, formatCurrencyBRL } from './main.js';
 
 let pieChartState = {
     range: 6,
@@ -23,14 +23,16 @@ export function initExpensesView() {
 }
 
 function setupTimeFilters() {
+    const totalExpWrapper = document.getElementById('total-expenditures-wrapper');
     const trendsWrapper = document.getElementById('department-trends-wrapper');
+    
     const tryParseJSON = (jsonString) => {
         if (!jsonString || jsonString === 'undefined' || jsonString === 'null') return [];
         if (jsonString === 'all') return data.departments || [];
         try { return JSON.parse(jsonString); } catch (e) { return []; }
     };
     
-    const filterButtonsContainer = document.querySelector('#total-expenditures-wrapper .filter-buttons-wrapper');
+    const filterButtonsContainer = totalExpWrapper.querySelector('.filter-buttons-wrapper');
     filterButtonsContainer.innerHTML = '<div class="filter-grid"></div>';
     const filterGrid = filterButtonsContainer.querySelector('.filter-grid');
 
@@ -70,34 +72,58 @@ function setupTimeFilters() {
         filterGrid.appendChild(row2);
     }
 
-
-    document.querySelectorAll('#total-expenditures-wrapper .time-filters .filter-btn, #total-expenditures-wrapper .filter-buttons-wrapper .filter-btn').forEach(button => {
+    // Event listeners for Total Expenditures chart
+    totalExpWrapper.querySelectorAll('.time-filters .filter-btn, .filter-buttons-wrapper .filter-btn').forEach(button => {
         button.addEventListener('click', function() {
-            const parent = this.closest('.card');
-            if (this.closest('.filter-buttons-wrapper')) {
-                 parent.querySelectorAll('.filter-buttons-wrapper .filter-btn').forEach(btn => btn.classList.remove('active'));
-            } else {
-                 parent.querySelectorAll('.time-filters .filter-btn').forEach(btn => btn.classList.remove('active'));
-            }
+            const parentGroup = this.closest('.toggle-switch-group, .filter-grid');
+            parentGroup.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
             this.classList.add('active');
 
-            const activeMonths = document.querySelector('#total-expenditures-wrapper .time-filters .filter-btn.active').dataset.months;
-            const activeDept = document.querySelector('#total-expenditures-wrapper .filter-buttons-wrapper .filter-btn.active').dataset.department;
-            charts.totalExpenditures.update(data.data, data.months.slice(-activeMonths), activeDept);
+            const activeMonths = totalExpWrapper.querySelector('.time-filters .filter-btn.active').dataset.months;
+            const activeDept = totalExpWrapper.querySelector('.filter-buttons-wrapper .filter-btn.active').dataset.department;
+            
+            const chart = charts.totalExpenditures;
+            const monthsToShow = data.months.slice(-activeMonths);
+            chart.data.labels = monthsToShow.map(formatMonthShort);
+            
+            const isDarkMode = document.body.classList.contains('dark');
+            const mainColor = isDarkMode ? darkModeColors.main : '#024B59';
+
+            if (activeDept === 'all') {
+                chart.data.datasets[0].label = 'Gastos Totais';
+                chart.data.datasets[0].data = monthsToShow.map(month => data.data[month]?.total || 0);
+                chart.data.datasets[0].borderColor = mainColor;
+                chart.data.datasets[0].backgroundColor = hexToRGBA(mainColor, 0.1);
+            } else {
+                const color = colorsByDepartment[activeDept] || '#cccccc';
+                chart.data.datasets[0].label = `Gastos - ${activeDept}`;
+                chart.data.datasets[0].data = monthsToShow.map(m => data.data[m]?.departments?.[activeDept]?.geral || 0);
+                chart.data.datasets[0].borderColor = color;
+                chart.data.datasets[0].backgroundColor = hexToRGBA(color, 0.12);
+            }
+            chart.update();
         });
     });
 
+    // Event listeners for Department Trends chart
     if (trendsWrapper) {
         trendsWrapper.querySelectorAll('.toggle-switch-group .filter-btn').forEach(button => {
             button.addEventListener('click', function() {
-                const parent = this.closest('.toggle-switch-group');
-                parent.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+                const parentGroup = this.closest('.toggle-switch-group');
+                parentGroup.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
                 this.classList.add('active');
 
-                const monthsRange = trendsWrapper.querySelector('.time-filters .filter-btn.active')?.dataset?.months || 'all';
+                const monthsRange = trendsWrapper.querySelector('.time-filters .filter-btn.active')?.dataset.months || 'all';
                 const monthsToShow = monthsRange === 'all' ? data.months : data.months.slice(-monthsRange);
-                const selectedDepartments = tryParseJSON(trendsWrapper.querySelector('.filter-buttons .filter-btn.active')?.dataset?.departments || 'all');
-                charts.departmentTrends.update(monthsToShow, selectedDepartments);
+                const selectedDepartments = tryParseJSON(trendsWrapper.querySelector('.filter-buttons .filter-btn.active')?.dataset.departments || 'all');
+                
+                const chart = charts.departmentTrends;
+                chart.data.labels = monthsToShow.map(formatMonthShort);
+                chart.data.datasets = selectedDepartments.map(dept => ({
+                    label: dept, data: monthsToShow.map(month => data.data[month]?.departments[dept]?.geral || 0),
+                    borderColor: colorsByDepartment[dept] || "#ccc", borderWidth: 2, fill: false, tension: 0.3
+                }));
+                chart.update();
             });
         });
     }
@@ -106,26 +132,27 @@ function setupTimeFilters() {
 function createTotalExpendituresChart(chartData, months) {
     const canvas = document.getElementById('total-expenditures-chart');
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    const chart = new Chart(ctx, {
+    const isDarkMode = document.body.classList.contains('dark');
+    const mainColor = isDarkMode ? darkModeColors.main : '#024B59';
+
+    charts.totalExpenditures = new Chart(canvas.getContext('2d'), {
         type: 'line',
         data: {
             labels: months.map(formatMonthShort),
             datasets: [{
                 label: 'Gastos Totais', data: months.map(month => chartData[month]?.total || 0),
-                borderColor: '#024B59', backgroundColor: hexToRGBA('#024B59', 0.1),
+                borderColor: mainColor, backgroundColor: hexToRGBA(mainColor, 0.1),
                 borderWidth: 2, fill: true, tension: 0.4
             }]
         },
-        options: { ...globalChartOptions, animation: { y: { from: 500 } }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `${context.dataset.label}: ${formatCurrencyBRL(context.parsed.y)}` } } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) }, grace: '10%' } } }
+        options: { ...globalChartOptions, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `${context.dataset.label}: ${formatCurrencyBRL(context.parsed.y)}` } } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) }, grace: '10%' } } }
     });
-    charts.totalExpenditures = chart; // Store chart instance
 }
 
 function createDepartmentTrendsChart(chartData, months, departments) {
     const ctx = document.getElementById('department-trends-chart');
     if (!ctx) return;
-    const chart = new Chart(ctx.getContext('2d'), {
+    charts.departmentTrends = new Chart(ctx.getContext('2d'), {
         type: 'line',
         data: {
             labels: months.map(formatMonthShort),
@@ -134,14 +161,15 @@ function createDepartmentTrendsChart(chartData, months, departments) {
                 borderColor: colorsByDepartment[dept] || "#ccc", borderWidth: 2, fill: false, tension: 0.3
             }))
         },
-        options: { ...globalChartOptions, animation: { y: { from: 500 } }, plugins: { legend: { position: 'bottom' }, tooltip: { callbacks: { label: (context) => `${context.dataset.label}: ${formatCurrencyBRL(context.parsed.y)}` } } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
+        options: { ...globalChartOptions, plugins: { legend: { position: 'bottom' }, tooltip: { callbacks: { label: (context) => `${context.dataset.label}: ${formatCurrencyBRL(context.parsed.y)}` } } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) } } } }
     });
-    charts.departmentTrends = chart; // Store chart instance
 }
 
 function createAvgExpenditureChart(chartData, months) {
     const ctx = document.getElementById('avg-expenditure-chart');
     if (!ctx) return;
+    const isDarkMode = document.body.classList.contains('dark');
+    const mainColor = isDarkMode ? darkModeColors.main : '#024B59';
     charts.avgExpenditure = new Chart(ctx.getContext('2d'), {
         type: 'line',
         data: {
@@ -149,26 +177,28 @@ function createAvgExpenditureChart(chartData, months) {
             datasets: [{
                 label: 'Média de Gastos por Funcionário',
                 data: months.map(month => (chartData[month]?.totalEmployees > 0) ? chartData[month].total / chartData[month].totalEmployees : 0),
-                borderColor: '#024B59', backgroundColor: hexToRGBA('#024B59', 0.1), borderWidth: 2, fill: true, tension: 0.4
+                borderColor: mainColor, backgroundColor: hexToRGBA(mainColor, 0.1), borderWidth: 2, fill: true, tension: 0.4
             }]
         },
-        options: { ...globalChartOptions, animation: { y: { from: 500 } }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `Média: ${formatCurrencyBRL(context.parsed.y)}` } } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) }, grace: '10%' } } }
+        options: { ...globalChartOptions, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `Média: ${formatCurrencyBRL(context.parsed.y)}` } } }, scales: { y: { ticks: { callback: (value) => formatCurrencyBRL(value) }, grace: '10%' } } }
     });
 }
 
 function createEmployeesChart(chartData, months) {
     const ctx = document.getElementById('employees-chart');
     if (!ctx) return;
+    const isDarkMode = document.body.classList.contains('dark');
+    const mainColor = isDarkMode ? darkModeColors.main : '#024B59';
     charts.employees = new Chart(ctx.getContext('2d'), {
         type: 'line',
         data: {
             labels: months.map(formatMonthShort),
             datasets: [{
                 label: 'Total de Funcionários', data: months.map(month => chartData[month]?.totalEmployees || 0),
-                borderColor: '#024B59', backgroundColor: hexToRGBA('#024B59', 0.1), borderWidth: 2, fill: true, tension: 0.4
+                borderColor: mainColor, backgroundColor: hexToRGBA(mainColor, 0.1), borderWidth: 2, fill: true, tension: 0.4
             }]
         },
-        options: { ...globalChartOptions, animation: { y: { from: 500 } }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `Total: ${context.parsed.y}` } } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+        options: { ...globalChartOptions, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `Total: ${context.parsed.y}` } } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
     });
 }
 
@@ -188,7 +218,7 @@ function createPercentageStackedChart(chartData, months, departments) {
                 backgroundColor: colorsByDepartment[dept] || "#ccc"
             }))
         },
-        options: { ...globalChartOptions, animation: { y: { from: 500 } }, plugins: { legend: { position: 'right' }, tooltip: { callbacks: { label: (context) => `${context.dataset.label}: ${context.parsed.y.toFixed(2)}%` } } }, scales: { x: { stacked: true }, y: { stacked: true, max: 100, ticks: { callback: (value) => value + "%" } } } }
+        options: { ...globalChartOptions, plugins: { legend: { position: 'right' }, tooltip: { callbacks: { label: (context) => `${context.dataset.label}: ${context.parsed.y.toFixed(2)}%` } } }, scales: { x: { stacked: true }, y: { stacked: true, max: 100, ticks: { callback: (value) => value + "%" } } } }
     });
 }
 
@@ -203,7 +233,7 @@ function setupDepartmentBreakdown() {
                 <button class="filter-btn pie-time-btn" data-months="1">1 Mês</button>
                 <button class="filter-btn pie-time-btn" data-months="3">3 Meses</button>
                 <button class="filter-btn pie-time-btn active" data-months="6">6 Meses</button>
-                <button class.="filter-btn pie-time-btn" data-months="12">12 Meses</button>
+                <button class="filter-btn pie-time-btn" data-months="12">12 Meses</button>
             </div>
         </div>
         <div class="pie-chart-main-content">
@@ -350,7 +380,7 @@ function updateDepartmentBreakdownCharts() {
                     datasets: [{
                         data: filteredDeptData.map(d => d.value),
                         backgroundColor: filteredDeptData.map(d => colorsByDepartment[d.name] || "#ccc"),
-                        borderWidth: 1
+                        borderWidth: 0 // Removed white border
                     }]
                 },
                 options: {
