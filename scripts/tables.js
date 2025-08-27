@@ -176,3 +176,4 @@ function generateEarningsTable() {
     section.appendChild(table);
     container.appendChild(section);
 }
+ 
