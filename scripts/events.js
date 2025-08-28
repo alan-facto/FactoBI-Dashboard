@@ -5,39 +5,51 @@
  * event listeners and performing the initial render.
  */
 export function initEventsView() {
+    // First, check if the main container for this view exists.
+    const eventsViewContainer = document.getElementById('events-view');
+    if (!eventsViewContainer) {
+        // If the container isn't on the page, don't try to initialize the script.
+        // This prevents errors when the app loads, as this script might run
+        // before the user has navigated to the "Eventos" tab.
+        console.warn('Events view container not found. Skipping initialization.');
+        return;
+    }
+
     // --- STATE ---
     // Holds the current date for calendar navigation.
     let currentDate = new Date();
     // Holds the list of currently selected categories for filtering.
     let selectedCategories = [];
 
-    // --- DOM ELEMENTS ---
-    const agendaContainer = document.getElementById('agenda-container');
-    const budgetsContainer = document.getElementById('budgets-container');
-    const briefingsContainer = document.getElementById('briefings-container');
-    const calendarWrapper = document.getElementById('calendar-wrapper');
-    const listWrapper = document.getElementById('list-wrapper');
-    const filterSidebar = document.getElementById('filter-sidebar');
-    const toggleFiltersBtn = document.getElementById('toggle-filters-btn');
-    const agendaWrapper = document.getElementById('agenda-wrapper');
-    const calendarGrid = document.querySelector('#events-view .calendar-grid');
-    const currentMonthYearEl = document.getElementById('current-month-year');
-    const legendFilterList = document.getElementById('legend-filter-list');
+    // --- DOM ELEMENTS (scoped to the eventsViewContainer) ---
+    const agendaContainer = eventsViewContainer.querySelector('#agenda-container');
+    const budgetsContainer = eventsViewContainer.querySelector('#budgets-container');
+    const briefingsContainer = eventsViewContainer.querySelector('#briefings-container');
+    const calendarWrapper = eventsViewContainer.querySelector('#calendar-wrapper');
+    const listWrapper = eventsViewContainer.querySelector('#list-wrapper');
+    const filterSidebar = eventsViewContainer.querySelector('#filter-sidebar');
+    const toggleFiltersBtn = eventsViewContainer.querySelector('#toggle-filters-btn');
+    const agendaWrapper = eventsViewContainer.querySelector('#agenda-wrapper');
+    const calendarGrid = eventsViewContainer.querySelector('.calendar-grid');
+    const currentMonthYearEl = eventsViewContainer.querySelector('#current-month-year');
+    const legendFilterList = eventsViewContainer.querySelector('#legend-filter-list');
+    
+    // Global modals are not inside the view container
     const datePickerModal = document.getElementById('date-picker-modal');
     const monthSelect = document.getElementById('month-select');
     const yearInput = document.getElementById('year-input');
     
     // Configuration for main view toggles (Agenda, Budgets, Briefings)
     const viewToggles = [
-        { btn: document.getElementById('view-toggle-agenda'), container: agendaContainer },
-        { btn: document.getElementById('view-toggle-budgets'), container: budgetsContainer },
-        { btn: document.getElementById('view-toggle-briefings'), container: briefingsContainer },
+        { btn: eventsViewContainer.querySelector('#view-toggle-agenda'), container: agendaContainer },
+        { btn: eventsViewContainer.querySelector('#view-toggle-budgets'), container: budgetsContainer },
+        { btn: eventsViewContainer.querySelector('#view-toggle-briefings'), container: briefingsContainer },
     ];
     
     // Configuration for sub-view toggles within Agenda (Calendar, List)
     const agendaViewToggles = [
-        { btn: document.getElementById('agenda-view-calendar'), container: calendarWrapper },
-        { btn: document.getElementById('agenda-view-list'), container: listWrapper },
+        { btn: eventsViewContainer.querySelector('#agenda-view-calendar'), container: calendarWrapper },
+        { btn: eventsViewContainer.querySelector('#agenda-view-list'), container: listWrapper },
     ];
 
     // --- MOCK DATA ---
@@ -91,7 +103,7 @@ export function initEventsView() {
         }
         
         // Initialize drag-and-drop functionality for events
-        document.querySelectorAll('.event-list').forEach(el => new Sortable(el, { 
+        eventsViewContainer.querySelectorAll('.event-list').forEach(el => new Sortable(el, { 
             group: 'shared', 
             animation: 150,
             onEnd: (evt) => {
@@ -205,8 +217,8 @@ export function initEventsView() {
     });
 
     // Calendar navigation
-    document.getElementById('prev-month')?.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); renderCalendar(); renderListView(); });
-    document.getElementById('next-month')?.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); renderCalendar(); renderListView(); });
+    eventsViewContainer.querySelector('#prev-month')?.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); renderCalendar(); renderListView(); });
+    eventsViewContainer.querySelector('#next-month')?.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); renderCalendar(); renderListView(); });
     
     // Filter sidebar toggle
     toggleFiltersBtn?.addEventListener('click', () => {
