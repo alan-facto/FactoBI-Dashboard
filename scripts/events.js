@@ -11,7 +11,6 @@ export function initEventsView() {
         // If the container isn't on the page, don't try to initialize the script.
         // This prevents errors when the app loads, as this script might run
         // before the user has navigated to the "Eventos" tab.
-        console.warn('Events view container not found. Skipping initialization.');
         return;
     }
 
