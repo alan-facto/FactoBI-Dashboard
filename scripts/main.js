@@ -1,243 +1,394 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Painel Financeiro</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles/style.css">
-  <link rel="stylesheet" href="styles/login.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-  <link rel="icon" href="data:,">
-</head>
-<body>
+// Import necessary functions from the Firebase SDK
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, getDocs, query, where, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-  <!-- Loading View -->
-  <div id="loading-view" class="auth-view" style="display: flex;">
-      <div class="spinner"></div>
-      <p>Carregando...</p>
-  </div>
+// Import view-specific modules
+import { initExpensesView } from './expenses.js';
+import { initEarningsView } from './earnings.js';
+import { initTablesView } from './tables.js';
+import { initEventsView } from './events.js';
 
-  <!-- Main Dashboard Structure -->
-  <div id="dashboard-wrapper" class="dashboard-wrapper" style="display: none;">
-    <!-- Sidebar Navigation -->
-    <nav id="sidebar-nav" class="sidebar-nav">
-      <div>
-        <div class="sidebar-header">
-          <button id="hamburger-btn" class="hamburger-btn">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
-          </button>
-          <h1 class="sidebar-title">Dashboard</h1>
-        </div>
-        <ul id="nav-list" class="nav-list">
-          <!-- JS will populate this -->
-        </ul>
-      </div>
+// --- Firebase Configuration ---
+const firebaseConfig = {
+  apiKey: "AIzaSyDuXzhFCIUICOV4xrf7uYl3hYPAQp6qhbs",
+  authDomain: "financialdashboard-a60a6.firebaseapp.com",
+  projectId: "financialdashboard-a60a6",
+  storageBucket: "financialdashboard-a60a6.appspot.com",
+  messagingSenderId: "876071686917",
+  appId: "1:876071686917:web:4c1fc89d1fc21fdec49d6c",
+  measurementId: "G-C8GQJJR945"
+};
 
-      <div class="sidebar-footer">
-        <!-- Theme Toggle -->
-        <div class="theme-toggle-wrapper">
-            <div id="theme-toggle" class="theme-toggle">
-                <svg id="sun-icon" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 14.464A1 1 0 106.465 13.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM4 10a1 1 0 01-1-1H2a1 1 0 110-2h1a1 1 0 011 1zm2.122-5.607a1 1 0 011.414 0l.706.707a1 1 0 11-1.414 1.414l-.707-.707a1 1 0 010-1.414z"></path></svg>
-                <svg id="moon-icon" class="w-5 h-5 hidden" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
-            </div>
-        </div>
-        <div class="user-info-wrapper">
-            <div class="user-info">
-                <img id="user-avatar-img" src="https://placehold.co/40x40/024B59/FFFFFF?text=A" alt="User Avatar" class="user-avatar">
-                <div class="user-details">
-                    <p id="user-name-display" class="user-name nav-text">Usuário</p>
-                    <p id="user-role-display" class="user-role nav-text" style="display: none;"></p>
-                </div>
-            </div>
-          <button id="logout-btn" class="logout-btn">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-            <span class="nav-text">Sair</span>
-          </button>
-        </div>
-      </div>
-    </nav>
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
 
-    <!-- Main Content -->
-    <main class="main-content">
-        <h1 id="view-title-main" class="view-title">Visão Geral</h1>
-        <!-- Views Container -->
-        <div id="views-container">
-            <!-- Gastos (Expenses) View -->
-            <div id="charts-view" style="display: none;">
-              <!-- Row 1: Total Expenditures -->
-              <div class="chart-row single" id="total-expenditures-wrapper">
-                <div class="card">
-                  <h2>Gastos Totais ao Longo do Tempo</h2>
-                  <div class="centered-toggle">
-                    <div class="time-filters toggle-switch-group">
-                      <button class="filter-btn time-btn" data-months="3">3 Meses</button>
-                      <button class="filter-btn time-btn" data-months="6">6 Meses</button>
-                      <button class="filter-btn time-btn active" data-months="12">12 Meses</button>
-                    </div>
-                  </div>
-                  <div class="filter-buttons-wrapper">
-                    <!-- Department buttons will be generated by JS -->
-                  </div>
-                  <div class="chart-container">
-                    <canvas id="total-expenditures-chart"></canvas>
-                  </div>
-                </div>
-              </div>
+// --- Global Variables & Shared State ---
+export let data = { months: [], departments: [], data: {} };
+export let charts = {};
+let currentUserDocRef = null;
 
-              <!-- Row 2: Department Trends -->
-              <div class="chart-row single" id="department-trends-wrapper">
-                <div class="card">
-                  <h2>Gastos por Departamento</h2>
-                  <div class="centered-toggle">
-                    <div class="time-filters toggle-switch-group">
-                      <button class="filter-btn time-btn" data-months="3">3 Meses</button>
-                      <button class="filter-btn time-btn" data-months="6">6 Meses</button>
-                      <button class="filter-btn time-btn active" data-months="12">12 Meses</button>
-                    </div>
-                  </div>
-                   <div class="centered-toggle">
-                    <div class="filter-buttons toggle-switch-group">
-                        <button class="filter-btn active" data-departments='all'>Mostrar Todos</button>
-                        <button class="filter-btn" data-departments='["Comercial","Diretoria","Operação"]'>Principais</button>
-                        <button class="filter-btn" data-departments='["Administrativo","RH","NEC","Apoio","Marketing","Jurídico","Planejamento Estratégico"]'>Demais</button>
-                    </div>
-                  </div>
-                  <div class="chart-container">
-                    <canvas id="department-trends-chart"></canvas>
-                  </div>
-                </div>
-              </div>
+export const colorsByDepartment = {
+    "Administrativo": "#6B5B95", "Apoio": "#FF6F61", "Comercial": "#E44D42",
+    "Diretoria": "#0072B5", "Jurídico": "#2E8B57", "Marketing": "#FFA500",
+    "NEC": "#9370DB", "Operação": "#00A86B", "RH": "#FF69B4",
+    "Planejamento Estratégico": "#D95F02"
+};
+export const darkModeColors = {
+    main: '#0DEB89'
+};
 
-              <!-- Row 3: Average Expenditure & Employees -->
-              <div class="chart-row double">
-                <div class="card">
-                  <h2>Média de Gastos por Funcionário</h2>
-                  <div class="chart-container">
-                    <canvas id="avg-expenditure-chart"></canvas>
-                  </div>
-                </div>
-                <div class="card">
-                  <h2>Total de Funcionários</h2>
-                  <div class="chart-container">
-                    <canvas id="employees-chart"></canvas>
-                  </div>
-                </div>
-              </div>
+export const globalChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: {
+        duration: 800
+    }
+};
 
-              <!-- Row 4: Department Breakdown (Pie Charts) -->
-              <div class="chart-row single">
-                <div class="card" id="department-breakdown-wrapper">
-                  <!-- Content generated by JS -->
-                </div>
-              </div>
+// --- Utility Functions ---
+export function hexToRGBA(hex, alpha = 1) {
+    const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
 
-              <!-- Row 5: Percentage Stacked -->
-              <div class="chart-row single">
-                <div class="card">
-                  <h2>Participação por Departamento</h2>
-                  <div class="chart-container">
-                    <canvas id="percentage-stacked-chart"></canvas>
-                  </div>
-                </div>
-              </div>
-            </div>
+export function formatMonthLabel(monthStr) {
+    if (!monthStr || !monthStr.includes('-')) return "Invalid Date";
+    const [year, month] = monthStr.split("-");
+    const monthsPt = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+    return `${monthsPt[parseInt(month) - 1]}/${year}`;
+}
 
-            <!-- Faturamento (Earnings) View -->
-            <div id="earnings-view" style="display: none;">
-                <!-- Row 1: Earnings vs Total Costs -->
-                <div class="chart-row single">
-                    <div class="card">
-                        <h2>Faturamento vs. Gastos Totais</h2>
-                        <div class="chart-container">
-                            <canvas id="earnings-vs-costs-chart"></canvas>
-                        </div>
-                    </div>
-                </div>
+export function formatMonthShort(monthStr) {
+    if (!monthStr || !monthStr.includes('-')) return "";
+    const [year, month] = monthStr.split("-");
+    return `${month}/${year.slice(2)}`;
+}
 
-                <!-- Row 2: Net Difference -->
-                <div class="chart-row single">
-                    <div class="card">
-                        <h2>Diferença Líquida Mensal</h2>
-                        <div class="chart-container">
-                            <canvas id="net-profit-loss-chart"></canvas>
-                        </div>
-                    </div>
-                </div>
+export function formatCurrencyBRL(value) {
+    return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
 
-                <!-- Row 3: Profit Margin Percentage -->
-                <div class="chart-row single">
-                    <div class="card">
-                        <h2>Margem de Diferença Percentual</h2>
-                        <div class="chart-container">
-                            <canvas id="profit-margin-chart"></canvas>
-                        </div>
-                    </div>
-                </div>
+export function formatVA(value, month) {
+    if (month < '2025-01' && (value === 0 || value === null || value === undefined)) {
+        return 'N/A';
+    }
+    return formatCurrencyBRL(value);
+}
 
-                <!-- Row 4: Earnings Allocation -->
-                <div class="chart-row single">
-                    <div class="card" id="earnings-allocation-card">
-                        <h2>Alocação de Faturamento</h2>
-                        <div class="centered-toggle">
-                            <div class="toggle-switch-group">
-                                <button class="filter-btn active" data-mode="headcount">Headcount</button>
-                                <button class="filter-btn" data-mode="costs">Custos</button>
-                            </div>
-                        </div>
-                        <div class="chart-container" style="height: 500px;">
-                            <canvas id="earnings-allocation-chart"></canvas>
-                        </div>
-                    </div>
-                </div>
+// --- Mappings and Helpers ---
+const deptMap = {
+    "Administrativo Financeiro": "Administrativo", "Apoio": "Apoio", "Comercial": "Comercial",
+    "Diretoria": "Diretoria", "Direção": "Diretoria",
+    "Jurídico Externo": "Jurídico", "Marketing": "Marketing",
+    "NEC": "NEC", "Operação Geral": "Operação", "RH / Departamento Pessoal": "RH",
+    "Planejamento Estratégico": "Planejamento Estratégico"
+};
 
-                <!-- Row 5: Earnings per Employee -->
-                <div class="chart-row single">
-                    <div class="card" id="earnings-per-employee-card">
-                        <h2>Faturamento por Funcionário</h2>
-                        <div class="centered-toggle">
-                            <div class="filter-buttons toggle-switch-group">
-                                <button class="filter-btn active" data-mode="company">Geral</button>
-                                <button class="filter-btn" data-mode="operation">Operação</button>
-                            </div>
-                        </div>
-                        <div class="chart-container">
-                            <canvas id="earnings-per-employee-chart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
+function convertMonthToYYYYMM(monthStr) {
+    if (!monthStr || typeof monthStr !== 'string') return null;
+    const s = monthStr.trim();
+    let match = s.match(/^(\d{4})-(\d{2})/);
+    if (match) return `${match[1]}-${match[2]}`;
+    match = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (match) return `${match[3]}-${match[2].padStart(2, '0')}`;
+    match = s.match(/^(\d{1,2})\/(\d{4})$/);
+    if (match) return `${match[2]}-${match[1].padStart(2, '0')}`;
+    match = s.match(/(\w{3,})\.-(\d{2})$/i);
+    if (match) {
+        const monthAbbr = match[1].substring(0, 3).toLowerCase();
+        const yearShort = match[2];
+        const yearFull = parseInt(yearShort, 10) < 70 ? `20${yearShort}` : `19${yearShort}`;
+        const monthMap = { "jan": "01", "fev": "02", "mar": "03", "abr": "04", "mai": "05", "jun": "06", "jul": "07", "ago": "08", "set": "09", "out": "10", "nov": "11", "dez": "12" };
+        const monthNum = monthMap[monthAbbr];
+        if (monthNum) return `${yearFull}-${monthNum}`;
+    }
+    console.warn('Unrecognized month format:', s);
+    return null;
+}
 
-            <!-- Tabelas (Tables) View -->
-            <div id="tables-view" style="display: none;">
-              <div class="card">
-                <div class="table-toggle-container">
-                  <button id="btn-summary-month" class="table-toggle-btn active">Resumo por Mês</button>
-                  <button id="btn-summary-department" class="table-toggle-btn">Resumo por Departamento</button>
-                  <button id="btn-detailed-month" class="table-toggle-btn">Detalhado por Mês</button>
-                  <button id="btn-detailed-department" class="table-toggle-btn">Detalhado por Departamento</button>
-                  <button id="btn-earnings-table" class="table-toggle-btn">Faturamento</button>
-                </div>
+// --- DOM Elements ---
+const loadingView = document.getElementById('loading-view');
+const dashboardWrapper = document.getElementById('dashboard-wrapper');
+const logoutBtn = document.getElementById("logout-btn");
+const hamburgerBtn = document.getElementById('hamburger-btn');
+const sidebar = document.getElementById('sidebar-nav');
+const themeToggle = document.getElementById('theme-toggle');
+const sunIcon = document.getElementById('sun-icon');
+const moonIcon = document.getElementById('moon-icon');
 
-                <div id="table-summary-month" style="display: block;"></div>
-                <div id="table-summary-department" style="display: none;"></div>
-                <div id="table-detailed-month" style="display: none;"></div>
-                <div id="table-detailed-department" style="display: none;"></div>
-                <div id="table-earnings" style="display: none;"></div>
-              </div>
-            </div>
+// --- Main Application Flow ---
+
+onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        await checkAuthorization(user);
+    } else {
+        currentUserDocRef = null;
+        window.location.href = '/login.html';
+    }
+});
+
+async function checkAuthorization(user) {
+    try {
+        const q = query(collection(db, "authorizedUsers"), where("email", "==", user.email));
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+            const userDoc = querySnapshot.docs[0];
+            currentUserDocRef = userDoc.ref;
+            const userData = userDoc.data();
+
+            const userAvatar = document.getElementById('user-avatar-img');
+            const userNameDisplay = document.getElementById('user-name-display');
+            const userRoleDisplay = document.getElementById('user-role-display');
             
-            <!-- Eventos (Events) View -->
-            <div id="events-view-content" style="display: none;">
-                <!-- This will be populated by events.js -->
-            </div>
-        </div>
-    </main>
-  </div>
+            userNameDisplay.textContent = user.displayName || 'Usuário';
+            if (user.photoURL) {
+                userAvatar.src = user.photoURL;
+            }
+            if (userData.role) {
+                userRoleDisplay.textContent = userData.role;
+                userRoleDisplay.style.display = 'block';
+            } else {
+                 userNameDisplay.style.lineHeight = '2.5rem'; // Center name vertically if no role
+            }
 
-  <script type="module" src="scripts/main.js"></script>
-</body>
-</html>
+            if (userData.theme === 'dark') {
+                document.body.classList.add('dark');
+                sunIcon.classList.add('hidden');
+                moonIcon.classList.remove('hidden');
+            } else {
+                document.body.classList.remove('dark');
+                sunIcon.classList.remove('hidden');
+                moonIcon.classList.add('hidden');
+            }
+            
+            await loadDashboardData();
+            loadingView.style.display = 'none';
+            dashboardWrapper.style.display = 'flex';
+        } else {
+            alert(`A conta ${user.email} não tem permissão de acesso.`);
+            await signOut(auth);
+        }
+    } catch (error) {
+        console.error("Authorization check error:", error);
+        alert("Erro ao verificar permissão. Tente novamente.");
+        await signOut(auth);
+    }
+}
+
+async function loadDashboardData() {
+    try {
+        const [expendituresSnapshot, earningsSnapshot] = await Promise.all([
+            getDocs(collection(db, "expenditures")),
+            getDocs(collection(db, "earnings"))
+        ]);
+
+        const fetchedRows = expendituresSnapshot.docs.map(doc => doc.data());
+        const earningsData = earningsSnapshot.docs.map(doc => doc.data());
+
+        if (!fetchedRows.length && !earningsData.length) {
+            throw new Error("No expenditure or earnings data found in Firestore.");
+        }
+
+        const monthsSet = new Set();
+        const departmentsSet = new Set();
+        const structuredData = {};
+
+        [...fetchedRows, ...earningsData].forEach(row => {
+            const monthKey = convertMonthToYYYYMM(row["Month"] || row["Mês"]);
+            if (monthKey) monthsSet.add(monthKey);
+        });
+
+        monthsSet.forEach(month => {
+            if (!structuredData[month]) {
+                structuredData[month] = { departments: {}, total: 0, totalEmployees: 0, earnings: 0 };
+            }
+        });
+
+        fetchedRows.forEach(row => {
+            const monthKey = convertMonthToYYYYMM(row["Month"]);
+            if (!monthKey || !structuredData[monthKey]) return;
+            const rawDept = row["Department"];
+            const dept = deptMap[rawDept] || rawDept;
+            const total = parseFloat(String(row["Total"]).replace(',', '.')) || 0;
+            const bonificacao = parseFloat(String(row["Bonificacao 20"]).replace(',', '.')) || 0;
+            const valeAlimentacao = parseFloat(String(row["Vale Alimentação"]).replace(',', '.')) || 0;
+            const count = parseInt(row["Employee Count"]) || 0;
+            const geral = total + bonificacao;
+
+            if (dept && dept.toLowerCase() !== "total geral") {
+                departmentsSet.add(dept);
+                if (!structuredData[monthKey].departments[dept]) {
+                    structuredData[monthKey].departments[dept] = { total: 0, bonificacao: 0, valeAlimentacao: 0, count: 0, geral: 0 };
+                }
+                structuredData[monthKey].departments[dept].total += total;
+                structuredData[monthKey].departments[dept].bonificacao += bonificacao;
+                structuredData[monthKey].departments[dept].valeAlimentacao += valeAlimentacao;
+                structuredData[monthKey].departments[dept].count += count;
+                structuredData[monthKey].departments[dept].geral += geral;
+
+                structuredData[monthKey].total += geral;
+                structuredData[monthKey].totalEmployees += count;
+            }
+        });
+
+        earningsData.forEach(row => {
+            const monthKey = convertMonthToYYYYMM(row["Mês"]);
+            const faturamentoStr = row["Faturamento"];
+            if (monthKey && faturamentoStr && structuredData[monthKey]) {
+                const faturamentoValue = typeof faturamentoStr === 'number' ? faturamentoStr : parseFloat(String(faturamentoStr).replace(/["R$\s.]/g, '').replace(',', '.')) || 0;
+                structuredData[monthKey].earnings = faturamentoValue;
+            }
+        });
+        
+        data.months = Array.from(monthsSet).sort();
+        data.departments = Array.from(departmentsSet).sort();
+        data.data = structuredData;
+
+        initDashboard();
+
+    } catch (error) {
+        console.error("Error loading data from Firestore:", error);
+        showError(`Falha ao carregar os dados: ${error.message}`);
+    }
+}
+
+function updateChartTheme() {
+    const isDarkMode = document.body.classList.contains('dark');
+    const fontColor = isDarkMode ? 'rgba(255, 255, 255, 0.8)' : '#333';
+    const gridColor = isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+    const mainLineColor = isDarkMode ? darkModeColors.main : '#024B59';
+
+    Chart.defaults.color = fontColor;
+    
+    Object.values(charts).forEach(chartInstance => {
+        if (chartInstance && chartInstance.options) {
+            if (chartInstance.options.scales) {
+                Object.keys(chartInstance.options.scales).forEach(axis => {
+                    chartInstance.options.scales[axis].ticks.color = fontColor;
+                    chartInstance.options.scales[axis].grid.color = gridColor;
+                });
+            }
+            if (chartInstance.options.plugins && chartInstance.options.plugins.legend) {
+                chartInstance.options.plugins.legend.labels.color = fontColor;
+            }
+            chartInstance.data.datasets.forEach(dataset => {
+                if (dataset.isMainLine) {
+                    dataset.borderColor = mainLineColor;
+                    dataset.backgroundColor = hexToRGBA(mainLineColor, 0.1);
+                    dataset.pointBackgroundColor = mainLineColor;
+                }
+                 if (dataset.isNetProfit) {
+                    dataset.backgroundColor = dataset.data.map(val => val >= 0 ? mainLineColor : '#E44D42');
+                }
+            });
+            chartInstance.update();
+        }
+    });
+}
+
+
+function initDashboard() {
+    setupSidebar();
+    
+    initExpensesView();
+    initEarningsView();
+    initTablesView();
+    initEventsView();
+    
+    updateChartTheme();
+
+    document.querySelector('#nav-list .nav-link')?.click();
+}
+
+function setupSidebar() {
+    const navList = document.getElementById('nav-list');
+    const viewTitle = document.getElementById('view-title-main');
+    const views = document.querySelectorAll('#views-container > div');
+
+    const navLinksConfig = [
+        { id: 'btn-expenses-main', text: 'Gastos', viewId: 'charts-view', icon: `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V7a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>`, roles: ['admin', 'finance'] },
+        { id: 'btn-earnings-main', text: 'Faturamento', viewId: 'earnings-view', icon: `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>`, roles: ['admin', 'finance'] },
+        { id: 'btn-tables-main', text: 'Tabelas', viewId: 'tables-view', icon: `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>`, roles: ['admin'] },
+        { id: 'btn-events-main', text: 'Eventos', viewId: 'events-view-content', icon: `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>`, roles: ['admin', 'hr', 'finance'] }
+    ];
+    let currentUserRole = 'admin';
+
+    navList.innerHTML = ''; 
+    const filteredLinks = navLinksConfig.filter(link => link.roles.includes(currentUserRole));
+    filteredLinks.forEach(link => {
+        const li = document.createElement('li');
+        li.innerHTML = `<a href="#" id="${link.id}" data-view="${link.viewId}" class="nav-link">${link.icon}<span class="nav-text">${link.text}</span></a>`;
+        navList.appendChild(li);
+    });
+
+    const navLinks = document.querySelectorAll('.nav-link');
+    navLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            navLinks.forEach(l => l.classList.remove('active'));
+            link.classList.add('active');
+            
+            const viewId = link.dataset.view;
+            const linkConfig = navLinksConfig.find(c => c.viewId === viewId);
+            
+            views.forEach(view => {
+                view.style.display = view.id === viewId ? 'flex' : 'none';
+            });
+            
+            if (linkConfig) {
+                 viewTitle.textContent = linkConfig.text;
+            }
+
+            if (viewId === 'tables-view') {
+                const activeTableButton = document.querySelector('.table-toggle-btn.active');
+                if (!activeTableButton) {
+                    document.getElementById('btn-summary-month')?.click();
+                }
+            }
+        });
+    });
+
+    hamburgerBtn.addEventListener('click', () => {
+        sidebar.classList.toggle('collapsed');
+        setTimeout(() => {
+            Object.values(charts).forEach(chartInstance => {
+                if (chartInstance && typeof chartInstance.resize === 'function') {
+                    chartInstance.resize();
+                }
+            });
+        }, 350); 
+    });
+
+    themeToggle.addEventListener('click', async () => {
+        document.body.classList.toggle('dark');
+        sunIcon.classList.toggle('hidden');
+        moonIcon.classList.toggle('hidden');
+        updateChartTheme();
+
+        if (currentUserDocRef) {
+            const newTheme = document.body.classList.contains('dark') ? 'dark' : 'light';
+            try {
+                await setDoc(currentUserDocRef, { theme: newTheme }, { merge: true });
+            } catch (error) {
+                console.error("Error saving theme preference:", error);
+            }
+        }
+    });
+}
+
+function showError(message) {
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent) {
+        mainContent.innerHTML = `<div class="error-message"><h2>Erro</h2><p>${message}</p><button onclick="window.location.reload()">Recarregar Página</button></div>`;
+    }
+    loadingView.style.display = 'none';
+    dashboardWrapper.style.display = 'flex';
+}
+
+logoutBtn.addEventListener('click', async () => {
+    await signOut(auth);
+});
