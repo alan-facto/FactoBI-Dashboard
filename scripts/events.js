@@ -129,71 +129,78 @@ export function initEventsView() {
 
     // --- EVENT LISTENERS ---
     viewToggles.forEach(toggle => {
-        toggle.btn.addEventListener('click', () => {
-            viewToggles.forEach(t => {
-                t.container.classList.add('hidden');
-                t.btn.classList.remove('bg-white', 'text-[#024B59]');
-                t.btn.classList.add('text-white');
+        if (toggle.btn) {
+            toggle.btn.addEventListener('click', () => {
+                viewToggles.forEach(t => {
+                    t.container.classList.add('hidden');
+                    t.btn.classList.remove('bg-white', 'text-[#024B59]');
+                    t.btn.classList.add('text-white');
+                });
+                toggle.container.classList.remove('hidden');
+                toggle.btn.classList.add('bg-white', 'text-[#024B59]');
+                toggle.btn.classList.remove('text-white');
+                
+                const isAgenda = toggle.container === agendaContainer;
+                toggleFiltersBtn.style.display = isAgenda ? 'flex' : 'none';
+                if (!isAgenda) {
+                    filterSidebar.classList.add('w-0', 'p-0');
+                }
             });
-            toggle.container.classList.remove('hidden');
-            toggle.btn.classList.add('bg-white', 'text-[#024B59]');
-            toggle.btn.classList.remove('text-white');
-            
-            const isAgenda = toggle.container === agendaContainer;
-            toggleFiltersBtn.style.display = isAgenda ? 'flex' : 'none';
-            if (!isAgenda) {
-                filterSidebar.classList.add('w-0', 'p-0');
-            }
-        });
+        }
     });
     
     agendaViewToggles.forEach(toggle => {
-        toggle.btn.addEventListener('click', () => {
-             agendaViewToggles.forEach(t => {
-                t.container.classList.add('hidden');
-                t.btn.classList.remove('bg-white', 'text-[#024B59]');
-                t.btn.classList.add('text-gray-600');
+        if (toggle.btn) {
+            toggle.btn.addEventListener('click', () => {
+                 agendaViewToggles.forEach(t => {
+                    t.container.classList.add('hidden');
+                    t.btn.classList.remove('bg-white', 'text-[#024B59]');
+                    t.btn.classList.add('text-gray-600');
+                });
+                toggle.container.classList.remove('hidden');
+                toggle.btn.classList.add('bg-white', 'text-[#024B59]');
+                toggle.btn.classList.remove('text-gray-600');
+                renderListView();
             });
-            toggle.container.classList.remove('hidden');
-            toggle.btn.classList.add('bg-white', 'text-[#024B59]');
-            toggle.btn.classList.remove('text-gray-600');
-            renderListView();
-        });
-    });
-
-    prevMonthBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); renderCalendar(); renderListView(); });
-    nextMonthBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); renderCalendar(); renderListView(); });
-
-    const months = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-    monthSelect.innerHTML = months.map((m, i) => `<option value="${i}">${m}</option>`).join('');
-    currentMonthYearEl.addEventListener('click', () => { datePickerModal.classList.remove('hidden'); datePickerModal.classList.add('flex'); });
-    document.getElementById('cancel-date-picker').addEventListener('click', () => datePickerModal.classList.add('hidden'));
-    document.getElementById('go-to-date').addEventListener('click', () => { currentDate = new Date(yearInput.value, monthSelect.value, 1); renderCalendar(); renderListView(); datePickerModal.classList.add('hidden'); });
-    
-    legendFilterList.addEventListener('click', (e) => {
-        const item = e.target.closest('.legend-item');
-        if (item) {
-            const category = item.dataset.category;
-            const index = selectedCategories.indexOf(category);
-            if (index > -1) {
-                selectedCategories.splice(index, 1);
-            } else {
-                selectedCategories.push(category);
-            }
-            item.classList.toggle('opacity-40');
-            renderListView();
         }
     });
 
-    toggleFiltersBtn.addEventListener('click', () => {
-        filterSidebar.classList.toggle('w-0');
-        filterSidebar.classList.toggle('w-56');
-        filterSidebar.classList.toggle('p-0');
-        filterSidebar.classList.toggle('p-6');
-    });
+    if (prevMonthBtn) prevMonthBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); renderCalendar(); renderListView(); });
+    if (nextMonthBtn) nextMonthBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); renderCalendar(); renderListView(); });
+
+    const months = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+    if (monthSelect) monthSelect.innerHTML = months.map((m, i) => `<option value="${i}">${m}</option>`).join('');
+    if (currentMonthYearEl) currentMonthYearEl.addEventListener('click', () => { datePickerModal.classList.remove('hidden'); datePickerModal.classList.add('flex'); });
+    if (document.getElementById('cancel-date-picker')) document.getElementById('cancel-date-picker').addEventListener('click', () => datePickerModal.classList.add('hidden'));
+    if (document.getElementById('go-to-date')) document.getElementById('go-to-date').addEventListener('click', () => { currentDate = new Date(yearInput.value, monthSelect.value, 1); renderCalendar(); renderListView(); datePickerModal.classList.add('hidden'); });
+    
+    if (legendFilterList) {
+        legendFilterList.addEventListener('click', (e) => {
+            const item = e.target.closest('.legend-item');
+            if (item) {
+                const category = item.dataset.category;
+                const index = selectedCategories.indexOf(category);
+                if (index > -1) {
+                    selectedCategories.splice(index, 1);
+                } else {
+                    selectedCategories.push(category);
+                }
+                item.classList.toggle('opacity-40');
+                renderListView();
+            }
+        });
+    }
+
+    if (toggleFiltersBtn) {
+        toggleFiltersBtn.addEventListener('click', () => {
+            filterSidebar.classList.toggle('w-0');
+            filterSidebar.classList.toggle('w-56');
+            filterSidebar.classList.toggle('p-0');
+            filterSidebar.classList.toggle('p-6');
+        });
+    }
 
     // Initial Render
-    renderCalendar();
-    renderLegend();
+    if(calendarGrid) renderCalendar();
+    if(legendFilterList) renderLegend();
 }
- 
