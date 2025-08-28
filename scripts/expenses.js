@@ -24,6 +24,7 @@ export function initExpensesView() {
 
 function setupTimeFilters() {
     const totalExpWrapper = document.getElementById('total-expenditures-wrapper');
+    if (!totalExpWrapper) return;
     const trendsWrapper = document.getElementById('department-trends-wrapper');
     
     const tryParseJSON = (jsonString) => {
@@ -453,4 +454,3 @@ function renderCustomLegend(container, chartData) {
     });
     container.appendChild(column);
 }
- 
