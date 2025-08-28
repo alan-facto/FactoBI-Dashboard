@@ -78,7 +78,21 @@
 
             <!-- Tabelas (Tables) View -->
             <div id="tables-view" style="display: none;">
-              <!-- Content for tables view -->
+              <div class="card">
+                <div class="table-toggle-container">
+                  <button id="btn-summary-month" class="table-toggle-btn active">Resumo por Mês</button>
+                  <button id="btn-summary-department" class="table-toggle-btn">Resumo por Departamento</button>
+                  <button id="btn-detailed-month" class="table-toggle-btn">Detalhado por Mês</button>
+                  <button id="btn-detailed-department" class="table-toggle-btn">Detalhado por Departamento</button>
+                  <button id="btn-earnings-table" class="table-toggle-btn">Faturamento</button>
+                </div>
+
+                <div id="table-summary-month" style="display: block;"></div>
+                <div id="table-summary-department" style="display: none;"></div>
+                <div id="table-detailed-month" style="display: none;"></div>
+                <div id="table-detailed-department" style="display: none;"></div>
+                <div id="table-earnings" style="display: none;"></div>
+              </div>
             </div>
             
             <!-- Eventos (Events) View -->
