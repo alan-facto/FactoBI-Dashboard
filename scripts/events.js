@@ -196,3 +196,4 @@ export function initEventsView() {
     renderCalendar();
     renderLegend();
 }
+ 
