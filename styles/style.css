@@ -34,6 +34,13 @@ body {
   transition: background-color 0.3s ease;
 }
 
+.view-title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #E5E7EB; /* Light gray for all modes */
+}
+
+
 #views-container > div {
     display: flex;
     flex-direction: column;
@@ -263,9 +270,6 @@ body {
 }
 .dark .main-content {
     background-color: #1a202c;
-}
-.dark .view-title {
-    color: var(--text-dark);
 }
 .dark .sidebar-nav {
     background-color: var(--bg-dark);
