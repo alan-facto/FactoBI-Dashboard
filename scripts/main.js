@@ -7,6 +7,7 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
 import { initExpensesView } from './expenses.js';
 import { initEarningsView } from './earnings.js';
 import { initTablesView } from './tables.js';
+import { initEventsView } from './events.js';
 
 // --- Firebase Configuration ---
 const firebaseConfig = {
@@ -296,6 +297,7 @@ function initDashboard() {
     initExpensesView();
     initEarningsView();
     initTablesView();
+    initEventsView();
     
     updateChartTheme();
 
@@ -311,7 +313,7 @@ function setupSidebar() {
         { id: 'btn-expenses-main', text: 'Gastos', viewId: 'charts-view', icon: `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V7a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>`, roles: ['admin', 'finance'] },
         { id: 'btn-earnings-main', text: 'Faturamento', viewId: 'earnings-view', icon: `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>`, roles: ['admin', 'finance'] },
         { id: 'btn-tables-main', text: 'Tabelas', viewId: 'tables-view', icon: `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>`, roles: ['admin'] },
-        { id: 'btn-calendar-main', text: 'Eventos', viewId: 'calendar-view', icon: `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>`, roles: ['admin', 'hr', 'finance'] }
+        { id: 'btn-events-main', text: 'Eventos', viewId: 'events-view-content', icon: `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>`, roles: ['admin', 'hr', 'finance'] }
     ];
     let currentUserRole = 'admin';
 
@@ -335,7 +337,9 @@ function setupSidebar() {
             
             views.forEach(view => view.style.display = view.id === viewId ? 'flex' : 'none');
             
-            if (linkConfig) viewTitle.textContent = linkConfig.text;
+            if (linkConfig) {
+                 document.getElementById('view-title-main').textContent = linkConfig.text;
+            }
 
             if (viewId === 'tables-view') {
                 const activeTableButton = document.querySelector('.table-toggle-btn.active');
