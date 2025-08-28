@@ -24,7 +24,7 @@ let selectedCategories = Object.keys(categoryColors);
 let calendarGrid, currentMonthYearEl, listWrapper, legendFilterList;
 
 // --- RENDER FUNCTIONS ---
-const renderCalendar = () => {
+function renderCalendar() {
     calendarGrid.innerHTML = `<div class="text-center font-semibold text-gray-500 p-2 border-r border-b text-xs sm:text-base">Dom</div><div class="text-center font-semibold text-gray-500 p-2 border-r border-b text-xs sm:text-base">Seg</div><div class="text-center font-semibold text-gray-500 p-2 border-r border-b text-xs sm:text-base">Ter</div><div class="text-center font-semibold text-gray-500 p-2 border-r border-b text-xs sm:text-base">Qua</div><div class="text-center font-semibold text-gray-500 p-2 border-r border-b text-xs sm:text-base">Qui</div><div class="text-center font-semibold text-gray-500 p-2 border-r border-b text-xs sm:text-base">Sex</div><div class="text-center font-semibold text-gray-500 p-2 border-r border-b text-xs sm:text-base">Sáb</div>`;
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
@@ -45,7 +45,7 @@ const renderCalendar = () => {
     }}));
 };
 
-const renderListView = () => {
+function renderListView() {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
     const filteredEvents = events
@@ -88,7 +88,7 @@ const renderListView = () => {
     }).join('');
 };
 
-const renderLegend = () => {
+function renderLegend() {
     legendFilterList.innerHTML = Object.entries(categoryColors).map(([category, colorClass]) => `
         <div class="flex items-center gap-2 cursor-pointer legend-item ${selectedCategories.includes(category) ? '' : 'opacity-40'}" data-category="${category}">
             <span class="w-4 h-4 rounded-full ${colorClass}"></span> ${category}
