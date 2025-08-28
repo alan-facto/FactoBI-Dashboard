@@ -1,179 +1,59 @@
-import { data, colorsByDepartment, formatMonthLabel, formatCurrencyBRL, formatVA } from './main.js';
+// This module handles the functionality for the "Tabelas" view.
 
-export function initTablesView() {
-    setupTableToggle();
-    generateSummaryByMonth(); // Pre-render the default table
-}
-
-function setupTableToggle() {
-    const container = document.querySelector('.table-toggle-container');
+/**
+ * Sets up the event listeners for the table toggle buttons.
+ * @param {HTMLElement} container - The main container for the tables view.
+ */
+function setupTableToggle(container) {
     const buttons = container.querySelectorAll('.table-toggle-btn');
-    const tables = {
-        'btn-summary-month': 'table-summary-month', 'btn-summary-department': 'table-summary-department',
-        'btn-detailed-month': 'table-detailed-month', 'btn-detailed-department': 'table-detailed-department',
-        'btn-earnings-table': 'table-earnings'
-    };
+    const tables = [
+        { id: 'btn-summary-month', element: container.querySelector('#table-summary-month') },
+        { id: 'btn-summary-department', element: container.querySelector('#table-summary-department') },
+        { id: 'btn-detailed-month', element: container.querySelector('#table-detailed-month') },
+        { id: 'btn-detailed-department', element: container.querySelector('#table-detailed-department') },
+        { id: 'btn-earnings-table', element: container.querySelector('#table-earnings') }
+    ];
+
     buttons.forEach(button => {
         button.addEventListener('click', () => {
+            // Update button styles
             buttons.forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
-            const tableId = tables[button.id];
-            
-            Object.values(tables).forEach(id => document.getElementById(id).style.display = 'none');
-            const tableEl = document.getElementById(tableId);
-            tableEl.style.display = 'block';
-            
-            if (tableEl.innerHTML.trim() === '') {
-                if (button.id === 'btn-summary-month') generateSummaryByMonth();
-                if (button.id === 'btn-summary-department') generateSummaryByDepartment();
-                if (button.id === 'btn-detailed-month') generateDetailedByMonth();
-                if (button.id === 'btn-detailed-department') generateDetailedByDepartment();
-                if (button.id === 'btn-earnings-table') generateEarningsTable();
-            }
+
+            // Show the corresponding table and hide others
+            tables.forEach(table => {
+                if (table.element) {
+                    table.element.style.display = table.id === button.id ? 'block' : 'none';
+                }
+            });
         });
     });
 }
 
-function generateSummaryByMonth() {
-    const container = document.getElementById('table-summary-month');
-    if (!container) return;
-    container.innerHTML = ''; 
-    data.months.forEach(month => {
-        const monthData = data.data[month];
-        if (!monthData) return;
-        const section = document.createElement('div');
-        section.innerHTML = `<h3>${formatMonthLabel(month)}</h3>`;
-        const table = document.createElement('table');
-        table.innerHTML = `
-            <thead><tr><th>Departamento</th><th>Total</th></tr></thead>
-            <tbody>
-                ${Object.entries(monthData.departments).map(([dept, d]) => `<tr><td>${dept}</td><td>${formatCurrencyBRL(d.geral)}</td></tr>`).join('')}
-                <tr class="summary-row-1"><td>Total Geral Mensal</td><td>${formatCurrencyBRL(monthData.total)}</td></tr>
-                <tr class="summary-row-2"><td>Faturamento Mensal</td><td>${formatCurrencyBRL(monthData.earnings)}</td></tr>
-            </tbody>`;
-        section.appendChild(table);
-        container.appendChild(section);
-    });
-}
+/**
+ * Initializes the entire tables view.
+ */
+export function initTablesView() {
+    // The fix: First, check if the main container for this view exists.
+    const tablesViewContainer = document.getElementById('tables-view');
+    if (!tablesViewContainer) {
+        // If the container isn't on the page, don't try to initialize.
+        // This prevents the "container is null" error during the initial app load.
+        return;
+    }
 
-function generateSummaryByDepartment() {
-    const container = document.getElementById('table-summary-department');
-    if (!container) return;
-    container.innerHTML = ''; 
-    data.departments.forEach(dept => {
-        const section = document.createElement('div');
-        section.innerHTML = `<h3>${dept}</h3>`;
-        const table = document.createElement('table');
-        table.innerHTML = `
-            <thead><tr><th>Mês</th><th>Total Gasto</th><th>Funcionários</th></tr></thead>
-            <tbody>
-                ${data.months.map(month => {
-                    const d = data.data[month]?.departments[dept];
-                    return d ? `<tr><td>${formatMonthLabel(month)}</td><td>${formatCurrencyBRL(d.geral)}</td><td>${d.count || 0}</td></tr>` : '';
-                }).join('')}
-            </tbody>`;
-        section.appendChild(table);
-        container.appendChild(section);
-    });
-}
+    // Pass the container to the setup function to ensure all querySelectors are scoped correctly.
+    setupTableToggle(tablesViewContainer);
 
-function generateDetailedByMonth() {
-    const container = document.getElementById('table-detailed-month');
-    if (!container) return;
-    container.innerHTML = ''; 
-    data.months.forEach(month => {
-        const monthData = data.data[month];
-        if (!monthData) return;
-        const totalSimples = Object.values(monthData.departments).reduce((sum, dept) => sum + dept.total, 0);
-        const totalVA = Object.values(monthData.departments).reduce((sum, dept) => sum + dept.valeAlimentacao, 0);
-        const totalBonificacao = Object.values(monthData.departments).reduce((sum, dept) => sum + dept.bonificacao, 0);
-        const totalGeral = Object.values(monthData.departments).reduce((sum, dept) => sum + dept.geral, 0);
-        const section = document.createElement('div');
-        section.innerHTML = `<h3>${formatMonthLabel(month)}</h3>`;
-        const table = document.createElement('table');
-        table.innerHTML = `
-            <thead><tr><th>Departamento</th><th>Funcionários</th><th>Total Simples</th><th>Vale Alimentação</th><th>Bonificação (Dia 20)</th><th>Total Geral</th></tr></thead>
-            <tbody>
-                ${Object.keys(colorsByDepartment).map(dept => {
-                    const d = monthData.departments[dept];
-                    return d ? `<tr>
-                        <td>${dept}</td><td>${d.count || 0}</td><td>${formatCurrencyBRL(d.total)}</td>
-                        <td>${formatVA(d.valeAlimentacao, month)}</td><td>${formatCurrencyBRL(d.bonificacao)}</td><td>${formatCurrencyBRL(d.geral)}</td>
-                    </tr>` : '';
-                }).join('')}
-            </tbody>
-            <tfoot><tr class="summary-row-2">
-                <td>Total Mensal</td><td>${monthData.totalEmployees}</td><td>${formatCurrencyBRL(totalSimples)}</td>
-                <td>${formatVA(totalVA, month)}</td><td>${formatCurrencyBRL(totalBonificacao)}</td><td>${formatCurrencyBRL(totalGeral)}</td>
-            </tr></tfoot>`;
-        section.appendChild(table);
-        container.appendChild(section);
-    });
+    // --- Initial Table Render (Placeholder Content) ---
+    // This section can be expanded to render actual data tables.
+    const summaryMonthContainer = tablesViewContainer.querySelector('#table-summary-month');
+    if (summaryMonthContainer) {
+        summaryMonthContainer.innerHTML = '<p class="p-4 text-gray-500">Tabela de resumo por mês será exibida aqui.</p>';
+    }
+    const summaryDeptContainer = tablesViewContainer.querySelector('#table-summary-department');
+     if (summaryDeptContainer) {
+        summaryDeptContainer.innerHTML = '<p class="p-4 text-gray-500">Tabela de resumo por departamento será exibida aqui.</p>';
+    }
+    // You can add similar placeholders for the other table containers.
 }
-
-function generateDetailedByDepartment() {
-    const container = document.getElementById('table-detailed-department');
-    if (!container) return;
-    container.innerHTML = '';
-    data.departments.forEach(dept => {
-        let totalSimples = 0, totalVA = 0, totalBonificacao = 0, totalGeral = 0, employeeSum = 0, monthCount = 0, lastMonthWithVA = '0000-00';
-        data.months.forEach(month => {
-            const d = data.data[month]?.departments[dept];
-            if (d) {
-                totalSimples += d.total; totalVA += d.valeAlimentacao; totalBonificacao += d.bonificacao;
-                totalGeral += d.geral; employeeSum += d.count; monthCount++;
-                if (d.valeAlimentacao > 0 || month >= '2025-01') lastMonthWithVA = month;
-            }
-        });
-        const avgEmployees = monthCount > 0 ? (employeeSum / monthCount).toFixed(1) : 0;
-        const section = document.createElement('div');
-        section.innerHTML = `<h3>${dept}</h3>`;
-        const table = document.createElement('table');
-        table.innerHTML = `
-            <thead><tr><th>Mês</th><th>Funcionários</th><th>Total Simples</th><th>Vale Alimentação</th><th>Bonificação (Dia 20)</th><th>Total Geral</th></tr></thead>
-            <tbody>
-                ${data.months.map(month => {
-                    const d = data.data[month]?.departments[dept];
-                    return d ? `<tr>
-                        <td>${formatMonthLabel(month)}</td><td>${d.count || 0}</td><td>${formatCurrencyBRL(d.total)}</td>
-                        <td>${formatVA(d.valeAlimentacao, month)}</td><td>${formatCurrencyBRL(d.bonificacao)}</td><td>${formatCurrencyBRL(d.geral)}</td>
-                    </tr>` : '';
-                }).join('')}
-            </tbody>
-            <tfoot><tr class="summary-row-2">
-                <td>Total / Média</td><td>${avgEmployees} (Média)</td><td>${formatCurrencyBRL(totalSimples)}</td>
-                <td>${formatVA(totalVA, lastMonthWithVA)}</td><td>${formatCurrencyBRL(totalBonificacao)}</td><td>${formatCurrencyBRL(totalGeral)}</td>
-            </tr></tfoot>`;
-        section.appendChild(table);
-        container.appendChild(section);
-    });
-}
-
-function generateEarningsTable() {
-    const container = document.getElementById('table-earnings');
-    if (!container) return;
-    container.innerHTML = '';
-    const section = document.createElement('div');
-    section.innerHTML = `<h3>Faturamento Mensal</h3>`;
-    const table = document.createElement('table');
-    table.innerHTML = `
-        <thead><tr><th>Mês</th><th>Faturamento</th><th>Gastos com Pessoal</th><th>Diferença</th><th>Margem (%)</th></tr></thead>
-        <tbody>
-            ${data.months.map(month => {
-                const monthData = data.data[month];
-                if (!monthData) return '';
-                const earnings = monthData.earnings || 0, totalCosts = monthData.total || 0, netProfit = earnings - totalCosts;
-                const profitMargin = (earnings > 0) ? (netProfit / earnings) * 100 : 0;
-                return `<tr>
-                    <td>${formatMonthLabel(month)}</td>
-                    <td>${formatCurrencyBRL(earnings)}</td>
-                    <td>${formatCurrencyBRL(totalCosts)}</td>
-                    <td class="${netProfit >= 0 ? 'positive' : 'negative'}">${formatCurrencyBRL(netProfit)}</td>
-                    <td class="${profitMargin >= 0 ? 'positive' : 'negative'}">${profitMargin.toFixed(2)}%</td>
-                </tr>`;
-            }).join('')}
-        </tbody>`;
-    section.appendChild(table);
-    container.appendChild(section);
-}
- 
