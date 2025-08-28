@@ -232,7 +232,55 @@
             
             <!-- Eventos (Events) View -->
             <div id="events-view-content" style="display: none;">
-                <!-- This will be populated by events.js -->
+                <div class="flex gap-6">
+                    <div id="agenda-container" class="w-full">
+                        <div class="bg-white rounded-xl shadow-2xl p-6 h-full flex flex-col">
+                            <div class="flex justify-between items-center mb-4">
+                                <div class="flex items-center gap-2 flex-1">
+                                    <button id="prev-month" class="p-2 rounded-full hover:bg-gray-100"><svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg></button>
+                                    <h2 id="current-month-year" class="text-xl font-bold text-gray-800 cursor-pointer hover:text-blue-600 text-center w-48">Agosto 2025</h2>
+                                    <button id="next-month" class="p-2 rounded-full hover:bg-gray-100"><svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></button>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                     <div class="flex items-center gap-1 bg-gray-100 p-1 rounded-lg">
+                                        <button id="agenda-view-calendar" class="px-2 py-1 text-sm font-semibold rounded-md bg-white text-[#024B59]">Calendário</button>
+                                        <button id="agenda-view-list" class="px-2 py-1 text-sm font-semibold rounded-md text-gray-600">Lista</button>
+                                    </div>
+                                     <button id="toggle-filters-btn" class="p-2 rounded-full hover:bg-gray-100">
+                                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L12 14.414V19a1 1 0 01-1.447.894L7 18a1 1 0 01-.553-.894v-3.586L3.293 6.707A1 1 0 013 6V4z"></path></svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="calendar-wrapper" class="flex-1">
+                                <div class="calendar-grid border-t border-l border-gray-200 h-full">
+                                    <div class="text-center font-semibold text-gray-500 p-2 border-r border-b text-xs sm:text-base">Dom</div>
+                                    <div class="text-center font-semibold text-gray-500 p-2 border-r border-b text-xs sm:text-base">Seg</div>
+                                    <div class="text-center font-semibold text-gray-500 p-2 border-r border-b text-xs sm:text-base">Ter</div>
+                                    <div class="text-center font-semibold text-gray-500 p-2 border-r border-b text-xs sm:text-base">Qua</div>
+                                    <div class="text-center font-semibold text-gray-500 p-2 border-r border-b text-xs sm:text-base">Qui</div>
+                                    <div class="text-center font-semibold text-gray-500 p-2 border-r border-b text-xs sm:text-base">Sex</div>
+                                    <div class="text-center font-semibold text-gray-500 p-2 border-r border-b text-xs sm:text-base">Sáb</div>
+                                </div>
+                            </div>
+                            <div id="list-wrapper" class="hidden flex-1 space-y-4 overflow-y-auto">
+                                <!-- List items will be populated by JS -->
+                            </div>
+                        </div>
+                    </div>
+                     <div id="filter-sidebar" class="bg-white rounded-xl shadow-2xl filter-sidebar w-0 p-0 overflow-hidden">
+                        <div class="p-6 w-56">
+                            <h3 class="text-lg font-bold text-gray-800 mb-4">Legenda/Filtro</h3>
+                            <div id="legend-filter-list" class="space-y-2 text-sm text-gray-600">
+                                <!-- Legend items will be populated by JS -->
+                            </div>
+                            <hr class="my-6">
+                            <h3 class="text-lg font-bold text-gray-800 mb-4">Outros Filtros</h3>
+                            <div class="space-y-2 text-sm">
+                                <label class="flex items-center gap-2"><input type="checkbox" class="rounded" checked> Mostrar feriados</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </main>
