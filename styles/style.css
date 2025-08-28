@@ -34,28 +34,6 @@ body {
   transition: background-color 0.3s ease;
 }
 
-.main-content-inner {
-    max-width: 1400px;
-    margin: 0 auto;
-}
-
-.main-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 30px;
-}
-
-.view-title {
-    font-size: 1.8rem;
-    font-weight: 700;
-    color: var(--text-dark);
-}
-
-.facto-logo {
-    height: 40px;
-}
-
 #views-container > div {
     display: flex;
     flex-direction: column;
@@ -613,10 +591,10 @@ body {
 }
 
 .legend-item {
-    display: grid;
-    grid-template-columns: auto 1fr auto;
+    display: flex;
     align-items: center;
     gap: 8px;
+    transition: opacity 0.2s ease;
 }
 
 .legend-swatch {
