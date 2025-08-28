@@ -204,3 +204,4 @@ export function initEventsView() {
     if(calendarGrid) renderCalendar();
     if(legendFilterList) renderLegend();
 }
+ 
