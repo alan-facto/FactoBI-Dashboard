@@ -1,179 +1,234 @@
-/* ====== BASE STYLES ====== */
-:root {
-    --bg-light: #F6F6F6;
-    --text-light: #024B59;
-    --bg-dark: #024B59;
-    --text-dark: #F6F6F6;
-    --bg-main: #024B59;
-    --shadow-light: 0 4px 12px rgba(0,0,0,0.1);
-    --shadow-dark: 0 4px 12px rgba(0,0,0,0.4);
-    --positive-color: #00A86B;
-    --negative-color: #E44D42;
-}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel Financeiro</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles/style.css">
+  <link rel="stylesheet" href="styles/login.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+  <link rel="icon" href="data:,">
+</head>
+<body>
 
-body {
-  margin: 0;
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  background-color: var(--bg-main);
-  color: #333;
-  line-height: 1.6;
-  overflow-x: hidden;
-}
+  <!-- Loading View -->
+  <div id="loading-view" class="auth-view" style="display: flex;">
+      <div class="spinner"></div>
+      <p>Carregando...</p>
+  </div>
 
-/* ====== NEW LAYOUT STRUCTURE ====== */
-.dashboard-wrapper {
-  display: flex;
-  height: 100vh;
-  transition: background-color 0.3s ease;
-}
+  <!-- Main Dashboard Structure -->
+  <div id="dashboard-wrapper" class="dashboard-wrapper" style="display: none;">
+    <!-- Sidebar Navigation -->
+    <nav id="sidebar-nav" class="sidebar-nav">
+      <div>
+        <div class="sidebar-header">
+          <button id="hamburger-btn" class="hamburger-btn">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+          </button>
+          <h1 class="sidebar-title">Dashboard</h1>
+        </div>
+        <ul id="nav-list" class="nav-list">
+          <!-- JS will populate this -->
+        </ul>
+      </div>
 
-.main-content {
-  flex-grow: 1;
-  overflow-y: auto;
-  padding: 25px;
-  transition: background-color 0.3s ease;
-}
+      <div class="sidebar-footer">
+        <!-- Theme Toggle -->
+        <div class="theme-toggle-wrapper">
+            <div id="theme-toggle" class="theme-toggle">
+                <svg id="sun-icon" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 14.464A1 1 0 106.465 13.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM4 10a1 1 0 01-1-1H2a1 1 0 110-2h1a1 1 0 011 1zm2.122-5.607a1 1 0 011.414 0l.706.707a1 1 0 11-1.414 1.414l-.707-.707a1 1 0 010-1.414z"></path></svg>
+                <svg id="moon-icon" class="w-5 h-5 hidden" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
+            </div>
+        </div>
+        <div class="user-info-wrapper">
+            <div class="user-info">
+                <img id="user-avatar-img" src="https://placehold.co/40x40/024B59/FFFFFF?text=A" alt="User Avatar" class="user-avatar">
+                <div class="user-details">
+                    <p id="user-name-display" class="user-name nav-text">Usuário</p>
+                    <p id="user-role-display" class="user-role nav-text" style="display: none;"></p>
+                </div>
+            </div>
+          <button id="logout-btn" class="logout-btn">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+            <span class="nav-text">Sair</span>
+          </button>
+        </div>
+      </div>
+    </nav>
 
-.view-title {
-    font-size: 1.8rem;
-    font-weight: 700;
-    color: #E5E7EB; /* Light gray for all modes */
-}
+    <!-- Main Content -->
+    <main class="main-content">
+        <h1 id="view-title-main" class="view-title">Visão Geral</h1>
+        <!-- Views Container -->
+        <div id="views-container">
+            <!-- Gastos (Expenses) View -->
+            <div id="charts-view" style="display: none;">
+              <!-- Content for charts view -->
+            </div>
 
+            <!-- Faturamento (Earnings) View -->
+            <div id="earnings-view" style="display: none;">
+                <!-- Content for earnings view -->
+            </div>
 
-#views-container > div {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-}
+            <!-- Tabelas (Tables) View -->
+            <div id="tables-view" style="display: none;">
+              <div class="card">
+                <div class="table-toggle-container">
+                  <button id="btn-summary-month" class="table-toggle-btn active">Resumo por Mês</button>
+                  <button id="btn-summary-department" class="table-toggle-btn">Resumo por Departamento</button>
+                  <button id="btn-detailed-month" class="table-toggle-btn">Detalhado por Mês</button>
+                  <button id="btn-detailed-department" class="table-toggle-btn">Detalhado por Departamento</button>
+                  <button id="btn-earnings-table" class="table-toggle-btn">Faturamento</button>
+                </div>
 
-/* ====== DEPRECATED STYLES ====== */
-.container, .view-toggle {
-  display: none;
-}
+                <div id="table-summary-month" style="display: block;"></div>
+                <div id="table-summary-department" style="display: none;"></div>
+                <div id="table-detailed-month" style="display: none;"></div>
+                <div id="table-detailed-department" style="display: none;"></div>
+                <div id="table-earnings" style="display: none;"></div>
+              </div>
+            </div>
+            
+            <!-- Eventos (Events) View -->
+            <div id="events-view" style="display: none;">
+                 <!-- Header -->
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                    <div>
+                        <!-- Title is handled by main view title -->
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-2 bg-white/10 p-2 rounded-lg">
+                            <button id="view-toggle-agenda" class="px-3 py-1 text-sm font-semibold rounded-md bg-white text-[#024B59]">Agenda</button>
+                            <button id="view-toggle-budgets" class="px-3 py-1 text-sm font-semibold rounded-md text-white">Orçamentos</button>
+                            <button id="view-toggle-briefings" class="px-3 py-1 text-sm font-semibold rounded-md text-white">Briefings</button>
+                        </div>
+                        <button id="add-event-btn" class="bg-[#0DEB89] text-[#024B59] font-bold py-2 px-4 rounded-lg flex items-center gap-2 hover:bg-opacity-90 transition">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                            <span>Novo Evento</span>
+                        </button>
+                    </div>
+                </div>
 
-/* ====== SIDEBAR NAVIGATION ====== */
-.sidebar-nav {
-    width: 250px;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-    transition: width 0.3s ease-in-out, background-color 0.3s ease, color 0.3s ease;
-    flex-shrink: 0;
-    background-color: var(--bg-light);
-    color: var(--text-light);
-}
+                <!-- Main Content Area -->
+                <div class="flex gap-6">
+                    <div id="agenda-wrapper" class="w-full">
+                        <!-- Agenda View -->
+                        <div id="agenda-container">
+                            <div class="bg-white rounded-xl shadow-2xl p-6 h-full flex flex-col">
+                                <div class="flex justify-between items-center mb-4">
+                                    <div class="flex items-center gap-2 flex-1">
+                                        <button id="prev-month" class="p-2 rounded-full hover:bg-gray-100"><svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg></button>
+                                        <h2 id="current-month-year" class="text-xl font-bold text-gray-800 cursor-pointer hover:text-blue-600 text-center w-48">Agosto 2025</h2>
+                                        <button id="next-month" class="p-2 rounded-full hover:bg-gray-100"><svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></button>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <div class="flex items-center gap-1 bg-gray-100 p-1 rounded-lg">
+                                            <button id="agenda-view-calendar" class="px-2 py-1 text-sm font-semibold rounded-md bg-white text-[#024B59]">Calendário</button>
+                                            <button id="agenda-view-list" class="px-2 py-1 text-sm font-semibold rounded-md text-gray-600">Lista</button>
+                                        </div>
+                                        <button id="toggle-filters-btn" class="p-2 rounded-full hover:bg-gray-100">
+                                            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L12 14.414V19a1 1 0 01-1.447.894L7 18a1 1 0 01-.553-.894v-3.586L3.293 6.707A1 1 0 013 6V4z"></path></svg>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div id="calendar-wrapper" class="flex-1">
+                                    <div class="calendar-grid border-t border-l border-gray-200 h-full">
+                                        <!-- Calendar days are rendered here -->
+                                    </div>
+                                </div>
+                                <div id="list-wrapper" class="hidden flex-1 space-y-4 overflow-y-auto">
+                                    <!-- List items will be populated by JS -->
+                                </div>
+                            </div>
+                        </div>
 
-.sidebar-nav.collapsed {
-    width: 80px;
-    padding: 20px 10px;
-}
+                        <!-- Budgets View -->
+                        <div id="budgets-container" class="hidden w-full">
+                            <div class="bg-white/10 p-6 rounded-xl">
+                                <div class="flex justify-between items-center mb-4">
+                                    <h2 class="text-2xl font-bold text-white">Gerenciamento de Orçamentos</h2>
+                                    <div class="flex items-center gap-2 bg-white/20 p-1 rounded-lg text-sm">
+                                        <button class="px-3 py-1 font-semibold rounded-md text-white bg-white/20">Todos</button>
+                                        <button class="px-3 py-1 font-semibold rounded-md text-white">Pendente</button>
+                                        <button class="px-3 py-1 font-semibold rounded-md text-white">Aprovado</button>
+                                    </div>
+                                </div>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-left text-white min-w-[600px]">
+                                        <thead>
+                                            <tr class="border-b border-white/20">
+                                                <th class="p-3">Evento</th>
+                                                <th class="p-3">Solicitado por</th>
+                                                <th class="p-3">Valor</th>
+                                                <th class="p-3">Status</th>
+                                                <th class="p-3">Aprovador</th>
+                                                <th class="p-3">Data</th>
+                                                <th class="p-3">Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="text-gray-300 text-sm">
+                                            <!-- Table rows -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Briefings View -->
+                        <div id="briefings-container" class="hidden w-full space-y-6">
+                            <div class="bg-white/10 p-6 rounded-xl text-white">
+                                <h2 class="text-2xl font-bold mb-4">Briefings Ativos</h2>
+                                <p>Funcionalidade em desenvolvimento.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Filters & Legend Sidebar -->
+                    <div id="filter-sidebar" class="bg-white rounded-xl shadow-2xl filter-sidebar w-0 p-0 overflow-hidden">
+                        <div class="p-6 w-56">
+                            <h3 class="text-lg font-bold text-gray-800 mb-4">Legenda/Filtro</h3>
+                            <div id="legend-filter-list" class="space-y-2 text-sm text-gray-600">
+                                <!-- Legend items will be populated by JS -->
+                            </div>
+                            <hr class="my-6">
+                            <h3 class="text-lg font-bold text-gray-800 mb-4">Outros Filtros</h3>
+                            <div class="space-y-2 text-sm">
+                                <label class="flex items-center gap-2"><input type="checkbox" class="rounded" checked> Mostrar feriados</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+  </div>
+  
+  <!-- Modals -->
+  <div id="date-picker-modal" class="fixed inset-0 z-40 hidden items-center justify-center modal-backdrop">
+       <div class="bg-white rounded-lg shadow-2xl p-6">
+           <h3 class="text-lg font-bold text-gray-800 mb-4">Ir para Data</h3>
+           <div class="flex gap-4">
+               <select id="month-select" class="p-2 border rounded-md bg-white"></select>
+               <input id="year-input" type="number" class="p-2 border rounded-md w-24" value="2025">
+           </div>
+           <div class="flex justify-end gap-4 mt-6">
+               <button id="cancel-date-picker" class="px-4 py-2 text-sm font-semibold text-gray-600 rounded-md hover:bg-gray-100">Cancelar</button>
+               <button id="go-to-date" class="px-4 py-2 text-sm font-semibold text-white bg-[#024B59] rounded-md">Ir</button>
+           </div>
+      </div>
+  </div>
+  <div id="event-detail-modal" class="fixed inset-0 z-30 hidden items-center justify-center modal-backdrop">
+      <div class="bg-white rounded-lg shadow-2xl w-full max-w-2xl p-6 transform transition-all">
+          <!-- Modal Content will be populated by JS -->
+      </div>
+  </div>
 
-/* ... (rest of the existing styles) ... */
-
-
-/* ====== EVENTOS VIEW STYLES ====== */
-.calendar-grid { 
-    display: grid; 
-    grid-template-columns: repeat(7, 1fr); 
-}
-.calendar-day { 
-    aspect-ratio: 1 / 1; 
-    overflow-y: auto; 
-}
-.modal-backdrop { 
-    background-color: rgba(0,0,0,0.6); 
-}
-.filter-sidebar { 
-    transition: width 0.3s ease-in-out, padding 0.3s ease-in-out, transform 0.3s ease-in-out; 
-}
-#agenda-wrapper { 
-    transition: width 0.3s ease-in-out; 
-}
-.event-bubble { 
-    line-height: 1.2; 
-    cursor: grab; 
-    user-select: none; 
-}
-.event-bubble:active { 
-    cursor: grabbing; 
-}
-.sortable-ghost { 
-    background: #cce5ff; 
-    border-radius: 4px; 
-}
-
-
-/* ====== MISC & RESPONSIVE ====== */
-.error-message {
-  color: white;
-  text-align: center;
-  padding: 40px;
-  background-color: #e15759;
-  border-radius: 10px;
-  margin: 20px;
-}
-
-.error-message button {
-  background: white;
-  color: #e15759;
-  border: none;
-  padding: 10px 20px;
-  margin-top: 20px;
-  border-radius: 5px;
-  cursor: pointer;
-  font-weight: bold;
-}
-
-@media (max-width: 1024px) {
-    .sidebar-nav:not(.expanded) {
-        width: 80px;
-        padding: 20px 10px;
-    }
-    .sidebar-nav:not(.expanded) .nav-text,
-    .sidebar-nav:not(.expanded) .sidebar-title,
-    .sidebar-nav:not(.expanded) .user-details {
-        display: none;
-    }
-    .sidebar-nav:not(.expanded) .nav-link,
-    .sidebar-nav:not(.expanded) .user-info,
-    .sidebar-nav:not(.expanded) .sidebar-header {
-        justify-content: center;
-    }
-    .sidebar-nav:not(.expanded) .logout-btn .w-5 {
-        margin: 0;
-    }
-}
-
-
-@media (max-width: 768px) {
-  .chart-row.double {
-    grid-template-columns: 1fr;
-  }
-  .filter-buttons {
-    max-width: 100%;
-  }
-  .pie-chart-main-content {
-    flex-direction: column;
-  }
-  .department-legend-sidebar {
-    border-left: none;
-    border-top: 1px solid #e0e0e0;
-    padding-left: 0;
-    padding-top: 20px;
-    width: 100%;
-  }
-  #tables-view table {
-    display: block;
-    overflow-x: auto;
-    white-space: nowrap;
-  }
-  .main-content {
-    padding: 15px;
-  }
-  .view-title {
-    font-size: 1.5rem;
-  }
-}
+  <script type="module" src="scripts/main.js"></script>
+</body>
+</html>
